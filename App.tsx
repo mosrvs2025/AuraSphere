@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Room, User } from './types';
 import { MOCK_ROOMS, MOCK_USER_HOST, MOCK_USER_LISTENER, users as MOCK_USERS } from './constants';
@@ -43,6 +44,57 @@ const App: React.FC = () => {
     }
   };
 
+  const stopScreenShare = (roomId: string) => {
+    // This helper ensures state is cleaned up correctly, especially when called from a stream event.
+    setRooms(prevRooms => {
+      const room = prevRooms.find(r => r.id === roomId);
+      if (room?.screenShareStream) {
+        room.screenShareStream.getTracks().forEach(track => track.stop());
+      }
+      return prevRooms.map(r => 
+        r.id === roomId ? { ...r, screenShareStream: undefined } : r
+      );
+    });
+
+    if (selectedRoom?.id === roomId) {
+      setSelectedRoom(prev => prev ? { ...prev, screenShareStream: undefined } : null);
+    }
+  };
+  
+  const toggleScreenShare = async (roomId: string) => {
+    const roomToUpdate = rooms.find(r => r.id === roomId);
+    if (!roomToUpdate) return;
+
+    // If currently sharing, stop it
+    if (roomToUpdate.screenShareStream) {
+      stopScreenShare(roomId);
+      return;
+    }
+
+    // If not sharing, request to start
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        // Fix: The 'cursor' property is valid for `getDisplayMedia` but might not exist in default TypeScript DOM typings. Casting to `any` resolves the type error.
+        video: { cursor: "always" } as any,
+        audio: false,
+      });
+
+      // Listen for when the user stops sharing via the native browser UI
+      const track = stream.getVideoTracks()[0];
+      track.onended = () => stopScreenShare(roomId);
+
+      const updatedRooms = rooms.map(r => r.id === roomId ? { ...r, screenShareStream: stream } : r);
+      setRooms(updatedRooms);
+      
+      if (selectedRoom?.id === roomId) {
+        setSelectedRoom(prev => prev ? {...prev, screenShareStream: stream} : null);
+      }
+    } catch (err) {
+      console.error("Screen share error:", err);
+    }
+  };
+
+
   const enterRoom = (room: Room) => {
     const roomFromState = rooms.find(r => r.id === room.id);
     setSelectedRoom(roomFromState || room);
@@ -57,7 +109,11 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black antialiased">
         <div className="container mx-auto max-w-lg p-4 font-sans">
           {selectedRoom ? (
-            <RoomView room={selectedRoom} onLeave={leaveRoom} />
+            <RoomView 
+              room={selectedRoom} 
+              onLeave={leaveRoom} 
+              onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)} 
+            />
           ) : (
             <div>
               <header className="flex justify-between items-center py-4">

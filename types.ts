@@ -1,3 +1,4 @@
+// Fix: MediaStream is a global type from the DOM API and is not exported by React.
 export enum UserRole {
   HOST = 'host',
   SPEAKER = 'speaker',
@@ -13,17 +14,21 @@ export interface User {
 }
 
 export interface Room {
-  id: string;
+  id:string;
   title: string;
   tags: string[];
   hosts: User[];
   speakers: User[];
   listeners: User[];
+  screenShareStream?: MediaStream;
 }
 
-export interface VoiceMemo {
+export interface ChatMessage {
   id: string;
   user: User;
-  duration: number; // in seconds
+  text?: string;
+  voiceMemo?: {
+    duration: number; // in seconds
+  };
   createdAt: Date;
 }

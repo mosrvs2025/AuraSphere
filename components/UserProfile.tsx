@@ -5,9 +5,10 @@ import AvatarCustomizer from './AvatarCustomizer';
 
 interface UserProfileProps {
   user: User;
+  isSpeaking?: boolean;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, isSpeaking }) => {
   const { currentUser, updateUserAvatar } = useContext(UserContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -18,7 +19,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
     setIsModalOpen(false);
   };
 
-  const avatarClasses = `h-16 w-16 rounded-full border-2 shadow-lg mb-1 object-cover ${isCurrentUser ? 'border-indigo-500 cursor-pointer hover:opacity-80 transition-opacity' : 'border-gray-600'}`;
+  const speakingClasses = isSpeaking ? 'ring-4 ring-offset-2 ring-offset-gray-800 ring-green-400 animate-pulse' : '';
+  const avatarClasses = `h-16 w-16 rounded-full border-2 shadow-lg mb-1 object-cover ${isCurrentUser ? 'border-indigo-500 cursor-pointer hover:opacity-80 transition-opacity' : 'border-gray-600'} ${speakingClasses}`;
 
   return (
     <>
