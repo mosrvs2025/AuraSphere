@@ -1,158 +1,123 @@
-// Implemented the RoomView component to provide the main audio room UI.
-import React, { useContext, useState } from 'react';
-import { Room, User } from '../types';
-import HostControls from './HostControls';
-import UserProfile from './UserProfile';
+// Implemented RoomView, the main interface for participating in a live audio room.
+import React, { useState } from 'react';
+import { Room, User, ChatMessage } from '../types';
 import ChatView from './ChatView';
+import HostControls from './HostControls';
+import ListenerControls from './ListenerControls';
 import { RoomActionsContext } from '../context/RoomActionsContext';
-import { MicIcon, SendIcon } from './Icons';
 
 interface RoomViewProps {
   room: Room;
   currentUser: User;
   onLeave: () => void;
-  onUpdateRoom: (updatedData: Partial<Room>) => void;
-  onSendMessage: (message: { text: string }) => void;
 }
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdateRoom, onSendMessage }) => {
-  const isHost = room.hosts.some(h => h.id === currentUser.id);
-  const { isSharingScreen } = useContext(RoomActionsContext);
-  const [text, setText] = useState('');
-  const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
+const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small' }> = ({ user, size = 'large' }) => (
+    <div className="flex flex-col items-center space-y-1 text-center">
+        <img 
+            src={user.avatarUrl} 
+            alt={user.name} 
+            className={`${size === 'large' ? 'w-20 h-20' : 'w-12 h-12'} rounded-full border-2 border-gray-600 shadow-md`}
+        />
+        <p className={`font-semibold truncate w-24 ${size === 'large' ? 'text-sm' : 'text-xs'}`}>{user.name}</p>
+    </div>
+);
 
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) {
-      onSendMessage({ text: text.trim() });
-      setText('');
-    }
-  };
-  
-  const handleToggleReaction = (messageId: string, emoji: string) => {
-    const message = room.messages.find(m => m.id === messageId);
-    if (!message) return;
 
-    const reactions = message.reactions || {};
-    const userList = reactions[emoji] || [];
-    
-    if (userList.includes(currentUser.id)) {
-        // User is removing their reaction
-        reactions[emoji] = userList.filter(id => id !== currentUser.id);
-    } else {
-        // User is adding a reaction
-        reactions[emoji] = [...userList, currentUser.id];
-    }
-    
-    // Cleanup empty reaction arrays
-    if (reactions[emoji].length === 0) {
-        delete reactions[emoji];
-    }
-    
-    const updatedMessages = room.messages.map(m => 
-        m.id === messageId ? { ...m, reactions } : m
-    );
-    
-    onUpdateRoom({ messages: updatedMessages });
-  };
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave }) => {
+    const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
+    const [isSharingScreen, setIsSharingScreen] = useState(false);
+    const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
+    const [currentRoom, setCurrentRoom] = useState<Room>(room);
 
-  const handlePlayAudioNote = (messageId: string) => {
-    setNowPlayingAudioNoteId(prevId => (prevId === messageId ? null : messageId));
-  };
+    const isHost = currentRoom.hosts.some(h => h.id === currentUser.id);
 
-  return (
-    <div className="h-full flex flex-col bg-gray-900 animate-fade-in">
-      <header className="flex-shrink-0 p-4 border-b border-gray-800 flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold">{room.title}</h1>
-          <p className="text-sm text-gray-400">{room.hosts.map(h => h.name).join(', ')}</p>
-        </div>
-        <button onClick={onLeave} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
-          Leave
-        </button>
-      </header>
+    const handleUpdateRoom = (updatedData: Partial<Room>) => {
+      setCurrentRoom(prev => ({...prev, ...updatedData}));
+    };
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Main Content: Video/Screen share or Participants */}
-        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto">
-          {room.videoUrl ? (
-            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                <iframe
-                    className="w-full h-full"
-                    src={`https://www.youtube.com/embed/${room.videoUrl.split('v=')[1]}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                ></iframe>
+    const handleToggleReaction = (messageId: string, emoji: string) => {
+      // In a real app, this would be a backend call.
+      // This is a placeholder function to satisfy prop requirements.
+      console.log(`Toggled reaction ${emoji} for message ${messageId}`);
+    };
+
+    const onToggleScreenShare = async () => {
+      setIsSharingScreen(!isSharingScreen);
+    };
+
+    return (
+    <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
+      <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
+        {/* Main Room Content */}
+        <div className="flex-1 flex flex-col bg-gray-900 p-4 md:p-6">
+          <header className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
+              <p className="text-sm text-gray-400">{currentRoom.hosts.map(h => h.name).join(', ')}</p>
             </div>
-           ) : isSharingScreen ? (
-             <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-gray-400">
-                <p>Screen sharing is active...</p>
+            <button onClick={onLeave} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+              Leave
+            </button>
+          </header>
+
+          {/* Screen Share / Video View */}
+          { isSharingScreen || currentRoom.videoUrl ? (
+             <div className="w-full bg-black rounded-lg aspect-video mb-6 flex items-center justify-center text-gray-400">
+               {isSharingScreen ? "Screen share is active" : (
+                 <iframe 
+                   src={currentRoom.videoUrl?.replace('watch?v=', 'embed/')} 
+                   title="YouTube video player" 
+                   frameBorder="0" 
+                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                   allowFullScreen
+                   className="w-full h-full rounded-lg"
+                 ></iframe>
+               )}
              </div>
-           ) : (
-             <>
-                <div className="mb-6">
-                    <h2 className="text-lg font-bold text-indigo-400 mb-3">Hosts</h2>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                        {room.hosts.map(user => <UserProfile key={user.id} user={user} isDucked={!!nowPlayingAudioNoteId} />)}
-                    </div>
-                </div>
+          ) : null}
 
-                {room.speakers.length > 0 && (
-                    <div className="mb-6">
-                        <h2 className="text-lg font-bold text-gray-300 mb-3">Speakers</h2>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                            {room.speakers.map(user => <UserProfile key={user.id} user={user} isDucked={!!nowPlayingAudioNoteId} />)}
-                        </div>
-                    </div>
-                )}
-
-                <div>
-                    <h2 className="text-lg font-bold text-gray-500 mb-3">Listeners ({room.listeners.length})</h2>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
-                        {room.listeners.map(user => <UserProfile key={user.id} user={user} isListener />)}
-                    </div>
-                </div>
-             </>
-           )}
-        </main>
+          {/* Participants */}
+          <div className="flex-1 overflow-y-auto space-y-6">
+              <div>
+                  <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} />)}
+                  </div>
+              </div>
+              <div>
+                  <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} />)}
+                  </div>
+              </div>
+               <div>
+                  <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
+                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" />)}
+                  </div>
+              </div>
+          </div>
+          
+          {/* Controls */}
+          <footer className="mt-auto pt-4">
+              {isHost ? <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} /> : <ListenerControls />}
+          </footer>
+        </div>
 
         {/* Chat Sidebar */}
-        <aside className="w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-gray-800 flex flex-col flex-shrink-0">
+        <div className="w-full md:w-80 lg:w-96 border-l border-gray-800 flex-shrink-0 h-1/2 md:h-full">
           <ChatView 
-             messages={room.messages} 
-             currentUser={currentUser}
-             onToggleReaction={handleToggleReaction}
-             nowPlayingAudioNoteId={nowPlayingAudioNoteId}
-             onPlayAudioNote={handlePlayAudioNote}
+            messages={messages} 
+            currentUser={currentUser}
+            onToggleReaction={handleToggleReaction}
+            nowPlayingAudioNoteId={nowPlayingAudioNoteId}
+            onPlayAudioNote={setNowPlayingAudioNoteId}
           />
-        </aside>
-      </div>
-
-      <footer className="flex-shrink-0 p-4 border-t border-gray-800 bg-gray-800/30 space-y-4">
-        {isHost && <HostControls videoUrl={room.videoUrl} onUpdateRoom={onUpdateRoom} />}
-        {/* Unified Input Bar */}
-        <div className="flex items-center space-x-2">
-            <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-full transition" title="Send Audio Note">
-                <MicIcon />
-            </button>
-            <form onSubmit={handleTextSubmit} className="flex-1 flex items-center bg-gray-900 rounded-full">
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Send a message..."
-                    className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none"
-                />
-                <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300" aria-label="Send message">
-                   <SendIcon />
-                </button>
-            </form>
         </div>
-      </footer>
-    </div>
-  );
+      </div>
+    </RoomActionsContext.Provider>
+    );
 };
 
 export default RoomView;

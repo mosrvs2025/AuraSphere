@@ -1,31 +1,26 @@
+// Implemented the main Header component with navigation controls.
 import React from 'react';
 import { MenuIcon, SearchIcon } from './Icons';
 
 interface HeaderProps {
-  title: string;
-  onMenuClick: () => void;
-  showSearch?: boolean;
+  onToggleSidebar: () => void;
+  title?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, onMenuClick, showSearch }) => {
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   return (
-    <header className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10">
+    <header className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 flex items-center justify-between p-4 h-16">
       <div className="flex items-center space-x-4">
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white"
-          aria-label="Open sidebar"
-        >
+        <button onClick={onToggleSidebar} className="text-gray-400 hover:text-white md:hidden">
           <MenuIcon />
         </button>
-        <h1 className="text-xl font-bold text-white tracking-tight">{title}</h1>
+        {title && <h1 className="text-xl font-bold">{title}</h1>}
       </div>
-      
-      {showSearch && (
-        <button className="p-2 text-gray-400 hover:text-white" aria-label="Search">
+      <div className="flex items-center space-x-4">
+        <button className="text-gray-400 hover:text-white">
             <SearchIcon />
         </button>
-      )}
+      </div>
     </header>
   );
 };

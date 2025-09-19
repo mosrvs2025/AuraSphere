@@ -1,28 +1,26 @@
-// Implemented the UserProfile component for displaying participant avatars and names.
-import React from 'react';
-import { User } from '../types';
+// Implemented UserProfile as a wrapper for the ProfileView component.
+import React, { useContext } from 'react';
+import { User, Room } from '../types';
+import ProfileView from './ProfileView';
+import { UserContext } from '../context/UserContext';
 
 interface UserProfileProps {
   user: User;
-  isListener?: boolean;
-  isDucked?: boolean;
+  allRooms: Room[];
+  onEditProfile: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, isListener, isDucked }) => {
-  return (
-    <div className={`flex flex-col items-center text-center transition-opacity duration-300 ${isDucked ? 'opacity-40' : 'opacity-100'}`}>
-      <div className="relative">
-        <img
-          src={user.avatarUrl}
-          alt={user.name}
-          className={`w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-2 ${
-            isListener ? 'border-gray-700' : 'border-indigo-500'
-          }`}
+const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile }) => {
+    const { currentUser } = useContext(UserContext);
+    
+    return (
+        <ProfileView 
+            user={user}
+            allRooms={allRooms}
+            onEditProfile={onEditProfile}
+            currentUser={currentUser}
         />
-      </div>
-      <p className="mt-2 text-sm font-semibold text-white truncate w-20">{user.name}</p>
-    </div>
-  );
+    );
 };
 
 export default UserProfile;

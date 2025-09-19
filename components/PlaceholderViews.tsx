@@ -1,38 +1,18 @@
+// Implemented placeholder components for Trending and My Studio views.
 import React from 'react';
+import { TrendingIcon, StudioIcon } from './Icons';
 
-const PlaceholderView: React.FC<{description: string}> = ({ description }) => (
-  <div className="p-4 md:p-6 animate-fade-in">
-    <div className="max-w-md">
-        <p className="text-gray-400 mt-2">{description}</p>
-        <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
-            <p className="text-center text-gray-300">Content for this section is coming soon!</p>
-        </div>
+const PlaceholderCard: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
+  <div className="h-full flex items-center justify-center p-8">
+    <div className="text-center text-gray-500">
+      <div className="inline-block p-4 bg-gray-800 rounded-full mb-4">
+        {icon}
+      </div>
+      <h2 className="text-2xl font-bold text-gray-400">{title}</h2>
+      <p className="mt-2">This feature is coming soon!</p>
     </div>
   </div>
 );
 
-export const MyStudioView: React.FC = () => (
-    <div className="p-4 md:p-6 animate-fade-in">
-        <div className="max-w-4xl">
-            <p className="text-gray-400 mt-2">This is your creator dashboard. Manage scheduled rooms, view past history, and prepare drafts.</p>
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
-                    <h2 className="font-bold text-indigo-400">Scheduled Rooms</h2>
-                    <p className="text-gray-300 mt-2 text-sm">You have no upcoming rooms scheduled.</p>
-                    <button className="mt-4 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded-full transition">Schedule a Room</button>
-                </div>
-                <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
-                    <h2 className="font-bold text-indigo-400">Past Room History</h2>
-                    <p className="text-gray-300 mt-2 text-sm">No past rooms to show.</p>
-                </div>
-                <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg md:col-span-2">
-                    <h2 className="font-bold text-indigo-400">Drafts</h2>
-                    <p className="text-gray-300 mt-2 text-sm">You have no saved drafts.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-);
-
-
-export const TrendingView = () => <PlaceholderView description="Discover the most popular rooms and topics right now." />;
+export const TrendingView = () => <PlaceholderCard title="Trending Rooms" icon={<TrendingIcon />} />;
+export const MyStudioView = () => <PlaceholderCard title="My Studio" icon={<StudioIcon />} />;

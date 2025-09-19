@@ -1,15 +1,27 @@
+// Implemented UserContext to provide current user data throughout the application.
 import { createContext } from 'react';
 import { User } from '../types';
-import { MOCK_USER_LISTENER } from '../constants';
 
 export interface IUserContext {
   currentUser: User;
-  updateUserAvatar: (newAvatarUrl: string, isGenerated?: boolean) => void;
+  updateCurrentUser: (userData: Partial<User>) => void;
+  getUserById: (id: string) => User | undefined;
 }
 
-const defaultUpdateUserAvatar = () => console.warn('updateUserAvatar function was called without a Provider.');
+// This dummy user will be replaced by the state in App.tsx
+const dummyUser: User = {
+  id: 'user-0',
+  name: 'Default User',
+  avatarUrl: 'https://i.pravatar.cc/150?img=1',
+  followers: [],
+  following: []
+};
 
 export const UserContext = createContext<IUserContext>({
-  currentUser: MOCK_USER_LISTENER,
-  updateUserAvatar: defaultUpdateUserAvatar,
+  currentUser: dummyUser,
+  updateCurrentUser: () => console.warn('updateCurrentUser called outside of a UserContext.Provider'),
+  getUserById: () => {
+    console.warn('getUserById called outside of a UserContext.Provider');
+    return undefined;
+  },
 });
