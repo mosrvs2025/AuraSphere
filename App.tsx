@@ -250,7 +250,8 @@ const App: React.FC = () => {
 
     const handleEnterRoom = (room: Room) => {
         setActiveRoom(room);
-        changeView('room');
+        setPreviousView(activeView);
+        setActiveView('room');
     };
 
     const handleLeaveRoom = () => {
@@ -259,13 +260,15 @@ const App: React.FC = () => {
     };
 
     const handleSelectConversation = (conversation: Conversation) => {
+        setPreviousView(activeView);
         setActiveConversation(conversation);
-        changeView('conversation');
+        setActiveView('conversation');
     };
     
     const handleViewProfile = (user: User) => {
+        setPreviousView(activeView);
         setActiveProfile(user);
-        changeView('profile');
+        setActiveView('profile');
     };
 
     const handleViewMedia = (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => {
@@ -273,8 +276,9 @@ const App: React.FC = () => {
     };
 
     const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' }>) => {
+        setPreviousView(activeView);
         setActivePost(post);
-        changeView('post_detail');
+        setActiveView('post_detail');
     };
 
 

@@ -1,23 +1,42 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { DiscoverItem, User, Room } from '../types';
+import { UserContext } from '../context/UserContext';
 
-const UserProfileCard: React.FC<{ user: User; onViewProfile: (user: User) => void }> = ({ user, onViewProfile }) => (
-  <div onClick={() => onViewProfile(user)} className="bg-gray-800/50 p-4 rounded-lg flex flex-col items-center text-center cursor-pointer hover:bg-gray-700/70 transition-colors">
-    <img src={user.avatarUrl} alt={user.name} className="w-20 h-20 rounded-full mb-3" />
-    <p className="font-bold text-white">{user.name}</p>
-    <p className="text-sm text-gray-400 line-clamp-2">{user.bio}</p>
-    <button 
-      onClick={(e) => {
-        e.stopPropagation();
-        // Add follow logic here in a real app
-        console.log(`Follow user: ${user.name}`);
-      }} 
-      className="mt-4 bg-white text-black font-semibold py-1 px-4 rounded-full text-sm"
-    >
-      Follow
-    </button>
-  </div>
-);
+const UserProfileCard: React.FC<{ user: User; onViewProfile: (user: User) => void }> = ({ user, onViewProfile }) => {
+  const { currentUser, followUser, unfollowUser } = useContext(UserContext);
+  const isFollowing = currentUser.following?.some(u => u.id === user.id);
+  const isOwnProfile = currentUser.id === user.id;
+
+  const handleFollowClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from firing
+    if (isFollowing) {
+      unfollowUser(user.id);
+    } else {
+      followUser(user.id);
+    }
+  };
+  
+  return (
+    <div onClick={() => onViewProfile(user)} className="bg-gray-800/50 p-4 rounded-lg flex flex-col items-center text-center cursor-pointer hover:bg-gray-700/70 transition-colors">
+      <img src={user.avatarUrl} alt={user.name} className="w-20 h-20 rounded-full mb-3" />
+      <p className="font-bold text-white">{user.name}</p>
+      <p className="text-sm text-gray-400 line-clamp-2">{user.bio}</p>
+      {!isOwnProfile && (
+        <button 
+          onClick={handleFollowClick}
+          className={`mt-4 font-semibold py-1 px-4 rounded-full text-sm transition-colors w-24 ${
+            isFollowing 
+              ? 'bg-transparent border border-gray-500 text-gray-300' 
+              : 'bg-white text-black hover:bg-gray-200'
+          }`}
+        >
+          {isFollowing ? 'Following' : 'Follow'}
+        </button>
+      )}
+    </div>
+  );
+};
+
 
 const LiveRoomCard: React.FC<{ room: Room; onEnterRoom: (room: Room) => void }> = ({ room, onEnterRoom }) => (
     <div onClick={() => onEnterRoom(room)} className="bg-gray-800/50 p-4 rounded-lg cursor-pointer hover:bg-gray-700/70 transition-colors">
@@ -53,42 +72,67 @@ const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }
   </div>
 );
 
-const ImagePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'image_post' }>; onClick: () => void }> = ({ post, onClick }) => (
-  <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
-    <div className="p-3 flex items-center">
-      <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
-      <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
-    </div>
-    <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
-    {post.caption && (
-      <div className="p-4">
-        <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
-      </div>
-    )}
-  </div>
-);
+const ImagePostCard: React.FC<{
+  post: Extract<DiscoverItem, { type: 'image_post' }>;
+  onViewMedia: () => void;
+  onViewProfile: (user: User) => void;
+}> = ({ post, onViewMedia, onViewProfile }) => {
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onViewProfile(post.author);
+  };
 
-const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post' }>; onClick: () => void }> = ({ post, onClick }) => (
-  <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
-    <div className="p-3 flex items-center">
-      <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
-      <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
+  return (
+    <div className="bg-gray-800/50 rounded-lg overflow-hidden group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
+      <div onClick={handleProfileClick} className="p-3 flex items-center cursor-pointer">
+        <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
+        <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
+      </div>
+      <div onClick={onViewMedia} className="cursor-pointer">
+        <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+      </div>
+      {post.caption && (
+        <div onClick={onViewMedia} className="p-4 cursor-pointer">
+          <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
+        </div>
+      )}
     </div>
-    <div className="relative">
-      <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
-      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-        <div className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white scale-100 group-hover:scale-110 transition-transform">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
+  );
+};
+
+const VideoPostCard: React.FC<{
+  post: Extract<DiscoverItem, { type: 'video_post' }>;
+  onViewMedia: () => void;
+  onViewProfile: (user: User) => void;
+}> = ({ post, onViewMedia, onViewProfile }) => {
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onViewProfile(post.author);
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-lg overflow-hidden group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
+      <div onClick={handleProfileClick} className="p-3 flex items-center cursor-pointer">
+        <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
+        <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
+      </div>
+      <div onClick={onViewMedia} className="relative cursor-pointer">
+        <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+          <div className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white scale-100 group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
+          </div>
         </div>
       </div>
-    </div>
-    {post.caption && (
-        <div className="p-4">
-        <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
+      {post.caption && (
+        <div onClick={onViewMedia} className="p-4 cursor-pointer">
+          <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
         </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+};
+
 
 interface DiscoverCardProps {
     item: DiscoverItem;
@@ -107,9 +151,9 @@ export const DiscoverCard: React.FC<DiscoverCardProps> = ({ item, onEnterRoom, o
     case 'text_post':
       return <TextPostCard post={item} onClick={() => onViewPost(item)} />;
     case 'image_post':
-      return <ImagePostCard post={item} onClick={() => onViewMedia(item)} />;
+      return <ImagePostCard post={item} onViewMedia={() => onViewMedia(item)} onViewProfile={onViewProfile} />;
     case 'video_post':
-      return <VideoPostCard post={item} onClick={() => onViewMedia(item)} />;
+      return <VideoPostCard post={item} onViewMedia={() => onViewMedia(item)} onViewProfile={onViewProfile} />;
     default:
       return null;
   }
