@@ -156,6 +156,7 @@ const App: React.FC = () => {
     const [activeProfile, setActiveProfile] = useState<User | null>(null);
     const [activePost, setActivePost] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
     const [activeMediaPost, setActiveMediaPost] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
+    const [isScrolled, setIsScrolled] = useState(false);
     
     // --- Modal State ---
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
@@ -180,6 +181,7 @@ const App: React.FC = () => {
 
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const mainContentRef = useRef<HTMLDivElement>(null);
 
     // --- Automatic Content Publishing ---
     useEffect(() => {
@@ -327,6 +329,12 @@ const App: React.FC = () => {
     const handleNavigateToLive = () => {
         changeView('home');
         setActiveFilter('Live');
+    };
+
+    const handleScroll = () => {
+        if (mainContentRef.current) {
+            setIsScrolled(mainContentRef.current.scrollTop > 10);
+        }
     };
 
 
@@ -623,8 +631,9 @@ const App: React.FC = () => {
                         onSearchClick={() => setSearchModalOpen(true)}
                         liveRooms={liveRooms}
                         onEnterRoom={handleEnterRoom}
+                        isScrolled={isScrolled}
                     />
-                    <div className="flex-1 overflow-y-auto">
+                    <div ref={mainContentRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
                         {renderActiveView()}
                     </div>
                 </main>

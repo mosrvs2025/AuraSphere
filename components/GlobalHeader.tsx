@@ -13,6 +13,7 @@ interface GlobalHeaderProps {
   onSearchClick: () => void;
   liveRooms: Room[];
   onEnterRoom: (room: Room) => void;
+  isScrolled: boolean;
 }
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
@@ -56,7 +57,7 @@ const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) 
 };
 
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, curationTab, activeFilter, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms, onSearchClick, liveRooms, onEnterRoom }) => {
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, curationTab, activeFilter, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms, onSearchClick, liveRooms, onEnterRoom, isScrolled }) => {
   const isHome = activeView === 'home';
   let title = '';
 
@@ -88,8 +89,18 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, curationTab, ac
     }
   }
 
+  const uniqueHostsInRooms = new Map<string, Room>();
+    liveRooms.forEach(room => {
+        room.hosts.forEach(host => {
+            if (!uniqueHostsInRooms.has(host.id)) {
+                uniqueHostsInRooms.set(host.id, room);
+            }
+        });
+    });
+  const collapsedHosts = Array.from(uniqueHostsInRooms.entries()).slice(0, 4);
+
   return (
-    <header className="p-4 md:p-6 flex-shrink-0 border-b border-gray-800 bg-gray-900 z-10">
+    <header className={`sticky top-0 px-4 md:px-6 flex-shrink-0 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm z-10 transition-all duration-300 ease-in-out ${isScrolled && isHome ? 'py-3' : 'py-4 md:pt-6 md:pb-0'}`}>
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center">
                 <div className="flex-1 flex justify-start">
@@ -103,7 +114,22 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, curationTab, ac
                     )}
                 </div>
 
-                <h1 className="text-3xl font-bold text-center truncate px-4">{title}</h1>
+                <div className="flex items-center gap-4 transition-all duration-300 ease-in-out min-w-0">
+                    <h1 className={`font-bold text-center truncate transition-all duration-300 ease-in-out ${isScrolled && isHome ? 'text-2xl' : 'text-3xl'}`}>{title}</h1>
+                    
+                    {/* Collapsed Avatars */}
+                    <div className={`flex items-center transition-all duration-300 ease-in-out ${isScrolled && isHome && collapsedHosts.length > 0 ? 'visible opacity-100 w-auto -space-x-2' : 'invisible opacity-0 w-0'}`}>
+                      {collapsedHosts.map(([hostId, room]) => {
+                          const host = room.hosts.find(h => h.id === hostId);
+                          if (!host) return null;
+                          return (
+                              <button key={host.id} onClick={() => onEnterRoom(room)} className="focus:outline-none flex-shrink-0">
+                                  <img src={host.avatarUrl} alt={host.name} className="w-8 h-8 rounded-full border-2 border-gray-900 hover:z-10 hover:scale-110 transition-transform"/>
+                              </button>
+                          );
+                      })}
+                    </div>
+                </div>
                 
                 <div className="flex-1 flex justify-end items-center space-x-2">
                     <button 
@@ -127,7 +153,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, curationTab, ac
             </div>
         </div>
         {isHome && (
-            <div className="max-w-6xl mx-auto mt-4">
+            <div className={`max-w-6xl mx-auto transition-all duration-300 ease-in-out ${isScrolled ? 'max-h-0 opacity-0 mt-0 overflow-hidden invisible' : 'max-h-48 opacity-100 mt-4 visible'}`}>
                  <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
             </div>
         )}
