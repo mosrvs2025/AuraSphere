@@ -1,10 +1,11 @@
 import React from 'react';
-import { DiscoverItem, Conversation, Room, User, ChatMessage } from '../types';
+// FIX: Imported ActiveView to resolve type conflict and handle all possible views.
+import { DiscoverItem, Conversation, Room, User, ChatMessage, ActiveView } from '../types';
 import { DiscoverCard } from './DiscoverCards';
 
 interface GlobalSearchViewProps {
   query: string;
-  activeView: 'home' | 'messages';
+  activeView: ActiveView;
   discoverItems: DiscoverItem[];
   conversations: Conversation[];
   currentUser: User;
@@ -131,8 +132,8 @@ const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   return (
     <div className="p-4 md:p-6 animate-fade-in">
         <div className="max-w-6xl mx-auto">
-            {activeView === 'home' && renderDiscoverResults()}
-            {activeView === 'messages' && renderMessagesResults()}
+            {/* FIX: Default to discover results unless the view is explicitly 'messages' to handle all ActiveView types. */}
+            {activeView === 'messages' ? renderMessagesResults() : renderDiscoverResults()}
         </div>
     </div>
   );

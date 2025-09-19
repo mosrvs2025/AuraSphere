@@ -14,7 +14,6 @@ import { MyStudioView } from './components/PlaceholderViews';
 import ScheduledView from './components/ScheduledView';
 import NotificationsView from './components/NotificationsView';
 import ConversationView from './components/ConversationView';
-import Header from './components/Header';
 import BottomNavBar from './components/BottomNavBar';
 import PostDetailView from './components/PostDetailView';
 import MediaViewerModal from './components/MediaViewerModal';
@@ -195,29 +194,24 @@ const App: React.FC = () => {
                 />
                 
                 <div className="flex flex-col flex-1 h-full">
-                    {/* Mobile Header */}
-                    <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchOpen(true)}/>
-
-                    {/* Desktop/Tablet Global Header */}
-                    <div className="hidden md:block">
-                        <GlobalHeader
-                            activeView={activeView}
-                            curationTab={curationTab}
-                            setCurationTab={setCurationTab}
-                            activeFilter={activeFilter}
-                            setActiveFilter={setActiveFilter}
-                            unreadNotificationCount={3}
-                            onNavigateToNotifications={() => setActiveView('notifications')}
-                            onNavigateToLive={() => {}}
-                            hasActiveLiveRooms={true}
-                            onSearchClick={() => setSearchOpen(true)}
-                            liveRooms={allRooms.filter(r => !r.isScheduled)}
-                            onEnterRoom={handleEnterRoom}
-                            isScrolled={isScrolled}
-                        />
-                    </div>
+                    {/* Universal Global Header */}
+                    <GlobalHeader
+                        activeView={activeView}
+                        curationTab={curationTab}
+                        setCurationTab={setCurationTab}
+                        activeFilter={activeFilter}
+                        setActiveFilter={setActiveFilter}
+                        unreadNotificationCount={3}
+                        onNavigateToNotifications={() => setActiveView('notifications')}
+                        onNavigateToLive={() => {}}
+                        hasActiveLiveRooms={true}
+                        onSearchClick={() => setSearchOpen(true)}
+                        liveRooms={allRooms.filter(r => !r.isScheduled)}
+                        onEnterRoom={handleEnterRoom}
+                        isScrolled={isScrolled}
+                    />
                     
-                    <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden relative">
+                    <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden">
                       {activeRoom && !viewingProfile ? (
                         <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={() => {}} onSendMessage={() => {}} onToggleReaction={() => {}} onViewProfile={handleViewProfile}/>
                       ) : (
