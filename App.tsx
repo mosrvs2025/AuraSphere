@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import RoomView from './components/RoomView';
@@ -20,6 +20,9 @@ import PostDetailView from './components/PostDetailView';
 import { UserContext } from './context/UserContext';
 import { ActiveView, Room, User, ChatMessage, Notification, Conversation, DiscoverItem, ModalPosition } from './types';
 import CreateHubModal from './components/CreateHubModal';
+import CreatePostView from './components/CreatePostView';
+import CreateNoteView from './components/CreateNoteView';
+
 
 // --- MOCK DATA ---
 const createMockUsers = (count: number): User[] => {
@@ -136,6 +139,11 @@ const App: React.FC = () => {
     const [userCard, setUserCard] = useState<{ user: User, position: ModalPosition } | null>(null);
     const [mediaToView, setMediaToView] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
 
+    // New Content Creation States
+    const [activeCreationFlow, setActiveCreationFlow] = useState<{ type: 'image' | 'video' | 'note'; fileUrl?: string } | null>(null);
+    const [pendingFileType, setPendingFileType] = useState<'image' | 'video' | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
 
     // --- Context Providers ---
     const userContextValue = {
@@ -211,19 +219,95 @@ const App: React.FC = () => {
     
     const handleSelectCreateOption = (option: 'live' | 'video' | 'image' | 'note') => {
         setCreateHubModalOpen(false);
+        if (!fileInputRef.current) return;
+
         switch (option) {
             case 'live':
                 setCreateRoomModalOpen(true);
                 break;
-            case 'video':
             case 'image':
-            case 'note':
-                // Using alert for placeholder as requested
-                setTimeout(() => alert('This feature is coming soon!'), 100);
+                setPendingFileType('image');
+                fileInputRef.current.accept = 'image/*';
+                fileInputRef.current.click();
                 break;
-            default:
+            case 'video':
+                setPendingFileType('video');
+                fileInputRef.current.accept = 'video/*';
+                fileInputRef.current.click();
+                break;
+            case 'note':
+                setActiveCreationFlow({ type: 'note' });
                 break;
         }
+    };
+
+    const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file && pendingFileType) {
+            const fileUrl = URL.createObjectURL(file);
+            setActiveCreationFlow({
+                type: pendingFileType,
+                fileUrl: fileUrl,
+            });
+            setPendingFileType(null);
+        }
+        if (event.target) {
+            event.target.value = ''; // Reset input to allow selecting the same file again
+        }
+    };
+
+    const handleCancelCreation = () => {
+        if (activeCreationFlow?.fileUrl) {
+            URL.revokeObjectURL(activeCreationFlow.fileUrl);
+        }
+        setActiveCreationFlow(null);
+        setPendingFileType(null);
+    };
+
+    const handlePublishPost = (data: { caption?: string; content?: string }) => {
+        if (!activeCreationFlow) return;
+
+        const newPost: DiscoverItem | null = (() => {
+            const common = {
+                id: `${activeCreationFlow.type}-${Date.now()}`,
+                author: currentUser,
+                likes: 0,
+                comments: 0,
+                createdAt: new Date(),
+            };
+
+            switch (activeCreationFlow.type) {
+                case 'image':
+                    return {
+                        ...common,
+                        type: 'image_post',
+                        imageUrl: activeCreationFlow.fileUrl!,
+                        caption: data.caption,
+                    };
+                case 'video':
+                    return {
+                        ...common,
+                        type: 'video_post',
+                        videoUrl: activeCreationFlow.fileUrl!,
+                        thumbnailUrl: 'https://picsum.photos/seed/newvideo/600/400', // Placeholder
+                        caption: data.caption,
+                    };
+                case 'note':
+                    return {
+                        ...common,
+                        type: 'text_post',
+                        content: data.content || '',
+                    };
+                default: return null;
+            }
+        })();
+        
+        if (newPost) {
+            setDiscoverItems(prev => [newPost, ...prev]);
+        }
+        
+        handleCancelCreation();
+        setActiveView('home');
     };
 
 
@@ -272,9 +356,37 @@ const App: React.FC = () => {
         }
     };
     
+    const renderContent = () => {
+        if (activeCreationFlow) {
+            switch(activeCreationFlow.type) {
+                case 'note':
+                    return <CreateNoteView onPost={handlePublishPost} onClose={handleCancelCreation} />;
+                case 'image':
+                case 'video':
+                    return activeCreationFlow.fileUrl ? (
+                        <CreatePostView
+                            file={{ url: activeCreationFlow.fileUrl, type: activeCreationFlow.type }}
+                            onPost={handlePublishPost}
+                            onClose={handleCancelCreation}
+                        />
+                    ) : null;
+                default:
+                    return renderActiveView();
+            }
+        }
+        return renderActiveView();
+    };
+    
     return (
         <UserContext.Provider value={userContextValue}>
             <div className="bg-gray-900 text-gray-200 font-sans h-screen w-screen overflow-hidden flex">
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelected}
+                    className="hidden"
+                    aria-hidden="true"
+                />
                 <Sidebar 
                     activeView={activeView}
                     setActiveView={setActiveView}
@@ -285,13 +397,13 @@ const App: React.FC = () => {
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={handleSearchClick} />
-                    <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' ? 'pb-20' : ''}`}>
-                        {renderActiveView()}
+                    <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'pb-20' : ''}`}>
+                        {renderContent()}
                     </main>
                 </div>
 
                 {/* --- Mini Player --- */}
-                {activeRoom && activeView !== 'room' && (
+                {activeRoom && activeView !== 'room' && !activeCreationFlow && (
                     <MiniPlayer
                         room={activeRoom}
                         onLeave={handleLeaveRoom}
