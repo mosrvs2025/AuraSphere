@@ -67,6 +67,9 @@ export interface Room {
   scheduledTime?: Date;
   invitedUserIds?: string[];
   requestsToSpeak?: RequestToSpeak[];
+  createdAt?: Date;
+  totalListeners?: User[];
+  isVideoEnabled?: boolean;
 }
 
 // For the discover/trending feed
@@ -85,7 +88,7 @@ export type DiscoverItem = (Room & { type: 'live_room' }) |
   } |
   {
     type: 'image_post';
-    id: string;
+    id:string;
     author: User;
     imageUrl: string;
     caption?: string;

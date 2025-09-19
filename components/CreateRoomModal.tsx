@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { VideoCameraIcon } from './Icons';
 
 interface CreateRoomModalProps {
   onClose: () => void;
-  onCreate: (title: string, description: string, isPrivate: boolean, featuredUrl: string) => void;
+  onCreate: (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => void;
 }
 
 const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) => {
@@ -10,6 +11,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [featuredUrl, setFeaturedUrl] = useState('');
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -21,18 +23,16 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
     setPermissionError(null);
 
     try {
-      // 1. Request permission just-in-time when user tries to go live
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints = { audio: true, video: isVideoEnabled };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // 2. Immediately stop the tracks. We only needed the permission grant to proceed,
-      // the actual stream will be managed in the RoomView.
       stream.getTracks().forEach(track => track.stop());
       
-      // 3. Proceed with room creation on success
-      onCreate(title, description, isPrivate, featuredUrl.trim());
+      onCreate(title, description, isPrivate, featuredUrl.trim(), isVideoEnabled);
     } catch (err) {
-      console.error("Microphone permission denied:", err);
-      setPermissionError("Microphone access is required to host a room. Please grant permission and try again.");
+      console.error("Media permission denied:", err);
+      const requiredPermissions = isVideoEnabled ? "Microphone and camera access are" : "Microphone access is";
+      setPermissionError(`${requiredPermissions} required to host a room. Please grant permission and try again.`);
       setIsCreating(false);
     }
   };
@@ -86,18 +86,33 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
               className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>
-          <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
-            <span className="font-medium text-gray-300">Make room private?</span>
-            <label htmlFor="is-private-toggle" className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={isPrivate}
-                onChange={(e) => setIsPrivate(e.target.checked)}
-                id="is-private-toggle" 
-                className="sr-only peer" 
-              />
-              <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
+                <span className="font-medium text-gray-300">Enable Video</span>
+                <label htmlFor="is-video-toggle" className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    checked={isVideoEnabled}
+                    onChange={(e) => setIsVideoEnabled(e.target.checked)}
+                    id="is-video-toggle" 
+                    className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+            <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg">
+                <span className="font-medium text-gray-300">Make room private?</span>
+                <label htmlFor="is-private-toggle" className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    type="checkbox" 
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    id="is-private-toggle" 
+                    className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
           </div>
            {permissionError && (
               <p className="text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg">{permissionError}</p>

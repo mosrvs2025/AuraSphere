@@ -8,12 +8,13 @@ import Poll from './Poll';
 import { UserContext } from '../context/UserContext';
 import FeaturedLink from './FeaturedLink';
 import AiAssistantPanel from './AiAssistantPanel';
-import { SparklesIcon, MicIcon, UserPlusIcon } from './Icons';
+import { SparklesIcon, MicIcon, UserPlusIcon, HeartIcon } from './Icons';
 import InviteUsersModal from './InviteUsersModal';
 import CreatePollModal from './CreatePollModal';
 import DynamicInput from './DynamicInput';
 import RequestToSpeakModal from './RequestToSpeakModal';
 import RequestQueueView from './RequestQueueView';
+import RoomActivityModal from './RoomActivityModal';
 
 interface RoomViewProps {
   room: Room;
@@ -42,43 +43,46 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const [selectedUser, setSelectedUser] = useState<{ user: User, position: { top: number, left: number, width: number, height: number } } | null>(null);
   const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
   const [animatedReaction, setAnimatedReaction] = useState<{ messageId: string, emoji: string } | null>(null);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
   const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
   const [isRequestModalOpen, setRequestModalOpen] = useState(false);
   const [sidePanelView, setSidePanelView] = useState<'chat' | 'requests'>('chat');
   const [isMuted, setIsMuted] = useState(true);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [reactions, setReactions] = useState<{id: number, emoji: string, x: number}[]>([]);
+  const reactionCounter = useRef(0);
   
   const localStreamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isHost = room.hosts.some(h => h.id === currentUser.id);
 
   useEffect(() => {
     const startHostStream = async () => {
-        // When user becomes a host, request microphone access
         if (isHost) {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const constraints = { audio: true, video: room.isVideoEnabled ? { facingMode: "user" } : false };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 localStreamRef.current = stream;
-                // In a real app, this stream would be used for WebRTC.
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
             } catch (err) {
-                console.error("Failed to get host microphone stream:", err);
+                console.error("Failed to get media stream:", err);
             }
         }
     };
 
     startHostStream();
 
-    // Cleanup function: this is crucial. It runs when the component unmounts
-    // or when `isHost` changes from true to false.
     return () => {
         if (localStreamRef.current) {
-            // Stop all tracks on the stream to release the microphone
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
         }
     };
-  }, [isHost]);
+  }, [isHost, room.isVideoEnabled]);
 
 
   const handleUserClick = (user: User, ref: HTMLButtonElement) => {
@@ -89,7 +93,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const handleSendMessage = (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
       const newMessage: ChatMessage = {
           id: `msg-${Date.now()}`,
-          // FIX: Corrected typo from `new date()` to `new Date()`.
           createdAt: new Date(),
           ...message
       };
@@ -129,14 +132,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const handleVote = (optionIndex: number) => {
     if (!room.poll || !currentUser) return;
     const newPoll = { ...room.poll };
-    // Retract previous vote if any
     newPoll.options.forEach(opt => {
         const voteIndex = opt.votes.indexOf(currentUser.id);
         if (voteIndex > -1) {
             opt.votes.splice(voteIndex, 1);
         }
     });
-    // Add new vote
     newPoll.options[optionIndex].votes.push(currentUser.id);
     onUpdateRoom({ poll: newPoll });
   };
@@ -163,6 +164,18 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       setAnimatedReaction({ messageId, emoji });
       setTimeout(() => setAnimatedReaction(null), 1000);
   }
+
+  const handleSendLiveReaction = () => {
+    const newReaction = {
+        id: reactionCounter.current++,
+        emoji: '❤️',
+        x: Math.random() * 50 + 25 // Random horizontal position 25% to 75%
+    };
+    setReactions(prev => [...prev, newReaction]);
+    setTimeout(() => {
+        setReactions(currentReactions => currentReactions.filter(r => r.id !== newReaction.id));
+    }, 3000); // Remove after 3s (animation duration)
+  };
 
   const handleSubmitRequest = (requestData: { text?: string; voiceMemo?: { url: string; duration: number }}) => {
     const newRequest: RequestToSpeak = {
@@ -191,11 +204,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   };
 
   const handleApproveRequest = (request: RequestToSpeak) => {
-    // 1. Move user from listeners to speakers
     const newListeners = room.listeners.filter(u => u.id !== request.user.id);
     const newSpeakers = [...room.speakers, request.user];
-
-    // 2. Remove the request from the queue
     const newRequests = (room.requestsToSpeak || []).filter(r => r.id !== request.id);
 
     onUpdateRoom({
@@ -205,7 +215,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
     });
   };
 
-  return (
+  const renderAudioLayout = () => (
     <div className="h-full bg-gray-900 text-white flex flex-col animate-fade-in">
       {/* TOP PART: The scrolling area */}
       <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto min-h-0">
@@ -220,7 +230,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         </header>
 
         {room.featuredUrl && <FeaturedLink url={room.featuredUrl} onOpenLink={(url) => console.log('Open link:', url)} />}
-        
         {room.poll && <Poll poll={room.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
 
         <div className="space-y-6">
@@ -275,7 +284,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
             </div>
         )}
         
-        {sidePanelView === 'chat' && !isChatCollapsed && (
+        {sidePanelView === 'chat' && (
           <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
             {isHost ? (
               <div className="space-y-4">
@@ -284,6 +293,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                   onUpdateRoom={onUpdateRoom}
                   onCreatePoll={() => setCreatePollModalOpen(true)}
                   onInviteClick={() => setInviteModalOpen(true)}
+                  onViewActivity={() => setIsActivityModalOpen(true)}
                 />
                 <DynamicInput
                   onSubmitMessage={handleSendTextMessage}
@@ -293,12 +303,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
               </div>
             ) : (
                <div className="flex items-center space-x-4">
-                  <button 
-                      onClick={() => setIsMuted(!isMuted)}
-                      className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}
-                  >
-                      <MicIcon />
-                  </button>
                   <div className="flex-1">
                     <DynamicInput
                         onSubmitMessage={handleSendTextMessage}
@@ -306,6 +310,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                         onSubmitVideoNote={handleSendVideoNote}
                     />
                   </div>
+                  <button onClick={handleSendLiveReaction} className="p-2 text-gray-400 hover:text-red-400 transition-colors"><HeartIcon className="w-7 h-7" /></button>
                    <button onClick={() => setRequestModalOpen(true)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
                         <UserPlusIcon className="h-5 w-5" />
                         <span>Request</span>
@@ -315,59 +320,85 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
           </footer>
         )}
       </div>
-
-      {isHost && (
-        <button onClick={() => setAiPanelOpen(!isAiPanelOpen)} className="absolute bottom-4 right-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-lg transform transition-transform hover:scale-110">
-            <SparklesIcon />
-        </button>
-      )}
-
-      {isAiPanelOpen && <AiAssistantPanel room={room} messages={room.messages} onClose={() => setAiPanelOpen(false)} />}
-      
-      {showConfirmLeave && (
-        <ConfirmationModal
-          title="Leave Room"
-          message="Are you sure you want to leave this room?"
-          confirmText="Leave"
-          onConfirm={onLeave}
-          onCancel={() => setShowConfirmLeave(false)}
-        />
-      )}
-      
-      {selectedUser && (
-        <UserCardModal
-          user={selectedUser.user}
-          position={selectedUser.position}
-          onClose={() => setSelectedUser(null)}
-          onViewProfile={(user) => {
-            setSelectedUser(null);
-            onViewProfile(user);
-          }}
-        />
-      )}
-
-      {isInviteModalOpen && (
-          <InviteUsersModal 
-            followers={currentUser.followers}
-            onClose={() => setInviteModalOpen(false)}
-            onInvite={(userIds) => onUpdateRoom({ invitedUserIds: [...(room.invitedUserIds || []), ...userIds]})}
-            alreadyInvitedUserIds={room.invitedUserIds || []}
-          />
-      )}
-
-      {isCreatePollModalOpen && (
-          <CreatePollModal 
-            onClose={() => setCreatePollModalOpen(false)}
-            onCreate={handleCreatePoll}
-          />
-      )}
-      {isRequestModalOpen && (
-        <RequestToSpeakModal 
-            onClose={() => setRequestModalOpen(false)}
-            onSubmit={handleSubmitRequest}
-        />
-      )}
     </div>
+  );
+
+  const renderVideoLayout = () => (
+    <div className="h-full bg-black text-white flex flex-col animate-fade-in relative">
+        <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0"></div>
+
+        <div className="relative z-10 flex flex-col h-full p-4">
+            <header className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-2xl font-bold">{room.title}</h1>
+                    <p className="text-gray-300 text-sm">{room.description}</p>
+                </div>
+                <button onClick={() => setShowConfirmLeave(true)} className="bg-red-600/80 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm">
+                    Leave
+                </button>
+            </header>
+            
+            <div className="flex-1">
+                {/* Participant avatars can be overlayed here */}
+            </div>
+
+            <footer className="space-y-4">
+                 {isHost && (
+                    <HostControls 
+                      room={room} 
+                      onUpdateRoom={onUpdateRoom}
+                      onCreatePoll={() => setCreatePollModalOpen(true)}
+                      onInviteClick={() => setInviteModalOpen(true)}
+                      onViewActivity={() => setIsActivityModalOpen(true)}
+                    />
+                 )}
+                <div className="flex items-center space-x-4">
+                   <div className="flex-1">
+                     <DynamicInput
+                         onSubmitMessage={handleSendTextMessage}
+                         onSubmitAudioNote={handleSendAudioNote}
+                         onSubmitVideoNote={handleSendVideoNote}
+                     />
+                   </div>
+                   <button onClick={handleSendLiveReaction} className="p-3 bg-white/10 backdrop-blur-sm rounded-full text-white hover:text-red-400 transition-colors"><HeartIcon className="w-7 h-7" /></button>
+                   {!isHost && (
+                     <button onClick={() => setRequestModalOpen(true)} className="bg-yellow-600/80 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-full text-sm transition flex items-center space-x-2">
+                          <UserPlusIcon className="h-5 w-5" />
+                      </button>
+                   )}
+                </div>
+            </footer>
+        </div>
+    </div>
+  );
+
+  return (
+    <>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
+            {reactions.map(r => (
+                <span key={r.id} className="animate-float-up" style={{ left: `${r.x}%` }}>
+                    {r.emoji}
+                </span>
+            ))}
+        </div>
+        
+        {room.isVideoEnabled ? renderVideoLayout() : renderAudioLayout()}
+
+        {isHost && (
+          <button onClick={() => setAiPanelOpen(!isAiPanelOpen)} className="absolute bottom-4 right-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-lg transform transition-transform hover:scale-110">
+              <SparklesIcon />
+          </button>
+        )}
+
+        {isAiPanelOpen && <AiAssistantPanel room={room} messages={room.messages} onClose={() => setAiPanelOpen(false)} />}
+        {showConfirmLeave && <ConfirmationModal title="Leave Room" message="Are you sure you want to leave this room?" confirmText="Leave" onConfirm={onLeave} onCancel={() => setShowConfirmLeave(false)} />}
+        {selectedUser && <UserCardModal user={selectedUser.user} position={selectedUser.position} onClose={() => setSelectedUser(null)} onViewProfile={(user) => { setSelectedUser(null); onViewProfile(user); }} />}
+        {isInviteModalOpen && <InviteUsersModal followers={currentUser.followers} onClose={() => setInviteModalOpen(false)} onInvite={(userIds) => onUpdateRoom({ invitedUserIds: [...(room.invitedUserIds || []), ...userIds]})} alreadyInvitedUserIds={room.invitedUserIds || []} />}
+        {isCreatePollModalOpen && <CreatePollModal onClose={() => setCreatePollModalOpen(false)} onCreate={handleCreatePoll} />}
+        {isRequestModalOpen && <RequestToSpeakModal onClose={() => setRequestModalOpen(false)} onSubmit={handleSubmitRequest} />}
+        {isActivityModalOpen && isHost && <RoomActivityModal room={room} onClose={() => setIsActivityModalOpen(false)} />}
+    </>
   );
 };
 

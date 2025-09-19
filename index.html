@@ -62,6 +62,20 @@
   .animate-pulse-live {
     animation: pulse-live 2s infinite;
   }
+
+  /* New animation for floating reactions */
+  @keyframes float-up {
+      0% { transform: translateY(0) scale(0.5); opacity: 1; }
+      100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
+  }
+  .animate-float-up {
+      position: absolute;
+      bottom: 80px;
+      font-size: 2rem;
+      animation: float-up 3s ease-out forwards;
+      pointer-events: none;
+      user-select: none;
+  }
   
   /* Utility for hiding scrollbars */
   .scrollbar-hide::-webkit-scrollbar {

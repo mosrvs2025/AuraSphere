@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { generateIcebreakers } from '../services/geminiService';
 import { Room } from '../types';
-import { UserPlusIcon } from './Icons';
+import { UserPlusIcon, ChartBarIcon } from './Icons';
 
 interface HostControlsProps {
   room: Room;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onCreatePoll: () => void;
   onInviteClick: () => void;
+  onViewActivity: () => void;
 }
 
-const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreatePoll, onInviteClick }) => {
+const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreatePoll, onInviteClick, onViewActivity }) => {
   const [topic, setTopic] = useState("technology");
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +53,10 @@ const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreat
                 <span>Invite</span>
             </button>
          )}
+        <button onClick={onViewActivity} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
+            <ChartBarIcon className="h-5 w-5" />
+            <span>Activity</span>
+        </button>
          <button
           onClick={onToggleScreenShare}
           className={`flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition ${
@@ -84,23 +89,12 @@ const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreat
         )}
 
          <button onClick={onCreatePoll} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 12H12V2.252z" /></svg>
-            <span>Create Poll</span>
-        </button>
-
-        <button onClick={handleSuggestIcebreakers} disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full disabled:bg-indigo-800 disabled:cursor-not-allowed text-sm transition">
-          {isLoading ? '...' : '✨ Suggest'}
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>Poll</span>
         </button>
       </div>
-      
-      {icebreakers.length > 0 && (
-          <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
-              <h5 className="font-bold text-indigo-400 mb-2">Icebreaker Ideas:</h5>
-              <ul className="list-disc list-inside text-sm space-y-1">
-                  {icebreakers.map((q, i) => <li key={i}>{q}</li>)}
-              </ul>
-          </div>
-      )}
     </div>
   );
 };
