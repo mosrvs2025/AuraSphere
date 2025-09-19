@@ -10,11 +10,30 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [featuredUrl, setFeaturedUrl] = useState('');
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim()) {
+    if (!title.trim() || isCreating) return;
+
+    setIsCreating(true);
+    setPermissionError(null);
+
+    try {
+      // 1. Request permission just-in-time when user tries to go live
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // 2. Immediately stop the tracks. We only needed the permission grant to proceed,
+      // the actual stream will be managed in the RoomView.
+      stream.getTracks().forEach(track => track.stop());
+      
+      // 3. Proceed with room creation on success
       onCreate(title, description, isPrivate, featuredUrl.trim());
+    } catch (err) {
+      console.error("Microphone permission denied:", err);
+      setPermissionError("Microphone access is required to host a room. Please grant permission and try again.");
+      setIsCreating(false);
     }
   };
 
@@ -80,12 +99,15 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
               <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-indigo-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
             </label>
           </div>
+           {permissionError && (
+              <p className="text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg">{permissionError}</p>
+            )}
            <button
             type="submit"
-            disabled={!title.trim()}
+            disabled={!title.trim() || isCreating}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-full disabled:bg-indigo-800/50 disabled:cursor-not-allowed transition text-lg"
           >
-            Go Live
+            {isCreating ? 'Starting...' : 'Go Live'}
           </button>
         </form>
       </div>

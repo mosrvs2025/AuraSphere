@@ -66,6 +66,10 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
           if (videoRef.current) {
             videoRef.current.srcObject = null;
           }
+          // CRITICAL FIX: Stop the stream tracks to release camera/mic after recording finishes.
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          }
         };
 
         recorder.start();

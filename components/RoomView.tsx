@@ -1,5 +1,5 @@
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Room, User, ChatMessage, Poll as PollType } from '../types';
 import ChatView from './ChatView';
 import HostControls from './HostControls';
@@ -46,8 +46,37 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
   const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-
+  
+  const localStreamRef = useRef<MediaStream | null>(null);
   const isHost = room.hosts.some(h => h.id === currentUser.id);
+
+  useEffect(() => {
+    const startHostStream = async () => {
+        // When user becomes a host, request microphone access
+        if (isHost) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStreamRef.current = stream;
+                // In a real app, this stream would be used for WebRTC.
+            } catch (err) {
+                console.error("Failed to get host microphone stream:", err);
+            }
+        }
+    };
+
+    startHostStream();
+
+    // Cleanup function: this is crucial. It runs when the component unmounts
+    // or when `isHost` changes from true to false.
+    return () => {
+        if (localStreamRef.current) {
+            // Stop all tracks on the stream to release the microphone
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
+        }
+    };
+  }, [isHost]);
+
 
   const handleUserClick = (user: User, ref: HTMLButtonElement) => {
     const rect = ref.getBoundingClientRect();
@@ -168,7 +197,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
             animatedReaction={animatedReaction}
         />
         {!isChatCollapsed && (
-          <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
+          <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50 mt-auto">
             {isHost ? (
               <div className="space-y-4">
                 <HostControls 

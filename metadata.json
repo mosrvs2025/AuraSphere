@@ -1,8 +1,5 @@
 {
   "name": "AuraSphere",
   "description": "A next-generation interactive audio social platform that enhances live conversations with features like asynchronous voice memos for listeners and AI-powered tools for hosts.",
-  "requestFramePermissions": [
-    "microphone",
-    "camera"
-  ]
+  "requestFramePermissions": []
 }
