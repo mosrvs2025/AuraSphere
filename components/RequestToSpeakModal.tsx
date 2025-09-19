@@ -11,6 +11,7 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
     const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'preview'>('idle');
     const [audioPreview, setAudioPreview] = useState<{ url: string; blob: Blob, duration: number } | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [permissionError, setPermissionError] = useState<string | null>(null);
     
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -29,6 +30,7 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
     }, [audioPreview]);
 
     const startRecording = async () => {
+        setPermissionError(null);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunksRef.current = [];
@@ -57,7 +59,7 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
             setRecordingState('recording');
         } catch (err) {
             console.error("Mic access denied:", err);
-            alert("Microphone access is required to record a voice note.");
+            setPermissionError("Microphone access is required to record a voice note. Please grant permission and try again.");
         }
     };
 
@@ -103,6 +105,10 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
                     className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     disabled={recordingState !== 'idle'}
                 />
+
+                {permissionError && (
+                    <p className="text-red-400 text-sm text-center bg-red-900/20 p-3 rounded-lg">{permissionError}</p>
+                )}
 
                 {recordingState === 'idle' && (
                     <button onClick={startRecording} className="w-full flex items-center justify-center space-x-2 bg-gray-700 hover:bg-gray-600 p-3 rounded-lg transition">

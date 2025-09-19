@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon } from './Icons';
 import VideoRecorderModal from './VideoRecorderModal';
@@ -178,6 +179,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
 
             } catch (err) {
                 console.error("Mic access denied:", err);
+                alert("Microphone access is required to send audio notes. You can change this in your browser settings.");
             }
         } else {
             setVideoRecorderOpen(true);
