@@ -6,9 +6,10 @@ import { Room } from '../types';
 interface HostControlsProps {
   videoUrl?: string;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
+  onCreatePoll: () => void;
 }
 
-const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom }) => {
+const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom, onCreatePoll }) => {
   const [topic, setTopic] = useState("technology");
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +38,7 @@ const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom }) =
 
   return (
     <div className="relative space-y-4">
-      <div className="flex items-center justify-center space-x-2">
+      <div className="flex items-center justify-center space-x-2 flex-wrap gap-2">
          <button
           onClick={onToggleScreenShare}
           className={`flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition ${
@@ -68,6 +69,11 @@ const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom }) =
               <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
           </form>
         )}
+
+         <button onClick={onCreatePoll} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 12H12V2.252z" /></svg>
+            <span>Create Poll</span>
+        </button>
 
         <button onClick={handleSuggestIcebreakers} disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full disabled:bg-indigo-800 disabled:cursor-not-allowed text-sm transition">
           {isLoading ? '...' : '✨ Suggest'}

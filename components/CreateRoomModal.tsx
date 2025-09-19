@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 
 interface CreateRoomModalProps {
   onClose: () => void;
-  onCreate: (title: string, description: string, isPrivate: boolean) => void;
+  onCreate: (title: string, description: string, isPrivate: boolean, featuredUrl: string) => void;
 }
 
 const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [featuredUrl, setFeaturedUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onCreate(title, description, isPrivate);
+      onCreate(title, description, isPrivate, featuredUrl.trim());
     }
   };
 
@@ -52,6 +53,17 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onClose, onCreate }) 
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a brief description or #tags for your room..."
               rows={3}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+           <div>
+            <label htmlFor="featured-url" className="block text-sm font-medium text-gray-300 mb-2">Featured Link (Optional)</label>
+            <input
+              id="featured-url"
+              type="url"
+              value={featuredUrl}
+              onChange={(e) => setFeaturedUrl(e.target.value)}
+              placeholder="https://example.com"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>

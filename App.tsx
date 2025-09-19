@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
 import TrendingView from './components/TrendingView';
@@ -22,6 +21,8 @@ import { ActiveView, Room, User, ChatMessage, Notification, Conversation, Discov
 import CreateHubModal from './components/CreateHubModal';
 import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
+import BottomNavBar from './components/BottomNavBar';
+import InAppBrowser from './components/InAppBrowser';
 
 
 // --- MOCK DATA ---
@@ -64,6 +65,7 @@ const App: React.FC = () => {
             listeners: [users[5], users[6], users[7]],
             messages: [],
             isPrivate: false,
+            featuredUrl: 'https://techcrunch.com',
         },
         {
             id: 'room-2',
@@ -127,7 +129,7 @@ const App: React.FC = () => {
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [profileToShow, setProfileToShow] = useState<User | null>(null);
-    const [isSidebarExpanded, setSidebarExpanded] = useState(false);
+    const [isSidebarExpanded, setSidebarExpanded] = useState(true);
     const [postToShow, setPostToShow] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
 
     // Modal States
@@ -138,6 +140,7 @@ const App: React.FC = () => {
     const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [userCard, setUserCard] = useState<{ user: User, position: ModalPosition } | null>(null);
     const [mediaToView, setMediaToView] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
+    const [inAppBrowserUrl, setInAppBrowserUrl] = useState<string | null>(null);
 
     // New Content Creation States
     const [activeCreationFlow, setActiveCreationFlow] = useState<{ type: 'image' | 'video' | 'note'; fileUrl?: string } | null>(null);
@@ -167,7 +170,7 @@ const App: React.FC = () => {
         setActiveView('home');
     };
     
-    const handleCreateRoom = (title: string, description: string, isPrivate: boolean) => {
+    const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string) => {
         const newRoom: Room = {
             id: `room-${Date.now()}`,
             title,
@@ -177,6 +180,7 @@ const App: React.FC = () => {
             speakers: [],
             listeners: [],
             messages: [],
+            featuredUrl: featuredUrl || undefined,
         };
         setRooms(prev => [newRoom, ...prev]);
         setCreateRoomModalOpen(false);
@@ -334,7 +338,7 @@ const App: React.FC = () => {
         };
         switch (activeView) {
             case 'room':
-                return activeRoom ? <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} /> : <TrendingView {...trendingViewProps} />;
+                return activeRoom ? <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} onOpenLink={setInAppBrowserUrl} /> : <TrendingView {...trendingViewProps} />;
             case 'home':
                 return <TrendingView {...trendingViewProps} />;
             case 'messages':
@@ -396,11 +400,17 @@ const App: React.FC = () => {
                     unreadNotificationCount={notifications.filter(n => !n.isRead).length}
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={handleSearchClick} />
-                    <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'pb-20' : ''}`}>
+                    <main className={`flex-1 overflow-y-auto pb-16 md:pb-0 ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'md:pb-20' : ''}`}>
                         {renderContent()}
                     </main>
                 </div>
+                
+                 <BottomNavBar
+                    activeView={activeView}
+                    setActiveView={setActiveView}
+                    onCreateContent={() => setCreateHubModalOpen(true)}
+                    unreadNotificationCount={notifications.filter(n => !n.isRead).length}
+                />
 
                 {/* --- Mini Player --- */}
                 {activeRoom && activeView !== 'room' && !activeCreationFlow && (
@@ -428,6 +438,7 @@ const App: React.FC = () => {
                 />}
                 {userCard && <UserCardModal user={userCard.user} onClose={() => setUserCard(null)} onViewProfile={handleViewProfile} position={userCard.position} />}
                 {mediaToView && <MediaViewerModal post={mediaToView} onClose={() => setMediaToView(null)} />}
+                {inAppBrowserUrl && <InAppBrowser url={inAppBrowserUrl} onClose={() => setInAppBrowserUrl(null)} />}
             </div>
         </UserContext.Provider>
     );

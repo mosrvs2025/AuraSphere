@@ -25,6 +25,17 @@ export interface ChatMessage {
   reactions?: Record<string, string[]>; // emoji -> User IDs
 }
 
+export interface PollOption {
+  text: string;
+  votes: string[]; // Array of user IDs
+}
+
+export interface Poll {
+  question: string;
+  options: PollOption[];
+  isActive: boolean;
+}
+
 export interface Room {
   id:string;
   title: string;
@@ -37,6 +48,8 @@ export interface Room {
   videoUrl?: string;
   isScheduled?: boolean;
   scheduledTime?: Date;
+  featuredUrl?: string;
+  poll?: Poll;
 }
 
 export interface Conversation {

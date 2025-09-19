@@ -1,12 +1,15 @@
 // Implemented RoomView, the main interface for participating in a live audio room.
 import React, { useState, useEffect, useRef } from 'react';
-import { Room, User, ChatMessage, ModalPosition } from '../types';
+import { Room, User, ChatMessage, ModalPosition, Poll as PollType } from '../types';
 import ChatView from './ChatView';
 import { RoomActionsContext } from '../context/RoomActionsContext';
 import { SparklesIcon } from './Icons';
 import DynamicInput from './DynamicInput';
 import AiAssistantPanel from './AiAssistantPanel';
 import HostControls from './HostControls';
+import FeaturedLink from './FeaturedLink';
+import Poll from './Poll';
+import CreatePollModal from './CreatePollModal';
 
 
 interface RoomViewProps {
@@ -15,6 +18,7 @@ interface RoomViewProps {
   onLeave: () => void;
   onUserSelect: (user: User, position: ModalPosition) => void;
   selectedUser: User | null;
+  onOpenLink: (url: string) => void;
 }
 
 const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, isSelected: boolean }> = ({ user, size = 'large', onClick, isSelected }) => (
@@ -52,7 +56,7 @@ const ParticipantsList: React.FC<{ room: Room; selectedUser: User | null; onAvat
 );
 
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser, onOpenLink }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
@@ -61,7 +65,13 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [animatedReaction, setAnimatedReaction] = useState<{ messageId: string, emoji: string } | null>(null);
 
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+    const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        // This keeps the local room state in sync if the parent prop changes.
+        setCurrentRoom(room);
+    }, [room]);
 
     useEffect(() => {
         if (animatedReaction) {
@@ -162,6 +172,37 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             width: rect.width
         });
     };
+    
+    const handleCreatePoll = (question: string, options: string[]) => {
+        const newPoll: PollType = {
+            question,
+            options: options.map(opt => ({ text: opt, votes: [] })),
+            isActive: true,
+        };
+        setCurrentRoom(prev => ({...prev, poll: newPoll}));
+        setCreatePollModalOpen(false);
+    };
+
+    const handleVote = (optionIndex: number) => {
+        if (!currentRoom.poll) return;
+        const newPoll = JSON.parse(JSON.stringify(currentRoom.poll)); // Deep copy
+
+        // Prevent double voting by retracting previous vote
+        newPoll.options.forEach((opt: any) => {
+            const existingVoteIndex = opt.votes.indexOf(currentUser.id);
+            if (existingVoteIndex > -1) {
+                opt.votes.splice(existingVoteIndex, 1);
+            }
+        });
+        newPoll.options[optionIndex].votes.push(currentUser.id);
+        setCurrentRoom(prev => ({ ...prev, poll: newPoll }));
+    };
+
+    const handleEndPoll = () => {
+        if (!currentRoom.poll) return;
+        const endedPoll = { ...currentRoom.poll, isActive: false };
+        setCurrentRoom(prev => ({ ...prev, poll: endedPoll }));
+    };
 
     return (
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
@@ -184,6 +225,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             
             {/* Primary View (Media Player OR Full Participants List) */}
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                 {currentRoom.featuredUrl && <FeaturedLink url={currentRoom.featuredUrl} onOpenLink={onOpenLink} />}
+                 {currentRoom.poll && <Poll poll={currentRoom.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
                 {hasMedia ? (
                     <div className="w-full h-full bg-black rounded-lg flex items-center justify-center text-gray-400 min-h-[200px]">
                         {isSharingScreen ? "Screen share is active" : (currentRoom.videoUrl && <video src={currentRoom.videoUrl} controls autoPlay className="w-full h-full rounded-lg"></video>)}
@@ -205,7 +248,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           <footer className="flex-shrink-0">
              {isHost && (
                 <div className="p-4 border-t border-gray-800">
-                    <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} />
+                    <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} onCreatePoll={() => setCreatePollModalOpen(true)} />
                 </div>
              )}
              <div className="p-4 md:p-6 border-t border-gray-800 flex items-center space-x-4">
@@ -237,6 +280,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           />
         </div>
       </div>
+      {isHost && isCreatePollModalOpen && <CreatePollModal onClose={() => setCreatePollModalOpen(false)} onCreate={handleCreatePoll} />}
     </RoomActionsContext.Provider>
     );
 };
