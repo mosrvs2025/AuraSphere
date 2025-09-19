@@ -1,15 +1,43 @@
-import React, { useState } from 'react';
-import { Room } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Room, User } from '../types';
 import RoomCard from './RoomCard';
 
 interface HomeViewProps {
   rooms: Room[];
   onEnterRoom: (room: Room) => void;
+  currentUser: User;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom }) => {
+const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom, currentUser }) => {
   const [activeTab, setActiveTab] = useState('For You');
   const tabs = ['For You', 'Trending', 'Newest', 'Following'];
+
+  const getParticipantCount = (room: Room) => {
+    return room.listeners.length + room.speakers.length + room.hosts.length;
+  };
+
+  const filteredRooms = useMemo(() => {
+    const publicRooms = rooms.filter(room => !room.isPrivate);
+    
+    switch (activeTab) {
+      case 'Newest':
+        return [...publicRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      case 'Trending':
+        return [...publicRooms].sort((a, b) => getParticipantCount(b) - getParticipantCount(a));
+        
+      case 'Following':
+        const followingIds = currentUser.following || [];
+        return publicRooms.filter(room => 
+          room.hosts.some(host => followingIds.includes(host.id))
+        );
+
+      case 'For You':
+      default:
+         // For now, "For You" defaults to the "Newest" feed
+        return [...publicRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+  }, [rooms, activeTab, currentUser]);
 
   return (
     <div className="animate-fade-in">
@@ -37,9 +65,15 @@ const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom }) => {
         </nav>
       </div>
       <div className="p-4 md:p-6 space-y-4">
-        {rooms.map(room => (
-          <RoomCard key={room.id} room={room} onEnter={() => onEnterRoom(room)} />
-        ))}
+        {filteredRooms.length > 0 ? (
+          filteredRooms.map(room => (
+            <RoomCard key={room.id} room={room} onEnter={() => onEnterRoom(room)} />
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No rooms found for this category.</p>
+          </div>
+        )}
       </div>
     </div>
   );

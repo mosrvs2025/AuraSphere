@@ -1,4 +1,4 @@
-import { User, Room, UserRole } from './types';
+import { User, Room, UserRole, Conversation, ChatMessage } from './types';
 
 export const PREDEFINED_AVATARS: string[] = [
   'https://picsum.photos/seed/avatar1/100/100',
@@ -14,6 +14,9 @@ export const MOCK_USER_HOST: User = {
   name: 'Alex',
   avatarUrl: 'https://picsum.photos/seed/alex/100/100',
   role: UserRole.HOST,
+  bio: 'Host of Startup Pitch Practice. Angel investor. Tech enthusiast.',
+  following: ['user-2', 'user-3', 'user-4'],
+  followers: ['user-2', 'user-3', 'user-5', 'user-7', 'user-9'],
 };
 
 export const MOCK_USER_LISTENER: User = {
@@ -21,19 +24,22 @@ export const MOCK_USER_LISTENER: User = {
   name: 'Sam',
   avatarUrl: 'https://picsum.photos/seed/sam/100/100',
   role: UserRole.LISTENER,
+  bio: 'Just here to listen and learn.',
+  following: ['user-host-1'],
+  followers: [],
 };
 
 export const users: User[] = [
   MOCK_USER_HOST,
-  { id: 'user-2', name: 'Brenda', avatarUrl: 'https://picsum.photos/seed/brenda/100/100', role: UserRole.HOST },
-  { id: 'user-3', name: 'Charlie', avatarUrl: 'https://picsum.photos/seed/charlie/100/100', role: UserRole.SPEAKER },
-  { id: 'user-4', name: 'Dana', avatarUrl: 'https://picsum.photos/seed/dana/100/100', role: UserRole.SPEAKER },
-  { id: 'user-5', name: 'Evan', avatarUrl: 'https://picsum.photos/seed/evan/100/100', role: UserRole.LISTENER },
+  { id: 'user-2', name: 'Brenda', avatarUrl: 'https://picsum.photos/seed/brenda/100/100', role: UserRole.HOST, bio: 'Co-hosting with Alex.', following: ['user-host-1'], followers: ['user-host-1'] },
+  { id: 'user-3', name: 'Charlie', avatarUrl: 'https://picsum.photos/seed/charlie/100/100', role: UserRole.SPEAKER, bio: 'AI researcher and designer.', following: ['user-host-1'], followers: ['user-host-1'] },
+  { id: 'user-4', name: 'Dana', avatarUrl: 'https://picsum.photos/seed/dana/100/100', role: UserRole.SPEAKER, bio: 'Musician and sound engineer.', following: ['user-host-1'], followers: [] },
+  { id: 'user-5', name: 'Evan', avatarUrl: 'https://picsum.photos/seed/evan/100/100', role: UserRole.LISTENER, bio: 'Aspiring entrepreneur.', following: [], followers: ['user-host-1'] },
   MOCK_USER_LISTENER,
-  { id: 'user-7', name: 'Fiona', avatarUrl: 'https://picsum.photos/seed/fiona/100/100', role: UserRole.LISTENER },
-  { id: 'user-8', name: 'George', avatarUrl: 'https://picsum.photos/seed/george/100/100', role: UserRole.LISTENER },
-  { id: 'user-9', name: 'Hannah', avatarUrl: 'https://picsum.photos/seed/hannah/100/100', role: UserRole.LISTENER },
-  { id: 'user-10', name: 'Ian', avatarUrl: 'https://picsum.photos/seed/ian/100/100', role: UserRole.LISTENER },
+  { id: 'user-7', name: 'Fiona', avatarUrl: 'https://picsum.photos/seed/fiona/100/100', role: UserRole.LISTENER, bio: 'Loves chill music.', following: [], followers: ['user-host-1'] },
+  { id: 'user-8', name: 'George', avatarUrl: 'https://picsum.photos/seed/george/100/100', role: UserRole.LISTENER, bio: '', following: [], followers: [] },
+  { id: 'user-9', name: 'Hannah', avatarUrl: 'https://picsum.photos/seed/hannah/100/100', role: UserRole.LISTENER, bio: '', following: [], followers: ['user-host-1'] },
+  { id: 'user-10', name: 'Ian', avatarUrl: 'https://picsum.photos/seed/ian/100/100', role: UserRole.LISTENER, bio: '', following: [], followers: [] },
 ];
 
 export const MOCK_ROOMS: Room[] = [
@@ -44,6 +50,7 @@ export const MOCK_ROOMS: Room[] = [
     hosts: [users[0], users[1]],
     speakers: [users[2], users[3]],
     listeners: users.slice(4),
+    createdAt: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
   },
   {
     id: 'room-2',
@@ -52,6 +59,7 @@ export const MOCK_ROOMS: Room[] = [
     hosts: [users[2]],
     speakers: [users[0], users[4]],
     listeners: users.filter(u => ![users[0], users[2], users[4]].includes(u)),
+    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
   },
   {
     id: 'room-3',
@@ -60,5 +68,31 @@ export const MOCK_ROOMS: Room[] = [
     hosts: [users[4]],
     speakers: [users[6]],
     listeners: users.filter(u => ![users[4], users[6]].includes(u)),
+    createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
   },
+];
+
+const createMockMessage = (user: User, text: string, minutesAgo: number): ChatMessage => ({
+  id: `msg-${Math.random()}`,
+  user,
+  text,
+  createdAt: new Date(Date.now() - 1000 * 60 * minutesAgo),
+});
+
+export const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: 'conv-1',
+    participants: [MOCK_USER_HOST, users[1]], // Alex and Brenda
+    lastMessage: createMockMessage(users[1], "Great session today! We should do another one next week.", 5),
+  },
+  {
+    id: 'conv-2',
+    participants: [MOCK_USER_HOST, users[3]], // Alex and Dana
+    lastMessage: createMockMessage(MOCK_USER_HOST, "Thanks for the feedback on the audio setup.", 30),
+  },
+  {
+    id: 'conv-3',
+    participants: [MOCK_USER_HOST, MOCK_USER_LISTENER], // Alex and Sam
+    lastMessage: createMockMessage(MOCK_USER_LISTENER, "Hey, loved the talk! Had a quick question.", 120),
+  }
 ];

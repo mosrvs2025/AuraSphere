@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Room, User, UserRole } from './types';
-import { MOCK_ROOMS, MOCK_USER_HOST, MOCK_USER_LISTENER, users as MOCK_USERS } from './constants';
+import { MOCK_ROOMS, MOCK_USER_HOST, MOCK_USER_LISTENER, users as MOCK_USERS, MOCK_CONVERSATIONS } from './constants';
 import RoomView from './components/RoomView';
 import { UserContext } from './context/UserContext';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
-import { TrendingView, MessagesView, ScheduledView, ProfileView, NotificationsView, MyStudioView } from './components/PlaceholderViews';
+import { TrendingView, ScheduledView, NotificationsView, MyStudioView } from './components/PlaceholderViews';
 import { MenuIcon } from './components/Icons';
+import CreateRoomModal from './components/CreateRoomModal';
+import ProfileView from './components/ProfileView';
+import MessagesView from './components/MessagesView';
 
 // Create a unified list of users for state management, ensuring no duplicates
 const allMockUsers = [...new Map(MOCK_USERS.map(item => [item.id, item])).values()];
@@ -19,9 +22,9 @@ const App: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
 
   // Set a single, consistent user for the app experience.
-  // The user's role (host/listener) is now determined by their actions within a room.
   const currentUser = useMemo(() => {
     return users.find(u => u.id === MOCK_USER_HOST.id) || MOCK_USER_HOST;
   }, [users]);
@@ -91,6 +94,24 @@ const App: React.FC = () => {
       console.error("Screen share error:", err);
     }
   };
+  
+  const handleCreateRoom = (title: string, description: string, isPrivate: boolean) => {
+    const newRoom: Room = {
+      id: `room-${Date.now()}`,
+      title,
+      tags: description.split(' ').filter(tag => tag.startsWith('#')).map(tag => tag.substring(1)),
+      hosts: [currentUser],
+      speakers: [],
+      listeners: [],
+      createdAt: new Date(),
+      isPrivate,
+    };
+    
+    setRooms(prevRooms => [newRoom, ...prevRooms]);
+    setCreateRoomModalOpen(false);
+    setSelectedRoom(newRoom); // Automatically enter the new room
+  };
+
 
   const enterRoom = (room: Room) => {
     const roomFromState = rooms.find(r => r.id === room.id);
@@ -104,21 +125,21 @@ const App: React.FC = () => {
   const renderActiveView = () => {
     switch (activeView) {
       case 'home':
-        return <HomeView rooms={rooms} onEnterRoom={enterRoom} />;
+        return <HomeView rooms={rooms} onEnterRoom={enterRoom} currentUser={currentUser} />;
       case 'trending':
         return <TrendingView />;
       case 'messages':
-        return <MessagesView />;
+        return <MessagesView conversations={MOCK_CONVERSATIONS} currentUser={currentUser} />;
       case 'scheduled':
         return <ScheduledView />;
       case 'profile':
-        return <ProfileView />;
+        return <ProfileView user={currentUser} allRooms={rooms} />;
        case 'my-studio':
         return <MyStudioView />;
       case 'notifications':
         return <NotificationsView />;
       default:
-        return <HomeView rooms={rooms} onEnterRoom={enterRoom} />;
+        return <HomeView rooms={rooms} onEnterRoom={enterRoom} currentUser={currentUser} />;
     }
   };
 
@@ -133,6 +154,7 @@ const App: React.FC = () => {
           }}
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
+          onCreateRoom={() => setCreateRoomModalOpen(true)}
         />
         <main className="flex-1 flex flex-col overflow-y-auto">
            {/* Mobile Header */}
@@ -160,6 +182,13 @@ const App: React.FC = () => {
             )}
           </div>
         </main>
+
+        {isCreateRoomModalOpen && (
+          <CreateRoomModal 
+            onClose={() => setCreateRoomModalOpen(false)}
+            onCreate={handleCreateRoom}
+          />
+        )}
       </div>
     </UserContext.Provider>
   );

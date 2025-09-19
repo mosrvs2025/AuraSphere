@@ -9,9 +9,10 @@ interface SidebarProps {
   setActiveView: (view: ActiveView) => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
+  onCreateRoom: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarOpen, setSidebarOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarOpen, setSidebarOpen, onCreateRoom }) => {
   const { currentUser } = useContext(UserContext);
 
   const navItems = [
@@ -38,7 +39,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarO
         </div>
 
         <div className="p-4">
-            <button className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition">
+            <button 
+              onClick={onCreateRoom}
+              className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition"
+            >
                 <PlusIcon />
                 <span>Create Room</span>
             </button>
@@ -70,13 +74,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarO
                  {/* Notification dot */}
                 <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="flex items-center space-x-3 cursor-pointer group p-2 rounded-lg hover:bg-gray-800">
+            <button 
+              onClick={() => setActiveView('profile')}
+              className="w-full flex items-center space-x-3 cursor-pointer group p-2 rounded-lg hover:bg-gray-800 text-left"
+            >
                 <img src={currentUser.avatarUrl} alt={currentUser.name} className="h-10 w-10 rounded-full"/>
                 <div>
                     <p className="font-semibold text-sm text-white group-hover:text-indigo-400 transition">{currentUser.name}</p>
                     <p className="text-xs text-gray-500">View settings</p>
                 </div>
-            </div>
+            </button>
         </div>
       </aside>
     </>

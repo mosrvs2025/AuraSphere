@@ -11,6 +11,9 @@ export interface User {
   avatarUrl: string;
   role: UserRole;
   isGenerated?: boolean;
+  bio?: string;
+  following?: string[]; // Array of user IDs
+  followers?: string[]; // Array of user IDs
 }
 
 export interface Room {
@@ -21,6 +24,8 @@ export interface Room {
   speakers: User[];
   listeners: User[];
   screenShareStream?: MediaStream;
+  createdAt: Date;
+  isPrivate?: boolean;
 }
 
 export interface ChatMessage {
@@ -32,4 +37,10 @@ export interface ChatMessage {
     blob?: Blob;
   };
   createdAt: Date;
+}
+
+export interface Conversation {
+  id: string;
+  participants: User[];
+  lastMessage: ChatMessage;
 }
