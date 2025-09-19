@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, XIcon } from './Icons';
 import VideoRecorderModal from './VideoRecorderModal';
@@ -278,12 +279,22 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                         ) : (
                             <div className="relative">
                                  {isModeSelectorOpen && (
-                                    <div className="absolute bottom-full right-0 mb-2 flex flex-col items-center bg-gray-900 border border-gray-700 p-1 rounded-lg shadow-lg z-10 space-y-1">
-                                        <button onClick={() => selectMode('audio')} className={`p-2 rounded-md ${actionMode === 'audio' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} aria-label="Switch to audio mode">
-                                            <MicIcon className="text-white" />
+                                    <div className="absolute bottom-full right-0 mb-2 flex items-center bg-gray-900/90 backdrop-blur-sm border border-gray-700 p-2 rounded-xl shadow-lg z-10 space-x-2 animate-fade-in">
+                                        <button 
+                                            onClick={() => selectMode('audio')} 
+                                            className={`flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 transition-colors ${actionMode === 'audio' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} 
+                                            aria-label="Switch to audio mode"
+                                        >
+                                            <MicIcon className="h-8 w-8 text-white" />
+                                            <span className="text-sm mt-2 font-semibold text-white">Audio Note</span>
                                         </button>
-                                         <button onClick={() => selectMode('video')} className={`p-2 rounded-md ${actionMode === 'video' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} aria-label="Switch to video mode">
-                                            <VideoCameraIcon className="text-white" />
+                                         <button 
+                                            onClick={() => selectMode('video')} 
+                                            className={`flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 transition-colors ${actionMode === 'video' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} 
+                                            aria-label="Switch to video mode"
+                                        >
+                                            <VideoCameraIcon className="h-8 w-8 text-white" />
+                                            <span className="text-sm mt-2 font-semibold text-white">Video Note</span>
                                         </button>
                                     </div>
                                 )}
