@@ -37,7 +37,9 @@ const MessagesView: React.FC<MessagesViewProps> = ({ conversations, currentUser,
           if (!otherParticipant || !lastMessage) return null;
 
           const lastMessageText = lastMessage.voiceMemo 
-            ? 'Voice Memo' 
+            ? '🎤 Voice Memo' 
+            : lastMessage.videoNote
+            ? '📹 Video Note'
             : (lastMessage.text || '');
 
           return (

@@ -509,14 +509,12 @@ const App: React.FC = () => {
                     {renderActiveView()}
                 </main>
 
-                {activeView !== 'room' && (
-                  <BottomNavBar 
-                      activeView={activeView} 
-                      setActiveView={changeView}
-                      onCreateContent={() => setCreateHubOpen(true)}
-                      unreadNotificationCount={unreadNotificationCount}
-                  />
-                )}
+                <BottomNavBar 
+                    activeView={activeView} 
+                    setActiveView={changeView}
+                    onCreateContent={() => setCreateHubOpen(true)}
+                    unreadNotificationCount={unreadNotificationCount}
+                />
                 
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfileSave} />}
