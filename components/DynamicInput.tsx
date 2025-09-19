@@ -5,7 +5,7 @@ import VideoRecorderModal from './VideoRecorderModal';
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;
     onSubmitAudioNote: (url: string, duration: number) => void;
-    onSubmitVideoNote: () => void;
+    onSubmitVideoNote: (url: string, duration: number) => void;
 }
 
 const RECORDING_DURATION = 30;
@@ -294,6 +294,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                                     onTouchStart={handleActionPress}
                                     onTouchEnd={handleActionRelease}
                                     onMouseLeave={handleActionRelease}
+                                    onContextMenu={(e) => e.preventDefault()}
                                     className="p-3 text-gray-300 hover:text-white"
                                     aria-label={actionMode === 'audio' ? 'Tap to record audio, hold to switch mode' : 'Tap to record video, hold to switch mode'}
                                 >
@@ -368,8 +369,8 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
             {isVideoRecorderOpen && (
                 <VideoRecorderModal 
                     onClose={() => setVideoRecorderOpen(false)}
-                    onSend={() => {
-                        onSubmitVideoNote();
+                    onSend={(url, duration) => {
+                        onSubmitVideoNote(url, duration);
                         setVideoRecorderOpen(false);
                     }}
                 />

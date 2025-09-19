@@ -89,12 +89,12 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, curre
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const handleSendVideoNote = () => {
+  const handleSendVideoNote = (url: string, duration: number) => {
     const newMessage: ChatMessage = {
        id: `m-${Date.now()}`,
        user: currentUser,
        createdAt: new Date(),
-       videoNote: { url: '#', thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300`, duration: 30 }
+       videoNote: { url: url, thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300`, duration: Math.round(duration) }
    };
    setMessages(prev => [...prev, newMessage]);
   };
