@@ -62,6 +62,15 @@
   .animate-pulse-live {
     animation: pulse-live 2s infinite;
   }
+  
+  /* Utility for hiding scrollbars */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
 </style>
 </head>
   <body class="h-full bg-gray-900 text-white">

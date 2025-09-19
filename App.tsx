@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
@@ -493,4 +490,111 @@ const App: React.FC = () => {
                 if (activeRoom) return <RoomView 
                                             room={activeRoom} 
                                             currentUser={currentUser} 
-                                            onLeave={handleLeaveRoom
+                                            onLeave={handleLeaveRoom}
+                                            onUserSelect={handleUserSelectForCard}
+                                            selectedUser={selectedUserForCard}
+                                            onOpenLink={(url) => setBrowserUrl(url)}
+                                        />;
+                return <p>Room not found</p>; // Or redirect to home
+            case 'messages':
+                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
+            case 'scheduled':
+                return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
+            case 'profile':
+                if (activeProfile) return <UserProfile 
+                                            user={activeProfile} 
+                                            allRooms={rooms} 
+                                            onEditProfile={() => setEditProfileModalOpen(true)}
+                                            onBack={handleBackNavigation}
+                                            allPosts={publishedDiscoverItems}
+                                            onViewMedia={handleViewMedia}
+                                            onViewPost={handleViewPost}
+                                        />;
+                return <p>Profile not found</p>;
+            case 'notifications':
+                return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} onBack={handleBackNavigation} />;
+            case 'my-studio':
+                return <MyStudioView />;
+            case 'conversation':
+                 if (activeConversation) return <ConversationView 
+                                                    conversation={activeConversation} 
+                                                    currentUser={currentUser} 
+                                                    onBack={handleBackNavigation} 
+                                                    onViewProfile={handleViewProfile}
+                                                />;
+                 return <p>Conversation not found</p>;
+            case 'post_detail':
+                 if (activePost) return <PostDetailView 
+                                            post={activePost} 
+                                            onBack={handleBackNavigation} 
+                                            onViewProfile={handleViewProfile} 
+                                        />;
+                 return <p>Post not found</p>;
+            default:
+                return <p>Unknown view</p>;
+        }
+    };
+    
+    // Determine if we should render a creation view on top of everything
+    const renderCreationView = () => {
+        if (!activeCreateView) return null;
+        
+        if ((activeCreateView === 'image' || activeCreateView === 'video') && selectedFile) {
+            return <CreatePostView file={selectedFile} onPost={handlePublishPost} onClose={handleCloseCreateView} />;
+        }
+        if (activeCreateView === 'note') {
+            return <CreateNoteView onPost={handlePublishPost} onClose={handleCloseCreateView} />;
+        }
+        return null;
+    }
+
+    const unreadNotifications = notifications.filter(n => !n.isRead);
+
+    if (renderCreationView()) {
+        return (
+            <UserContext.Provider value={userContextValue}>
+                <div className="h-full bg-gray-900 text-white">
+                    {renderCreationView()}
+                </div>
+            </UserContext.Provider>
+        );
+    }
+
+    return (
+        <UserContext.Provider value={userContextValue}>
+            <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
+                {/* Main Content Area */}
+                <main className="flex-1 flex flex-col overflow-hidden relative">
+                     <GlobalHeader
+                        activeView={activeView}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        unreadNotificationCount={unreadNotifications.length}
+                        onNavigateToNotifications={() => changeView('notifications')}
+                        onNavigateToLive={handleNavigateToLive}
+                        hasActiveLiveRooms={rooms.filter(r => !r.isScheduled).length > 0}
+                    />
+                    <div className="flex-1 overflow-y-auto">
+                        {renderActiveView()}
+                    </div>
+                </main>
+            </div>
+            {/* --- Modals --- */}
+            {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
+            {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfileSave} />}
+            {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => handleAvatarSelect(url)} />}
+            {isUserCardOpen && selectedUserForCard && <UserCardModal user={selectedUserForCard} onClose={handleCloseUserCard} onViewProfile={handleViewProfile} position={userCardPosition} />}
+            {activeMediaPost && <MediaViewerModal post={activeMediaPost} onClose={() => setActiveMediaPost(null)} />}
+            {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContentSelect} />}
+            {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
+            
+            {/* --- Global Components --- */}
+            {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
+            <div className="md:hidden">
+              <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
+            </div>
+        </UserContext.Provider>
+    );
+};
+
+export default App;

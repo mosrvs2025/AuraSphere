@@ -21,6 +21,7 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
 
   const filteredRooms = query ? allRooms.filter(r => r.title.toLowerCase().includes(query.toLowerCase())) : [];
   const filteredUsers = query ? allUsers.filter(u => u.name.toLowerCase().includes(query.toLowerCase())) : [];
+  const liveRooms = allRooms.filter(r => !r.isScheduled);
 
   return (
     <div 
@@ -62,9 +63,11 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
         ) : (
           // FIX: Removed the unsupported 'title' prop from TrendingView.
           // FIX: Added the required 'currentUser' prop to TrendingView to resolve a type error.
+          // FIX: Added the required 'liveRooms' prop to TrendingView to resolve a type error.
           <TrendingView
             items={discoverItems}
             currentUser={currentUser}
+            liveRooms={liveRooms}
             onEnterRoom={onEnterRoom}
             onViewProfile={onViewProfile}
             onViewMedia={onViewMedia}

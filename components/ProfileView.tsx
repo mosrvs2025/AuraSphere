@@ -1,6 +1,7 @@
 import React from 'react';
-import { User, Room } from '../types';
+import { User, Room, DiscoverItem } from '../types';
 import RoomCard from './RoomCard';
+import { DocumentTextIcon, VideoCameraIcon } from './Icons';
 
 interface ProfileViewProps {
   user: User;
@@ -8,11 +9,52 @@ interface ProfileViewProps {
   onEditProfile: () => void;
   currentUser: User;
   onBack: () => void;
+  allPosts: DiscoverItem[];
+  onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser, onBack }) => {
+const ContentGridItem: React.FC<{ 
+    post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>;
+    onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+}> = ({ post, onViewMedia, onViewPost }) => {
+    switch(post.type) {
+        case 'image_post':
+            return (
+                <button onClick={() => onViewMedia(post)} className="aspect-square bg-gray-800 rounded-md overflow-hidden relative group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                    <img src={post.imageUrl} alt={post.caption || 'User post'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </button>
+            );
+        case 'video_post':
+            return (
+                <button onClick={() => onViewMedia(post)} className="aspect-square bg-gray-800 rounded-md overflow-hidden relative group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                    <img src={post.thumbnailUrl} alt={post.caption || 'User post'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute top-2 right-2 text-white bg-black/30 rounded-full">
+                        <VideoCameraIcon className="w-5 h-5 p-1" />
+                    </div>
+                </button>
+            );
+        case 'text_post':
+            return (
+                <button onClick={() => onViewPost(post)} className="aspect-square bg-gray-800 rounded-md p-3 flex flex-col justify-between hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                    <p className="text-left text-sm text-gray-300 line-clamp-5">{post.content}</p>
+                    <DocumentTextIcon className="w-6 h-6 text-gray-500 self-end" />
+                </button>
+            );
+        default:
+            return null;
+    }
+};
+
+const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser, onBack, allPosts, onViewMedia, onViewPost }) => {
   const userHostedRooms = allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled);
   const isOwnProfile = user.id === currentUser.id;
+
+  const userPosts = (allPosts.filter(
+      p => ('author' in p) && p.author.id === user.id && (p.type === 'image_post' || p.type === 'video_post' || p.type === 'text_post')
+  ) as Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
 
   return (
     <div className="p-4 md:p-6 animate-fade-in max-w-4xl mx-auto">
@@ -48,6 +90,28 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
             )}
           </div>
         </div>
+
+        {/* Creator Content Grid */}
+        <div className="mt-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Content</h2>
+            {userPosts.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1">
+                    {userPosts.map(post => (
+                        <ContentGridItem 
+                            key={post.id} 
+                            post={post}
+                            onViewMedia={onViewMedia}
+                            onViewPost={onViewPost}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <p className="text-gray-400">{user.name} hasn't posted anything yet.</p>
+                </div>
+            )}
+        </div>
+
 
         {/* Past Rooms */}
         <div className="mt-12">
