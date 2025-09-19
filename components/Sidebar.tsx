@@ -9,11 +9,11 @@ interface SidebarProps {
   setActiveView: (view: ActiveView) => void;
   isExpanded: boolean;
   setExpanded: (isOpen: boolean) => void;
-  onCreateRoom: () => void;
+  onCreateContent: () => void;
   unreadNotificationCount: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded, setExpanded, onCreateRoom, unreadNotificationCount }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded, setExpanded, onCreateContent, unreadNotificationCount }) => {
   const { currentUser } = useContext(UserContext);
 
   const navItems = [
@@ -43,11 +43,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded
 
         <div className={`p-4 ${!isExpanded ? 'md:px-2' : ''}`}>
             <button 
-              onClick={onCreateRoom}
+              onClick={onCreateContent}
               className={`w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition`}
             >
                 <PlusIcon />
-                <span className={`${isExpanded ? '' : 'md:hidden'}`}>Create Room</span>
+                <span className={`${isExpanded ? '' : 'md:hidden'}`}>Create</span>
             </button>
         </div>
 

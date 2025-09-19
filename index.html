@@ -26,6 +26,25 @@
     display: inline-block; /* Needed for transform */
     animation: scale-pop 0.4s ease-out;
   }
+  
+  /* New Animations for Create Hub */
+  @keyframes hub-pop-in {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .hub-option-button {
+    animation: hub-pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+  }
 </style>
 </head>
   <body class="h-full bg-gray-900 text-white">

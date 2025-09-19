@@ -19,6 +19,7 @@ import MediaViewerModal from './components/MediaViewerModal';
 import PostDetailView from './components/PostDetailView';
 import { UserContext } from './context/UserContext';
 import { ActiveView, Room, User, ChatMessage, Notification, Conversation, DiscoverItem, ModalPosition } from './types';
+import CreateHubModal from './components/CreateHubModal';
 
 // --- MOCK DATA ---
 const createMockUsers = (count: number): User[] => {
@@ -128,6 +129,7 @@ const App: React.FC = () => {
 
     // Modal States
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+    const [isCreateHubModalOpen, setCreateHubModalOpen] = useState(false);
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
     const [isSearchModalOpen, setSearchModalOpen] = useState(false);
@@ -206,6 +208,24 @@ const App: React.FC = () => {
         setPostToShow(post);
         setActiveView('post_detail');
     };
+    
+    const handleSelectCreateOption = (option: 'live' | 'video' | 'image' | 'note') => {
+        setCreateHubModalOpen(false);
+        switch (option) {
+            case 'live':
+                setCreateRoomModalOpen(true);
+                break;
+            case 'video':
+            case 'image':
+            case 'note':
+                // Using alert for placeholder as requested
+                setTimeout(() => alert('This feature is coming soon!'), 100);
+                break;
+            default:
+                break;
+        }
+    };
+
 
     useEffect(() => {
         if (activeView !== 'profile') {
@@ -260,7 +280,7 @@ const App: React.FC = () => {
                     setActiveView={setActiveView}
                     isExpanded={isSidebarExpanded}
                     setExpanded={setSidebarExpanded}
-                    onCreateRoom={() => setCreateRoomModalOpen(true)}
+                    onCreateContent={() => setCreateHubModalOpen(true)}
                     unreadNotificationCount={notifications.filter(n => !n.isRead).length}
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
@@ -280,6 +300,7 @@ const App: React.FC = () => {
                 )}
 
                 {/* --- Modals --- */}
+                {isCreateHubModalOpen && <CreateHubModal onClose={() => setCreateHubModalOpen(false)} onSelectOption={handleSelectCreateOption} />}
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
