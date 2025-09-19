@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Room, User, ChatMessage, ModalPosition, Poll as PollType } from '../types';
 import ChatView from './ChatView';
 import { RoomActionsContext } from '../context/RoomActionsContext';
-import { SparklesIcon } from './Icons';
+import { ChevronDownIcon, SparklesIcon } from './Icons';
 import DynamicInput from './DynamicInput';
 import AiAssistantPanel from './AiAssistantPanel';
 import HostControls from './HostControls';
@@ -17,6 +17,7 @@ interface RoomViewProps {
   room: Room;
   currentUser: User;
   onLeave: () => void;
+  onMinimize: () => void;
   onUserSelect: (user: User, position: ModalPosition) => void;
   selectedUser: User | null;
   onOpenLink: (url: string) => void;
@@ -58,7 +59,7 @@ const ParticipantsList: React.FC<{ room: Room; selectedUser: User | null; onAvat
 );
 
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser, onOpenLink, handleInviteUsers }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onMinimize, onUserSelect, selectedUser, onOpenLink, handleInviteUsers }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
@@ -218,13 +219,20 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         {/* Main Panel (Left side on desktop, full screen on mobile) */}
         <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden relative">
           <header className="p-4 md:p-6 flex-shrink-0 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
-              <p className="text-sm text-gray-400">{currentRoom.hosts.map(h => h.name).join(', ')}</p>
+            <div className="flex-1 flex justify-start">
+                <button onClick={onMinimize} className="p-2 text-gray-400 hover:text-white" aria-label="Minimize room">
+                    <ChevronDownIcon className="h-8 w-8" />
+                </button>
             </div>
-            <button onClick={onLeave} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
-              Leave
-            </button>
+            <div className="text-center flex-shrink-0 px-4">
+              <h1 className="text-2xl font-bold truncate">{currentRoom.title}</h1>
+              <p className="text-sm text-gray-400 truncate">{currentRoom.hosts.map(h => h.name).join(', ')}</p>
+            </div>
+            <div className="flex-1 flex justify-end">
+                <button onClick={onLeave} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+                Leave
+                </button>
+            </div>
           </header>
           
           {/* Main Content Area */}

@@ -537,6 +537,7 @@ const App: React.FC = () => {
                                             room={activeRoom} 
                                             currentUser={currentUser} 
                                             onLeave={handleLeaveRoom}
+                                            onMinimize={handleBackNavigation}
                                             onUserSelect={handleUserSelectForCard}
                                             selectedUser={selectedUserForCard}
                                             onOpenLink={(url) => setBrowserUrl(url)}
@@ -617,7 +618,7 @@ const App: React.FC = () => {
         <UserContext.Provider value={userContextValue}>
             <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
                 {/* Main Content Area */}
-                <main className="flex-1 flex flex-col overflow-hidden">
+                <main className="flex-1 flex flex-col overflow-hidden relative">
                      <GlobalHeader
                         activeView={activeView}
                         curationTab={curationTab}
@@ -660,7 +661,9 @@ const App: React.FC = () => {
             
             {/* --- Global Components --- */}
             {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
-            <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
+             <div className="fixed bottom-0 left-0 right-0 z-30">
+                 <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
+             </div>
         </UserContext.Provider>
     );
 };
