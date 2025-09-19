@@ -5,18 +5,14 @@ import { DiscoverCard } from './DiscoverCards';
 interface TrendingViewProps {
   items: DiscoverItem[];
   currentUser: User;
-  initialFilter?: string | null;
-  curationTab?: 'forYou' | 'following';
-  setCurationTab?: (tab: 'forYou' | 'following') => void;
-  activeFilter?: string;
-  setActiveFilter?: (filter: string) => void;
+  curationTab: 'forYou' | 'following';
+  activeFilter: string;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
 }
 
-const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
 const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'All': 'All',
     'Live': 'live_room',
@@ -27,23 +23,7 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
 };
 
 const TrendingView: React.FC<TrendingViewProps> = (props) => {
-  const { items, currentUser, initialFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
-
-  // Component can be controlled or uncontrolled
-  const [internalCurationTab, setInternalCurationTab] = useState<'forYou' | 'following'>('forYou');
-  const [internalActiveFilter, setInternalActiveFilter] = useState(initialFilter || 'All');
-  
-  const curationTab = props.curationTab !== undefined ? props.curationTab : internalCurationTab;
-  const setCurationTab = props.setCurationTab || setInternalCurationTab;
-  
-  const activeFilter = props.activeFilter !== undefined ? props.activeFilter : internalActiveFilter;
-  const setActiveFilter = props.setActiveFilter || setInternalActiveFilter;
-
-  useEffect(() => {
-    if (initialFilter) {
-      setActiveFilter(initialFilter);
-    }
-  }, [initialFilter, setActiveFilter]);
+  const { items, currentUser, curationTab, activeFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
     
   const displayedItems = useMemo(() => {
     let sourceItems: DiscoverItem[] = [...items]; // Create a mutable copy
@@ -91,41 +71,6 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
-        {/* Primary Curation Tabs */}
-        <div className="flex justify-center mb-4 border-b border-gray-800">
-            <button
-                onClick={() => setCurationTab('forYou')}
-                className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500'}`}
-            >
-                For You
-            </button>
-            <button
-                onClick={() => setCurationTab('following')}
-                className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500'}`}
-            >
-                Following
-            </button>
-        </div>
-
-        {/* Secondary Content-Type Filters */}
-        <div className="mb-6">
-            <div className="flex items-center space-x-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                {contentFilters.map(filter => (
-                    <button
-                        key={filter}
-                        onClick={() => setActiveFilter(filter)}
-                        className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                            activeFilter === filter
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                        }`}
-                    >
-                        {filter}
-                    </button>
-                ))}
-            </div>
-        </div>
-        
         {displayedItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {columns.map((col, colIndex) => (

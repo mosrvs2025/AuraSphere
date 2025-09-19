@@ -526,9 +526,7 @@ const App: React.FC = () => {
                             items={publishedDiscoverItems} 
                             currentUser={currentUser}
                             curationTab={curationTab}
-                            setCurationTab={setCurationTab}
                             activeFilter={activeFilter}
-                            setActiveFilter={setActiveFilter}
                             onEnterRoom={handleEnterRoom} 
                             onViewProfile={handleViewProfile} 
                             onViewMedia={handleViewMedia} 
@@ -623,7 +621,9 @@ const App: React.FC = () => {
                      <GlobalHeader
                         activeView={activeView}
                         curationTab={curationTab}
+                        setCurationTab={setCurationTab}
                         activeFilter={activeFilter}
+                        setActiveFilter={setActiveFilter}
                         unreadNotificationCount={unreadNotifications.length}
                         onNavigateToNotifications={() => changeView('notifications')}
                         onNavigateToLive={handleNavigateToLive}

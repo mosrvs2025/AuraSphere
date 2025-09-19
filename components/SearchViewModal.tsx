@@ -67,6 +67,10 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
             onViewProfile={onViewProfile}
             onViewMedia={onViewMedia}
             onViewPost={onViewPost}
+            // FIX: Added missing props to TrendingView to resolve TypeScript error.
+            // The search modal's initial view defaults to the "For You" / "All" feed.
+            curationTab="forYou"
+            activeFilter="All"
           />
         )}
       </div>
