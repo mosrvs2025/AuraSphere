@@ -23,15 +23,10 @@ const CreatePostView: React.FC<CreatePostViewProps> = ({ file, onPost, onClose }
           Back
         </button>
         <h1 className="text-lg font-bold">Finalize Post</h1>
-        <button
-          onClick={handlePost}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-full text-sm transition"
-        >
-          Post
-        </button>
+        <div className="w-16"></div>
       </header>
 
-      <main className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+      <main className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto min-h-0">
         <div className="flex-grow flex items-center justify-center bg-black rounded-lg">
           {file.type === 'image' ? (
             <img src={file.url} alt="Selected preview" className="max-h-full max-w-full object-contain rounded-lg" />
@@ -49,6 +44,14 @@ const CreatePostView: React.FC<CreatePostViewProps> = ({ file, onPost, onClose }
           />
         </div>
       </main>
+      <footer className="p-4 flex-shrink-0">
+        <button
+          onClick={handlePost}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-full text-lg transition"
+        >
+          Post
+        </button>
+      </footer>
     </div>
   );
 };

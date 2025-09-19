@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Sidebar from './components/Sidebar';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
 import TrendingView from './components/TrendingView';
@@ -129,7 +128,6 @@ const App: React.FC = () => {
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [profileToShow, setProfileToShow] = useState<User | null>(null);
-    const [isSidebarExpanded, setSidebarExpanded] = useState(true);
     const [postToShow, setPostToShow] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
 
     // Modal States
@@ -392,16 +390,8 @@ const App: React.FC = () => {
                     className="hidden"
                     aria-hidden="true"
                 />
-                <Sidebar 
-                    activeView={activeView}
-                    setActiveView={setActiveView}
-                    isExpanded={isSidebarExpanded}
-                    setExpanded={setSidebarExpanded}
-                    onCreateContent={() => setCreateHubModalOpen(true)}
-                    unreadNotificationCount={notifications.filter(n => !n.isRead).length}
-                />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <main className={`flex-1 overflow-y-auto pb-16 md:pb-0 ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'md:pb-20' : ''}`}>
+                    <main className={`flex-1 overflow-y-auto pb-16 ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'pb-20' : ''}`}>
                         {renderContent()}
                     </main>
                 </div>
