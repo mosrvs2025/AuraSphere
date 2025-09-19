@@ -5,26 +5,26 @@ import RoomView from './components/RoomView';
 import { UserContext } from './context/UserContext';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
-import { TrendingView, MessagesView, ScheduledView, ProfileView, NotificationsView } from './components/PlaceholderViews';
+import { TrendingView, MessagesView, ScheduledView, ProfileView, NotificationsView, MyStudioView } from './components/PlaceholderViews';
 import { MenuIcon } from './components/Icons';
 
 // Create a unified list of users for state management, ensuring no duplicates
 const allMockUsers = [...new Map(MOCK_USERS.map(item => [item.id, item])).values()];
 
-type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications';
+type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio';
 
 const App: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [isHostView, setIsHostView] = useState(true);
   const [users, setUsers] = useState<User[]>(allMockUsers);
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
+  // Set a single, consistent user for the app experience.
+  // The user's role (host/listener) is now determined by their actions within a room.
   const currentUser = useMemo(() => {
-    const currentUserId = isHostView ? MOCK_USER_HOST.id : MOCK_USER_LISTENER.id;
-    return users.find(u => u.id === currentUserId) || (isHostView ? MOCK_USER_HOST : MOCK_USER_LISTENER);
-  }, [isHostView, users]);
+    return users.find(u => u.id === MOCK_USER_HOST.id) || MOCK_USER_HOST;
+  }, [users]);
 
   const updateUserAvatar = (newAvatarUrl: string, isGenerated: boolean = false) => {
     const userId = currentUser.id;
@@ -113,6 +113,8 @@ const App: React.FC = () => {
         return <ScheduledView />;
       case 'profile':
         return <ProfileView />;
+       case 'my-studio':
+        return <MyStudioView />;
       case 'notifications':
         return <NotificationsView />;
       default:
@@ -129,8 +131,6 @@ const App: React.FC = () => {
             setActiveView(view);
             setSidebarOpen(false); // Close sidebar on selection (mobile)
           }}
-          isHostView={isHostView}
-          setIsHostView={setIsHostView}
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />

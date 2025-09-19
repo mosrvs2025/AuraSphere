@@ -1,19 +1,17 @@
 import React, { useContext } from 'react';
 import { UserContext } from '../context/UserContext';
-import { HomeIcon, TrendingIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon } from './Icons';
+import { HomeIcon, TrendingIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon, StudioIcon } from './Icons';
 
-type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications';
+type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio';
 
 interface SidebarProps {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
-  isHostView: boolean;
-  setIsHostView: (isHost: boolean) => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isHostView, setIsHostView, isSidebarOpen, setSidebarOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarOpen, setSidebarOpen }) => {
   const { currentUser } = useContext(UserContext);
 
   const navItems = [
@@ -22,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isHostView
     { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
     { id: 'scheduled', label: 'Scheduled', icon: <ScheduledIcon /> },
     { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },
+    { id: 'my-studio', label: 'My Studio', icon: <StudioIcon /> },
   ];
 
   return (
@@ -71,18 +70,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isHostView
                  {/* Notification dot */}
                 <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 cursor-pointer group p-2 rounded-lg hover:bg-gray-800">
                 <img src={currentUser.avatarUrl} alt={currentUser.name} className="h-10 w-10 rounded-full"/>
                 <div>
-                    <p className="font-semibold text-sm text-white">{currentUser.name}</p>
-                    <div className="flex items-center space-x-2 text-xs mt-1">
-                        <span className={`transition ${!isHostView ? 'text-indigo-400' : 'text-gray-500'}`}>Listener</span>
-                        <label htmlFor="user-toggle" className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={isHostView} onChange={() => setIsHostView(!isHostView)} id="user-toggle" className="sr-only peer" />
-                            <div className="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                        </label>
-                        <span className={`transition ${isHostView ? 'text-indigo-400' : 'text-gray-500'}`}>Host</span>
-                    </div>
+                    <p className="font-semibold text-sm text-white group-hover:text-indigo-400 transition">{currentUser.name}</p>
+                    <p className="text-xs text-gray-500">View settings</p>
                 </div>
             </div>
         </div>

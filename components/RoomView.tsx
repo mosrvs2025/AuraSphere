@@ -63,7 +63,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare 
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
-  const isHost = currentUser?.role === UserRole.HOST;
+  const isHost = room.hosts.some(h => h.id === currentUser.id);
   const isSharingScreen = !!room.screenShareStream;
 
   return (
