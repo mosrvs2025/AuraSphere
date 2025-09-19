@@ -27,6 +27,29 @@ const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: 
     </button>
 );
 
+const ParticipantsList: React.FC<{ room: Room; selectedUser: User | null; onAvatarClick: (event: React.MouseEvent<HTMLButtonElement>, user: User) => void; }> = ({ room, selectedUser, onAvatarClick }) => (
+    <div className="space-y-6">
+        <div>
+            <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {room.hosts.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => onAvatarClick(e, user)} />)}
+            </div>
+        </div>
+        <div>
+            <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {room.speakers.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => onAvatarClick(e, user)} />)}
+            </div>
+        </div>
+        <div>
+            <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
+                {room.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" isSelected={selectedUser?.id === user.id} onClick={(e) => onAvatarClick(e, user)} />)}
+            </div>
+        </div>
+    </div>
+);
+
 
 const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
@@ -35,7 +58,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [currentRoom, setCurrentRoom] = useState<Room>(room);
     const [isChatCollapsed, setChatCollapsed] = useState(true);
 
-    // State for controls, moved up from sub-components
     const [isMuted, setIsMuted] = useState(true);
     const [icebreakers, setIcebreakers] = useState<string[]>([]);
     const [isLoadingIcebreakers, setIsLoadingIcebreakers] = useState(false);
@@ -43,6 +65,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
 
 
     const isHost = currentRoom.hosts.some(h => h.id === currentUser.id);
+    const hasMedia = isSharingScreen || !!currentRoom.videoUrl;
 
     const handleUpdateRoom = (updatedData: Partial<Room>) => {
       setCurrentRoom(prev => ({...prev, ...updatedData}));
@@ -122,7 +145,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
       <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
         {/* Main Panel (Left side on desktop, full screen on mobile) */}
         <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
-          <header className="p-4 md:p-6 flex-shrink-0 flex justify-between items-center mb-6">
+          <header className="p-4 md:p-6 flex-shrink-0 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
               <p className="text-sm text-gray-400">{currentRoom.hosts.map(h => h.name).join(', ')}</p>
@@ -131,49 +154,39 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
               Leave
             </button>
           </header>
+          
+          {/* Main Content Area */}
+          <div className={`flex-1 flex ${hasMedia ? 'flex-col md:flex-row' : 'flex-col'} overflow-hidden`}>
+            
+            {/* Primary View (Media Player OR Full Participants List) */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                {hasMedia ? (
+                    <div className="w-full h-full bg-black rounded-lg flex items-center justify-center text-gray-400 min-h-[200px]">
+                        {isSharingScreen ? "Screen share is active" : (
+                           <iframe 
+                             src={currentRoom.videoUrl?.replace('watch?v=', 'embed/')} 
+                             title="YouTube video player" 
+                             frameBorder="0" 
+                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                             allowFullScreen
+                             className="w-full h-full rounded-lg"
+                           ></iframe>
+                        )}
+                    </div>
+                ) : (
+                    <ParticipantsList room={currentRoom} selectedUser={selectedUser} onAvatarClick={handleAvatarClick} />
+                )}
+            </div>
 
-          {/* Screen Share / Video View */}
-          <div className="px-4 md:px-6 flex-shrink-0">
-             { isSharingScreen || currentRoom.videoUrl ? (
-               <div className="w-full bg-black rounded-lg aspect-video mb-6 flex items-center justify-center text-gray-400">
-                 {isSharingScreen ? "Screen share is active" : (
-                   <iframe 
-                     src={currentRoom.videoUrl?.replace('watch?v=', 'embed/')} 
-                     title="YouTube video player" 
-                     frameBorder="0" 
-                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                     allowFullScreen
-                     className="w-full h-full rounded-lg"
-                   ></iframe>
-                 )}
-               </div>
-            ) : null}
+            {/* Sidebar Participants (only on desktop when media is active) */}
+            {hasMedia && (
+                <div className="hidden md:block md:w-80 lg:w-96 p-6 border-l border-gray-800 overflow-y-auto flex-shrink-0">
+                    <ParticipantsList room={currentRoom} selectedUser={selectedUser} onAvatarClick={handleAvatarClick} />
+                </div>
+            )}
           </div>
           
-
-          {/* Child 1: Participants Area */}
-          <div className="flex-1 overflow-y-auto space-y-6 pb-4 px-4 md:px-6">
-              <div>
-                  <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
-                  </div>
-              </div>
-              <div>
-                  <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
-                  </div>
-              </div>
-               <div>
-                  <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
-                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
-                  </div>
-              </div>
-          </div>
-          
-          {/* Child 2: The Room Chat Area (mobile only) */}
+          {/* Mobile Chat Area */}
            <div className="md:hidden flex-shrink-0 border-t border-gray-800">
              <ChatView 
                messages={messages} 
@@ -186,7 +199,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
              />
            </div>
 
-          {/* Child 3: The Bottom Control Bar */}
+          {/* Bottom Control Bar */}
           <footer className="p-4 md:p-6 pt-4 border-t border-gray-800 flex-shrink-0">
              {isHost ? (
                 // Host Controls

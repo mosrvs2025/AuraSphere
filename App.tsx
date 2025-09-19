@@ -112,7 +112,7 @@ const App: React.FC = () => {
   const [userCardModalUser, setUserCardModalUser] = useState<User | null>(null);
   const [userCardModalPosition, setUserCardModalPosition] = useState<ModalPosition | null>(null);
 
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarExpanded, setSidebarExpanded] = useState(true);
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
@@ -125,7 +125,10 @@ const App: React.FC = () => {
     if (view !== 'profile') {
         setProfileUser(null);
     }
-    setSidebarOpen(false);
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth < 768) {
+        setSidebarExpanded(false);
+    }
   };
 
   const handleEnterRoom = (room: Room) => {
@@ -248,13 +251,13 @@ const App: React.FC = () => {
         <Sidebar 
             activeView={activeView}
             setActiveView={handleSetActiveView}
-            isSidebarOpen={isSidebarOpen}
-            setSidebarOpen={setSidebarOpen}
+            isExpanded={isSidebarExpanded}
+            setExpanded={setSidebarExpanded}
             onCreateRoom={() => setCreateRoomModalOpen(true)}
             unreadNotificationCount={notifications.filter(n => !n.isRead).length}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} onSearchClick={() => setSearchModalOpen(true)} />
+            <Header onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchModalOpen(true)} />
             <div className="flex-1 overflow-y-auto">
                 {renderActiveView()}
             </div>
