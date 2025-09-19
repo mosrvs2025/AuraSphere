@@ -39,7 +39,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare 
     return () => clearInterval(intervalId);
   }, [room.hosts, room.speakers]);
 
-  const handleSendMessage = (messageData: { text?: string; voiceMemo?: { duration: number } }) => {
+  const handleSendMessage = (messageData: { text?: string; voiceMemo?: { duration: number, blob?: Blob } }) => {
     if (!currentUser) return;
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -53,7 +53,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare 
   const playVoiceMemo = (message: ChatMessage) => {
     if (message.voiceMemo) {
       setNowPlaying(message);
-      // Clear the "Now Playing" banner after the memo duration
+      // In a real app, you would use message.voiceMemo.blob to play audio.
+      // For now, we just simulate the duration.
       setTimeout(() => setNowPlaying(null), message.voiceMemo.duration * 1000);
     }
   };

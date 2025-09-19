@@ -29,6 +29,7 @@ export interface ChatMessage {
   text?: string;
   voiceMemo?: {
     duration: number; // in seconds
+    blob?: Blob;
   };
   createdAt: Date;
 }
