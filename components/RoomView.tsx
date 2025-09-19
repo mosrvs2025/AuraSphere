@@ -13,21 +13,22 @@ interface RoomViewProps {
   currentUser: User;
   onLeave: () => void;
   onUserSelect: (user: User, position: ModalPosition) => void;
+  selectedUser: User | null;
 }
 
-const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }> = ({ user, size = 'large', onClick }) => (
-    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-4 focus:ring-indigo-500/30 rounded-full transition-shadow duration-300 hover:shadow-lg hover:shadow-indigo-500/20">
+const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, isSelected: boolean }> = ({ user, size = 'large', onClick, isSelected }) => (
+    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none rounded-full transition-shadow duration-300 hover:shadow-lg hover:shadow-indigo-500/20">
         <img 
             src={user.avatarUrl} 
             alt={user.name} 
-            className={`${size === 'large' ? 'w-20 h-20' : 'w-12 h-12'} rounded-full border-2 border-gray-600 shadow-md`}
+            className={`${size === 'large' ? 'w-20 h-20' : 'w-12 h-12'} rounded-full border-2 shadow-md transition-all duration-300 ${isSelected ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.5)] animate-pulse' : 'border-gray-600'}`}
         />
         <p className={`font-semibold truncate w-24 ${size === 'large' ? 'text-sm' : 'text-xs'}`}>{user.name}</p>
     </button>
 );
 
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
@@ -155,19 +156,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} onClick={(e) => handleAvatarClick(e, user)} />)}
+                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} onClick={(e) => handleAvatarClick(e, user)} />)}
+                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
                <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
-                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" onClick={(e) => handleAvatarClick(e, user)} />)}
+                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" isSelected={selectedUser?.id === user.id} onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
           </div>

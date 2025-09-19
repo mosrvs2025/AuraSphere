@@ -215,7 +215,7 @@ const App: React.FC = () => {
 
   const renderActiveView = () => {
     if (activeRoom) {
-      return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={handleUserSelect} />;
+      return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={handleUserSelect} selectedUser={userCardModalUser} />;
     }
 
     switch (activeView) {
