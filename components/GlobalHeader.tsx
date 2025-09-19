@@ -16,9 +16,11 @@ interface GlobalHeaderProps {
   onSearchClick: () => void;
   liveRooms: Room[];
   onEnterRoom: (room: Room) => void;
+  scrollTop: number;
 }
 
 const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
+const HEADER_SCROLL_DISTANCE = 112; // Approx height of the live rail section in pixels
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
     if (liveRooms.length === 0) {
@@ -71,10 +73,19 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     onNavigateToNotifications, 
     onSearchClick, 
     liveRooms, 
-    onEnterRoom, 
+    onEnterRoom,
+    scrollTop,
 }) => {
   const isHome = activeView === 'home';
   let title = '';
+
+  const scrollProgress = Math.min(1, scrollTop / HEADER_SCROLL_DISTANCE);
+
+  const animatedSectionStyle: React.CSSProperties = {
+      height: `${HEADER_SCROLL_DISTANCE * (1 - scrollProgress)}px`,
+      opacity: 1 - scrollProgress,
+      overflow: 'hidden',
+  };
 
   if (isHome) {
     if (activeFilter === 'All') {
@@ -106,7 +117,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   
   return (
     <>
-      {/* Section 1: This part scrolls out of view */}
+      {/* Section 1: This part scrolls and animates out of view */}
       <div className="bg-gray-900 z-10">
         <div className="px-4 md:px-6 py-4 md:pt-6">
           <div className="max-w-6xl mx-auto">
@@ -143,7 +154,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
         </div>
 
         {isHome && (
-          <div className="max-w-6xl mx-auto px-4 md:px-6 mt-4">
+          <div style={animatedSectionStyle} className="max-w-6xl mx-auto px-4 md:px-6">
             <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
           </div>
         )}

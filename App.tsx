@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage } from './types';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
@@ -26,6 +26,7 @@ import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
 import InAppBrowser from './components/InAppBrowser';
 import SearchViewModal from './components/SearchViewModal';
+
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
   const users: User[] = [];
@@ -61,8 +62,6 @@ const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-3', title: 'Scheduled Event', description: 'This room is scheduled for a future date.', hosts: [users[0]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
 ]);
 
-const allRooms = generateRooms(allUsers);
-
 const generateDiscoverItems = (users: User[], rooms: Room[]): DiscoverItem[] => [
     ...rooms.filter(r => !r.isScheduled).map(r => ({ ...r, type: 'live_room' as const })),
     ...users.slice(1, 6).map(u => ({ ...u, type: 'user_profile' as const })),
@@ -70,8 +69,6 @@ const generateDiscoverItems = (users: User[], rooms: Room[]): DiscoverItem[] => 
     { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: 12, status: 'published' },
     { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: 8, status: 'published' }
 ];
-
-let allDiscoverItems = generateDiscoverItems(allUsers, allRooms);
 
 const generateConversations = (users: User[], currentUser: User): Conversation[] => {
   const conversations: Conversation[] = [];
@@ -122,6 +119,7 @@ const allConversations = generateConversations(allUsers, currentUserData);
 const App: React.FC = () => {
     const [activeView, setActiveView] = useState<ActiveView>('home');
     const [currentUser, setCurrentUser] = useState<User>(currentUserData);
+    const [rooms, setRooms] = useState(() => generateRooms(allUsers));
     const [conversations, setConversations] = useState<Conversation[]>(allConversations);
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [viewingProfile, setViewingProfile] = useState<User | null>(null);
@@ -139,6 +137,9 @@ const App: React.FC = () => {
     const [createPostFile, setCreatePostFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
     const [createNote, setCreateNote] = useState(false);
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
+    const [mainScrollTop, setMainScrollTop] = useState(0);
+
+    const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms), [rooms]);
 
     const userContextValue: IUserContext = {
         currentUser,
@@ -162,9 +163,20 @@ const App: React.FC = () => {
 
     const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string) => {
         const newRoom: Room = { id: `room-${Date.now()}`, title, description, isPrivate, featuredUrl, hosts: [currentUser], speakers: [], listeners: [], messages: [] };
-        // In a real app, this would update a shared state
+        setRooms(prev => [...prev, newRoom]);
         handleEnterRoom(newRoom);
         setCreateRoomModalOpen(false);
+    };
+
+    const handleUpdateRoom = (updatedData: Partial<Room>) => {
+        if (!activeRoom) return;
+
+        const updatedRoom = { ...activeRoom, ...updatedData };
+        setActiveRoom(updatedRoom);
+
+        setRooms(prevRooms =>
+            prevRooms.map(r => r.id === activeRoom.id ? updatedRoom : r)
+        );
     };
 
     const handleSaveProfile = (name: string, bio: string) => {
@@ -173,20 +185,20 @@ const App: React.FC = () => {
     };
 
     const renderActiveView = () => {
-      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={allRooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={allDiscoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
       if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} />;
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={() => {}} />;
       if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={() => {}} />;
 
       switch (activeView) {
-        case 'home': return <TrendingView items={allDiscoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
+        case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
-        case 'scheduled': return <ScheduledView rooms={allRooms} discoverItems={allDiscoverItems} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={allRooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} allPosts={allDiscoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+        case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => setActiveView('home')} />;
         case 'my-studio': return <MyStudioView />;
-        default: return <HomeView rooms={allRooms} onEnterRoom={handleEnterRoom} />;
+        default: return <HomeView rooms={rooms} onEnterRoom={handleEnterRoom} />;
       }
     };
     
@@ -223,7 +235,7 @@ const App: React.FC = () => {
                 />
                 
                 <div className="flex flex-col flex-1 h-full">
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden" onScroll={(e) => setMainScrollTop(e.currentTarget.scrollTop)}>
                       <GlobalHeader
                           activeView={activeView}
                           curationTab={curationTab}
@@ -235,11 +247,12 @@ const App: React.FC = () => {
                           onNavigateToLive={() => {}}
                           hasActiveLiveRooms={true}
                           onSearchClick={() => setSearchModalOpen(true)}
-                          liveRooms={allRooms.filter(r => !r.isScheduled)}
+                          liveRooms={rooms.filter(r => !r.isScheduled)}
                           onEnterRoom={handleEnterRoom}
+                          scrollTop={mainScrollTop}
                       />
                       {activeRoom && !viewingProfile ? (
-                        <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={() => {}} onSendMessage={() => {}} onToggleReaction={() => {}} onViewProfile={handleViewProfile}/>
+                        <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile}/>
                       ) : (
                         renderActiveView()
                       )}
@@ -259,9 +272,9 @@ const App: React.FC = () => {
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
                 {isSearchModalOpen && <SearchViewModal
                     onClose={() => setSearchModalOpen(false)}
-                    allRooms={allRooms}
+                    allRooms={rooms}
                     allUsers={allUsers}
-                    discoverItems={allDiscoverItems}
+                    discoverItems={discoverItems}
                     currentUser={currentUser}
                     onEnterRoom={(room) => {
                         handleEnterRoom(room);

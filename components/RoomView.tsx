@@ -2,23 +2,21 @@ import React, { useState, useContext } from 'react';
 import { Room, User, ChatMessage, Poll as PollType } from '../types';
 import ChatView from './ChatView';
 import HostControls from './HostControls';
-import ListenerControls from './ListenerControls';
 import UserCardModal from './UserCardModal';
 import ConfirmationModal from './ConfirmationModal';
 import Poll from './Poll';
 import { UserContext } from '../context/UserContext';
 import FeaturedLink from './FeaturedLink';
 import AiAssistantPanel from './AiAssistantPanel';
-import { SparklesIcon } from './Icons';
+import { SparklesIcon, MicIcon } from './Icons';
 import InviteUsersModal from './InviteUsersModal';
 import CreatePollModal from './CreatePollModal';
+import DynamicInput from './DynamicInput';
 
 interface RoomViewProps {
   room: Room;
   onLeave: () => void;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
-  onSendMessage: (message: Omit<ChatMessage, 'id' | 'createdAt' | 'user'>) => void;
-  onToggleReaction: (messageId: string, emoji: string) => void;
   onViewProfile: (user: User) => void;
 }
 
@@ -36,7 +34,7 @@ const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: 
   </div>
 );
 
-const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onSendMessage, onToggleReaction, onViewProfile }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onViewProfile }) => {
   const { currentUser } = useContext(UserContext);
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ user: User, position: { top: number, left: number, width: number, height: number } } | null>(null);
@@ -46,6 +44,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onSend
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
   const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   const isHost = room.hosts.some(h => h.id === currentUser.id);
 
@@ -53,6 +52,45 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onSend
     const rect = ref.getBoundingClientRect();
     setSelectedUser({ user, position: { top: rect.bottom, left: rect.left, width: rect.width, height: rect.height } });
   };
+  
+  const handleSendMessage = (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
+      const newMessage: ChatMessage = {
+          id: `msg-${Date.now()}`,
+          createdAt: new Date(),
+          ...message
+      };
+      onUpdateRoom({ messages: [...room.messages, newMessage] });
+  };
+
+  const handleSendTextMessage = (text: string) => {
+      handleSendMessage({ user: currentUser, text });
+  };
+
+  const handleSendAudioNote = (url: string, duration: number) => {
+      handleSendMessage({ user: currentUser, voiceMemo: { url, duration } });
+  };
+
+  const handleSendVideoNote = (url: string, duration: number) => {
+      handleSendMessage({ user: currentUser, videoNote: { url, thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300`, duration } });
+  };
+  
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    const newMessages = room.messages.map(msg => {
+      if (msg.id === messageId) {
+        const reactions = { ...(msg.reactions || {}) };
+        const usersForEmoji = reactions[emoji] || [];
+        if (usersForEmoji.includes(currentUser.id)) {
+          reactions[emoji] = usersForEmoji.filter(id => id !== currentUser.id);
+        } else {
+          reactions[emoji] = [...usersForEmoji, currentUser.id];
+        }
+        return { ...msg, reactions };
+      }
+      return msg;
+    });
+    onUpdateRoom({ messages: newMessages });
+  };
+
 
   const handleVote = (optionIndex: number) => {
     if (!room.poll || !currentUser) return;
@@ -87,7 +125,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onSend
   };
   
   const handleToggleReactionWithAnimation = (messageId: string, emoji: string) => {
-      onToggleReaction(messageId, emoji);
+      handleToggleReaction(messageId, emoji);
       setAnimatedReaction({ messageId, emoji });
       setTimeout(() => setAnimatedReaction(null), 1000);
   }
@@ -137,7 +175,24 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onSend
                     onInviteClick={() => setInviteModalOpen(true)}
                 />
               ) : (
-                <ListenerControls />
+                 <div className="flex items-center space-x-4">
+                    <button 
+                        onClick={() => setIsMuted(!isMuted)}
+                        className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}
+                    >
+                        <MicIcon />
+                    </button>
+                    <div className="flex-1">
+                      <DynamicInput
+                          onSubmitMessage={handleSendTextMessage}
+                          onSubmitAudioNote={handleSendAudioNote}
+                          onSubmitVideoNote={handleSendVideoNote}
+                      />
+                    </div>
+                     <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+                        Raise Hand
+                    </button>
+                  </div>
               )}
             </footer>
         )}
