@@ -88,6 +88,28 @@ const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, currentUser,
     );
 };
 
+// --- Sub-component for Video Notes ---
+interface VideoNoteBubbleProps {
+    message: ChatMessage;
+}
+const VideoNoteBubble: React.FC<VideoNoteBubbleProps> = ({ message }) => {
+    return (
+        <div className="relative w-40 h-56 rounded-lg overflow-hidden cursor-pointer group">
+            <img src={message.videoNote?.thumbnailUrl} alt="Video note thumbnail" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                 <button className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white scale-100 group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            <span className="absolute bottom-1 right-2 text-xs text-white bg-black/50 px-1.5 py-0.5 rounded font-mono">
+                0:{message.videoNote?.duration.toString().padStart(2, '0')}
+            </span>
+        </div>
+    );
+};
+
 
 // --- Main Chat View Component ---
 
@@ -138,6 +160,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
                     onToggleReaction={(emoji) => onToggleReaction(msg.id, emoji)}
                 />
               )}
+               {msg.videoNote && <VideoNoteBubble message={msg} />}
             </div>
           </div>
         ))}

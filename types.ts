@@ -17,6 +17,11 @@ export interface ChatMessage {
     url: string;
     duration: number; // in seconds
   };
+  videoNote?: {
+    url: string;
+    thumbnailUrl: string;
+    duration: number; // in seconds
+  };
   reactions?: Record<string, string[]>; // emoji -> User IDs
 }
 

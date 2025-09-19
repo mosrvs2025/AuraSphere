@@ -62,6 +62,26 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         setMessages(prev => [...prev, newMessage]);
     };
     
+    const handleSendAudioNote = () => {
+        const newMessage: ChatMessage = {
+            id: `m-${Date.now()}`,
+            user: currentUser,
+            createdAt: new Date(),
+            voiceMemo: { url: '#', duration: 30 }
+        };
+        setMessages(prev => [...prev, newMessage]);
+    };
+    
+    const handleSendVideoNote = () => {
+         const newMessage: ChatMessage = {
+            id: `m-${Date.now()}`,
+            user: currentUser,
+            createdAt: new Date(),
+            videoNote: { url: '#', thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300`, duration: 30 }
+        };
+        setMessages(prev => [...prev, newMessage]);
+    };
+    
     // Host Control Handlers
     const handleSuggestIcebreakers = async () => {
         setIsLoadingIcebreakers(true);
@@ -204,14 +224,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                 <div className="flex items-center space-x-4">
                     <DynamicInput 
                         onSubmitMessage={handleSendTextMessage}
-                        onStartAudioRecording={() => console.log('Start audio recording...')}
-                        onStartVideoRecording={() => console.log('Start video recording...')}
+                        onSubmitAudioNote={handleSendAudioNote}
+                        onSubmitVideoNote={handleSendVideoNote}
                     />
                     <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex-shrink-0">
                         Raise Hand
-                    </button>
-                    <button onClick={() => setIsMuted(!isMuted)} className={`p-3 rounded-full transition flex-shrink-0 ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}>
-                        <MicIcon />
                     </button>
                 </div>
             )}

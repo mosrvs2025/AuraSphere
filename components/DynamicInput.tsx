@@ -1,18 +1,53 @@
-import React, { useState, useRef } from 'react';
-import { MicIcon, SendIcon, VideoCameraIcon } from './Icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { MicIcon, SendIcon, VideoCameraIcon, StopIcon } from './Icons';
+import VideoRecorderModal from './VideoRecorderModal';
 
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;
-    onStartAudioRecording: () => void;
-    onStartVideoRecording: () => void;
+    onSubmitAudioNote: () => void;
+    onSubmitVideoNote: () => void;
 }
 
-const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onStartAudioRecording, onStartVideoRecording }) => {
+const RECORDING_DURATION = 30;
+
+const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAudioNote, onSubmitVideoNote }) => {
     const [text, setText] = useState('');
     const [actionMode, setActionMode] = useState<'audio' | 'video'>('audio');
     const [isModeSelectorOpen, setModeSelectorOpen] = useState(false);
     
+    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording'>('idle');
+    const [countdown, setCountdown] = useState(RECORDING_DURATION);
+    const [isVideoRecorderOpen, setVideoRecorderOpen] = useState(false);
+
     const pressTimer = useRef<number | null>(null);
+    const countdownInterval = useRef<number | null>(null);
+
+    // Countdown Timer Logic
+    useEffect(() => {
+        if (recordingStatus === 'recording') {
+            countdownInterval.current = window.setInterval(() => {
+                setCountdown(prev => prev - 1);
+            }, 1000);
+        } else {
+            if (countdownInterval.current) {
+                clearInterval(countdownInterval.current);
+            }
+            setCountdown(RECORDING_DURATION);
+        }
+
+        return () => {
+            if (countdownInterval.current) {
+                clearInterval(countdownInterval.current);
+            }
+        };
+    }, [recordingStatus]);
+
+    // Effect to stop recording when countdown finishes
+    useEffect(() => {
+        if (countdown <= 0) {
+            stopAudioRecording(true); // Auto-send when timer finishes
+        }
+    }, [countdown]);
 
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,17 +56,36 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onStartAud
             setText('');
         }
     };
+    
+    const startAudioRecording = () => {
+        console.log('Start audio recording...');
+        setRecordingStatus('recording');
+    };
 
+    const stopAudioRecording = (autoSend: boolean = false) => {
+        console.log('Stop audio recording...');
+        setRecordingStatus('idle');
+        if (autoSend) {
+             onSubmitAudioNote();
+        }
+    };
+    
     const handleActionClick = () => {
+        if (recordingStatus === 'recording') {
+            stopAudioRecording(true); // Send on tap stop
+            return;
+        }
+
         if (actionMode === 'audio') {
-            onStartAudioRecording();
+            startAudioRecording();
         } else {
-            onStartVideoRecording();
+            setVideoRecorderOpen(true);
         }
         setModeSelectorOpen(false);
     };
 
     const handlePressStart = () => {
+        if(recordingStatus !== 'idle') return;
         pressTimer.current = window.setTimeout(() => {
             setModeSelectorOpen(true);
         }, 500); // 500ms long press
@@ -57,6 +111,18 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onStartAud
                 </button>
             );
         }
+
+        if (recordingStatus === 'recording') {
+            return (
+                <div className="flex items-center">
+                    <span className="text-red-400 font-mono text-sm px-2">0:{countdown.toString().padStart(2, '0')}</span>
+                    <button type="button" onClick={() => stopAudioRecording(true)} className="p-3 text-red-400 hover:text-red-300" aria-label="Stop recording">
+                        <StopIcon />
+                    </button>
+                </div>
+            );
+        }
+
 
         return (
             <div className="relative">
@@ -96,16 +162,28 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onStartAud
     };
 
     return (
-        <form onSubmit={handleFormSubmit} className="flex-1 flex items-center bg-gray-800 rounded-full relative">
-            <input
-                type="text"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Send a message..."
-                className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none"
-            />
-            {renderActionButton()}
-        </form>
+        <>
+            <form onSubmit={handleFormSubmit} className="flex-1 flex items-center bg-gray-800 rounded-full relative">
+                <input
+                    type="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={recordingStatus === 'recording' ? 'Recording audio...' : 'Send a message...'}
+                    disabled={recordingStatus === 'recording'}
+                    className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none disabled:text-gray-500"
+                />
+                {renderActionButton()}
+            </form>
+            {isVideoRecorderOpen && (
+                <VideoRecorderModal 
+                    onClose={() => setVideoRecorderOpen(false)}
+                    onSend={() => {
+                        onSubmitVideoNote();
+                        setVideoRecorderOpen(false);
+                    }}
+                />
+            )}
+        </>
     );
 };
 
