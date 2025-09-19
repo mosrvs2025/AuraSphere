@@ -240,8 +240,15 @@ const App: React.FC = () => {
         setInitialHomeFilter(null); // Reset deep link filter on any view change
         setPreviousView(activeView);
         setActiveView(view);
-        // Reset specific views when navigating away
-        setActiveProfile(null);
+
+        // Special handling for the main profile tab navigation
+        if (view === 'profile') {
+            setActiveProfile(currentUser);
+        } else {
+            // Reset specific detail views when navigating away
+            setActiveProfile(null);
+        }
+        
         setActiveConversation(null);
         setActivePost(null);
     };
@@ -501,16 +508,19 @@ const App: React.FC = () => {
             case 'scheduled':
                 return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
             case 'profile':
-                if (activeProfile) return <UserProfile 
-                                            user={activeProfile} 
-                                            allRooms={rooms} 
-                                            onEditProfile={() => setEditProfileModalOpen(true)}
-                                            onBack={handleBackNavigation}
-                                            allPosts={publishedDiscoverItems}
-                                            onViewMedia={handleViewMedia}
-                                            onViewPost={handleViewPost}
-                                        />;
-                return <p>Profile not found</p>;
+                // FIX: If a specific profile is active (from clicking a user), show it.
+                // Otherwise, show the current user's profile (from clicking the nav tab). This
+                // resolves the "Profile not found" bug.
+                const profileUser = activeProfile || currentUser;
+                return <UserProfile 
+                            user={profileUser} 
+                            allRooms={rooms} 
+                            onEditProfile={() => setEditProfileModalOpen(true)}
+                            onBack={handleBackNavigation}
+                            allPosts={publishedDiscoverItems}
+                            onViewMedia={handleViewMedia}
+                            onViewPost={handleViewPost}
+                        />;
             case 'notifications':
                 return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} onBack={handleBackNavigation} />;
             case 'my-studio':

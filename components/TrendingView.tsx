@@ -54,7 +54,8 @@ const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) 
                                 <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-xs font-bold uppercase px-1.5 py-0.5 rounded-md border-2 border-gray-900">
                                     Live
                                 </div>
-                                <div className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-offset-gray-900 ring-red-500 animate-pulse"></div>
+                                {/* FIX: Replaced the misaligned ring with a perfectly concentric, glowing animation that sits flush against the avatar. */}
+                                <div className="absolute inset-0 rounded-full animate-pulse-live pointer-events-none"></div>
                             </div>
                             <p className="text-xs text-white font-semibold truncate w-full">{host.name}</p>
                         </button>
