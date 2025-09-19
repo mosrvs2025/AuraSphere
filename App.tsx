@@ -218,7 +218,7 @@ const App: React.FC = () => {
             case 'my-studio':
                 return <MyStudioView />;
             case 'conversation':
-                return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+                return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} onViewProfile={handleViewProfile} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
             default:
                 return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
         }

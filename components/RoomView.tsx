@@ -111,12 +111,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         setMessages(prev => [...prev, newMessage]);
     };
     
-    const handleSendAudioNote = (duration: number) => {
+    const handleSendAudioNote = (url: string, duration: number) => {
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,
             user: currentUser,
             createdAt: new Date(),
-            voiceMemo: { url: '#', duration: Math.round(duration) }
+            voiceMemo: { url, duration: Math.round(duration) }
         };
         setMessages(prev => [...prev, newMessage]);
     };
@@ -237,51 +237,3 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                                 <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
                             </form>
                         )}
-                        <button onClick={() => setIsAiPanelOpen(prev => !prev)} className={`font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2 ${isAiPanelOpen ? 'bg-indigo-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>
-                           <SparklesIcon className="h-5 w-5" />
-                           <span>AI Assistant</span>
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                // Listener Controls
-                <div className="flex items-center space-x-4">
-                    <DynamicInput 
-                        onSubmitMessage={handleSendTextMessage}
-                        onSubmitAudioNote={handleSendAudioNote}
-                        onSubmitVideoNote={handleSendVideoNote}
-                    />
-                    <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex-shrink-0">
-                        Raise Hand
-                    </button>
-                </div>
-            )}
-          </footer>
-            {isHost && isAiPanelOpen && (
-                <AiAssistantPanel 
-                    room={currentRoom}
-                    messages={messages}
-                    onClose={() => setIsAiPanelOpen(false)}
-                />
-            )}
-        </div>
-
-        {/* Chat Sidebar (Desktop only) */}
-        <div className="hidden md:flex md:flex-col w-80 lg:w-96 border-l border-gray-800 flex-shrink-0 h-full">
-          <ChatView 
-            messages={messages} 
-            currentUser={currentUser}
-            onToggleReaction={handleToggleReaction}
-            nowPlayingAudioNoteId={nowPlayingAudioNoteId}
-            onPlayAudioNote={setNowPlayingAudioNoteId}
-            isCollapsed={false}
-            onToggleCollapse={() => {}}
-            animatedReaction={animatedReaction}
-          />
-        </div>
-      </div>
-    </RoomActionsContext.Provider>
-    );
-};
-
-export default RoomView;
