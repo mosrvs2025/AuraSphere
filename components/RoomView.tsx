@@ -112,7 +112,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare,
         </div>
         
         <footer className="sticky bottom-0 p-4 bg-gray-900/70 backdrop-blur-sm">
-          {isHost ? <HostControls onUpdateRoom={onUpdateRoom} /> : <ListenerControls onSendMessage={handleSendMessage} />}
+          {isHost ? <HostControls onUpdateRoom={onUpdateRoom} onSendMessage={handleSendMessage} /> : <ListenerControls onSendMessage={handleSendMessage} />}
         </footer>
       </div>
     </RoomActionsContext.Provider>

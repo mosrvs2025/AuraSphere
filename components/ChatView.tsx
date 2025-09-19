@@ -76,8 +76,8 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, isHost, onPl
   }, [messages]);
 
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Live Chat</h3>
+    <section aria-labelledby="live-chat-heading">
+      <h3 id="live-chat-heading" className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Live Chat</h3>
       <div className="h-64 bg-gray-900/50 rounded-lg p-4 flex flex-col space-y-4 overflow-y-auto">
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
@@ -97,7 +97,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, isHost, onPl
         ))}
         <div ref={chatEndRef} />
       </div>
-    </div>
+    </section>
   );
 };
 

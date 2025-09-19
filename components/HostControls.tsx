@@ -5,13 +5,15 @@ import { Room } from '../types';
 
 interface HostControlsProps {
   onUpdateRoom: (updatedData: Partial<Room>) => void;
+  onSendMessage: (message: { text: string }) => void;
 }
 
-const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom }) => {
+const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom, onSendMessage }) => {
   const [topic, setTopic] = useState("technology");
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const [text, setText] = useState('');
   const { isSharingScreen, onToggleScreenShare } = useContext(RoomActionsContext);
 
   const handleSuggestIcebreakers = async () => {
@@ -27,6 +29,14 @@ const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom }) => {
     if (videoUrl.trim()) {
       onUpdateRoom({ videoUrl });
       setVideoUrl('');
+    }
+  };
+  
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (text.trim()) {
+      onSendMessage({ text: text.trim() });
+      setText('');
     }
   };
 
@@ -56,6 +66,11 @@ const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom }) => {
           {isLoading ? '...' : '✨ Suggest'}
         </button>
       </div>
+      
+       <form onSubmit={handleTextSubmit} className="flex items-center bg-gray-800 rounded-full">
+          <input type="text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Send a message..." className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none" />
+          <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300" aria-label="Send message"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg></button>
+        </form>
 
       {icebreakers.length > 0 && (
           <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
