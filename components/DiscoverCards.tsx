@@ -20,7 +20,7 @@ const UserProfileCard: React.FC<{ user: User; onViewProfile: (user: User) => voi
 );
 
 const LiveRoomCard: React.FC<{ room: Room; onEnterRoom: (room: Room) => void }> = ({ room, onEnterRoom }) => (
-    <div className="bg-gray-800/50 p-4 rounded-lg">
+    <div onClick={() => onEnterRoom(room)} className="bg-gray-800/50 p-4 rounded-lg cursor-pointer hover:bg-gray-700/70 transition-colors">
         <h3 className="font-bold text-white text-lg">{room.title}</h3>
         <div className="flex items-center space-x-2 mt-2">
             <div className="flex -space-x-2">
@@ -36,7 +36,7 @@ const LiveRoomCard: React.FC<{ room: Room; onEnterRoom: (room: Room) => void }> 
             </svg>
             {room.listeners.length + room.speakers.length + room.hosts.length} listeners
         </div>
-        <button onClick={() => onEnterRoom(room)} className="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-sm">Join Room</button>
+        <div className="mt-4 w-full bg-indigo-600 group-hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-sm text-center transition-colors">Join Room</div>
     </div>
 );
 

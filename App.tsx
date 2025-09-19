@@ -185,6 +185,13 @@ const App: React.FC = () => {
         setSearchModalOpen(false); // Close search modal if open
     };
     
+    const handleSearchClick = () => {
+        if (activeView !== 'home') {
+            setActiveView('home');
+        }
+        setSearchModalOpen(true);
+    };
+
     useEffect(() => {
         if (activeView !== 'profile') {
             setProfileToShow(null);
@@ -229,7 +236,7 @@ const App: React.FC = () => {
                     unreadNotificationCount={notifications.filter(n => !n.isRead).length}
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchModalOpen(true)} />
+                    <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={handleSearchClick} />
                     <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' ? 'pb-20' : ''}`}>
                         {renderActiveView()}
                     </main>
