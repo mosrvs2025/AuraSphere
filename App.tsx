@@ -3,7 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { UserContext } from './context/UserContext';
 import { RoomActionsContext } from './context/RoomActionsContext';
-import { User, Room, Notification, Conversation } from './types';
+// FIX: Imported ActiveView from types.ts to resolve type conflict.
+import { User, Room, Notification, Conversation, ActiveView } from './types';
 import { MOCK_ROOMS, MOCK_USER_LISTENER, MOCK_NOTIFICATIONS, MOCK_CONVERSATIONS } from './constants';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
@@ -19,8 +20,6 @@ import EditProfileModal from './components/EditProfileModal';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import { MenuIcon } from './components/Icons';
 
-
-type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User>(MOCK_USER_LISTENER);
@@ -147,7 +146,7 @@ const App: React.FC = () => {
 
   return (
     <UserContext.Provider value={{ currentUser, updateUserAvatar }}>
-      <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
+      <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare: handleToggleScreenShare }}>
         <div className="bg-gray-900 text-white min-h-screen flex">
           <Sidebar
             activeView={activeView}

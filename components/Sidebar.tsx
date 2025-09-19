@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 import { HomeIcon, TrendingIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon, StudioIcon } from './Icons';
-
-type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio';
+// FIX: Imported ActiveView from types.ts to resolve type conflict.
+import { ActiveView } from '../types';
 
 interface SidebarProps {
   activeView: ActiveView;
