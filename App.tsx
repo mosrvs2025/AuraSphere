@@ -120,9 +120,9 @@ const App: React.FC = () => {
     const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>([
         { type: 'live_room', ...rooms[0] },
         { type: 'user_profile', ...users[10] },
-        { type: 'text_post', id: 'tp1', author: users[11], content: 'Just had a great discussion about Web3. The potential is massive! It feels like we are on the cusp of a new internet, but there are still so many challenges to overcome, from scalability to user experience. What are your thoughts?', likes: 12, comments: 4, createdAt: new Date(Date.now() - 3600000 * 2) },
-        { type: 'image_post', id: 'ip1', author: users[12], imageUrl: 'https://picsum.photos/seed/123/600/400', caption: 'Working on a new side project. The view from the office is not bad!', likes: 45, comments: 8, createdAt: new Date(Date.now() - 3600000 * 5) },
-        { type: 'video_post', id: 'vp1', author: users[13], videoUrl: '#', thumbnailUrl: 'https://picsum.photos/seed/124/600/400', caption: 'A quick tour of the new workspace setup.', likes: 30, comments: 6, createdAt: new Date(Date.now() - 3600000 * 8) }
+        { type: 'text_post', id: 'tp1', author: users[11], content: 'Just had a great discussion about Web3. The potential is massive! It feels like we are on the cusp of a new internet, but there are still so many challenges to overcome, from scalability to user experience. What are your thoughts?', likes: 12, comments: 4, createdAt: new Date(Date.now() - 3600000 * 2), status: 'published' },
+        { type: 'image_post', id: 'ip1', author: users[12], imageUrl: 'https://picsum.photos/seed/123/600/400', caption: 'Working on a new side project. The view from the office is not bad!', likes: 45, comments: 8, createdAt: new Date(Date.now() - 3600000 * 5), status: 'published' },
+        { type: 'video_post', id: 'vp1', author: users[13], videoUrl: '#', thumbnailUrl: 'https://picsum.photos/seed/124/600/400', caption: 'A quick tour of the new workspace setup.', likes: 30, comments: 6, createdAt: new Date(Date.now() - 3600000 * 8), status: 'published' }
     ]);
 
     const [activeView, setActiveView] = useState<ActiveView>('home');
@@ -271,7 +271,7 @@ const App: React.FC = () => {
         setPendingFileType(null);
     };
 
-    const handlePublishPost = (data: { caption?: string; content?: string }) => {
+    const handlePublishPost = (data: { caption?: string; content?: string }, scheduleDate?: Date) => {
         if (!activeCreationFlow) return;
 
         const newPost: DiscoverItem | null = (() => {
@@ -281,7 +281,9 @@ const App: React.FC = () => {
                 likes: 0,
                 comments: 0,
                 createdAt: new Date(),
-            };
+                status: scheduleDate ? 'scheduled' : 'published',
+                scheduledTime: scheduleDate,
+            } as const;
 
             switch (activeCreationFlow.type) {
                 case 'image':
@@ -314,7 +316,7 @@ const App: React.FC = () => {
         }
         
         handleCancelCreation();
-        setActiveView('home');
+        setActiveView(scheduleDate ? 'scheduled' : 'home');
     };
 
 
@@ -331,8 +333,15 @@ const App: React.FC = () => {
     }, [activeView]);
 
     const renderActiveView = () => {
+        const publishedDiscoverItems = discoverItems.filter(item => {
+            if ('status' in item && item.type !== 'user_profile' && item.type !== 'live_room') {
+                return item.status === 'published';
+            }
+            return true;
+        });
+
         const trendingViewProps = {
-            items: discoverItems,
+            items: publishedDiscoverItems,
             onEnterRoom: handleEnterRoom,
             onViewProfile: handleViewProfile,
             onViewMedia: handleViewMedia,
@@ -346,7 +355,7 @@ const App: React.FC = () => {
             case 'messages':
                 return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
             case 'scheduled':
-                return <ScheduledView rooms={rooms} />;
+                return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
             case 'profile':
                 return <UserProfile user={profileToShow || currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} />;
             case 'notifications':
@@ -408,7 +417,7 @@ const App: React.FC = () => {
                        {isSearching ? (
                             <GlobalSearchView
                                 query={searchQuery}
-                                activeView={activeView}
+                                activeView={activeView as 'home' | 'messages'}
                                 discoverItems={discoverItems}
                                 conversations={conversations}
                                 currentUser={currentUser}

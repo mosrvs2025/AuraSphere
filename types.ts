@@ -90,6 +90,8 @@ export type DiscoverItem =
       likes: number;
       comments: number;
       createdAt: Date;
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
     })
   | ({
       type: 'image_post';
@@ -100,6 +102,8 @@ export type DiscoverItem =
       likes: number;
       comments: number;
       createdAt: Date;
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
     })
   | ({
       type: 'video_post';
@@ -111,4 +115,6 @@ export type DiscoverItem =
       likes: number;
       comments: number;
       createdAt: Date;
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
     });
