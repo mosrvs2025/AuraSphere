@@ -164,7 +164,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                             </span>
-                            Recording...
+                            Recording audio...
                             <span className="font-mono ml-2 text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
                         </div>
                         <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording">
