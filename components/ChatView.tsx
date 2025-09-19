@@ -1,4 +1,5 @@
 
+
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, User } from '../types';
@@ -135,7 +136,8 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
       </header>
       <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] md:max-h-full opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => {
-          const totalReactions = Object.values(msg.reactions || {}).reduce((sum, users) => sum + users.length, 0);
+          // Fix: Add type assertion for users to resolve 'unknown' type error.
+          const totalReactions = Object.values(msg.reactions || {}).reduce((sum, users) => sum + (users as string[]).length, 0);
           return (
             <div key={msg.id} className="flex items-start space-x-3">
               <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
@@ -161,12 +163,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
                     {totalReactions > 0 && (
                         <div className="absolute -bottom-4 left-2 flex items-center space-x-1.5 bg-gray-900 px-1.5 py-0.5 rounded-full text-xs z-10">
                             {Object.entries(msg.reactions || {}).map(([emoji, users]) => 
-                                users.length > 0 ? (
+                                // Fix: Add type assertion for users to resolve 'unknown' type error.
+                                (users as string[]).length > 0 ? (
                                     <span 
                                         key={emoji}
                                         className={`${animatedReaction?.messageId === msg.id && animatedReaction?.emoji === emoji ? 'animate-reaction' : ''}`}
                                     >
-                                        {emoji} <span className="text-gray-400">{users.length}</span>
+                                        {/* Fix: Add type assertion for users to resolve 'unknown' type error. */}
+                                        {emoji} <span className="text-gray-400">{(users as string[]).length}</span>
                                     </span>
                                 ) : null
                             )}

@@ -1,11 +1,12 @@
-// Defined core application types to resolve type errors across the project.
+// types.ts
+
 export interface User {
   id: string;
   name: string;
   avatarUrl: string;
   bio?: string;
-  followers?: User[];
-  following?: User[];
+  followers: User[];
+  following: User[];
 }
 
 export interface ChatMessage {
@@ -13,31 +14,32 @@ export interface ChatMessage {
   user: User;
   text?: string;
   createdAt: Date;
+  reactions?: { [emoji: string]: string[] }; // user ids for each emoji
   voiceMemo?: {
     url: string;
-    duration: number; // in seconds
+    duration: number;
   };
   videoNote?: {
-    url:string;
+    url: string;
     thumbnailUrl: string;
-    duration: number; // in seconds
+    duration: number;
   };
-  reactions?: Record<string, string[]>; // emoji -> User IDs
 }
 
 export interface PollOption {
   text: string;
-  votes: string[]; // Array of user IDs
+  votes: string[]; // user ids
 }
 
 export interface Poll {
+  id: string;
   question: string;
   options: PollOption[];
   isActive: boolean;
 }
 
 export interface Room {
-  id:string;
+  id: string;
   title: string;
   description?: string;
   hosts: User[];
@@ -45,79 +47,77 @@ export interface Room {
   listeners: User[];
   messages: ChatMessage[];
   isPrivate: boolean;
-  videoUrl?: string;
+  poll?: Poll;
   isSharingScreen?: boolean;
+  videoUrl?: string;
+  featuredUrl?: string;
   isScheduled?: boolean;
   scheduledTime?: Date;
-  featuredUrl?: string;
-  poll?: Poll;
-  createdAt?: Date;
   invitedUserIds?: string[];
 }
 
-export interface Conversation {
+// For the discover/trending feed
+export type DiscoverItem = (Room & { type: 'live_room' }) |
+  (User & { type: 'user_profile' }) |
+  {
+    type: 'text_post';
     id: string;
-    participants: User[];
-    messages: ChatMessage[];
+    author: User;
+    content: string;
+    createdAt: Date;
+    likes: number;
+    comments: number;
+    status: 'published' | 'scheduled';
+    scheduledTime?: Date;
+  } |
+  {
+    type: 'image_post';
+    id: string;
+    author: User;
+    imageUrl: string;
+    caption?: string;
+    createdAt: Date;
+    likes: number;
+    comments: number;
+    status: 'published' | 'scheduled';
+    scheduledTime?: Date;
+  } |
+  {
+    type: 'video_post';
+    id: string;
+    author: User;
+    videoUrl: string;
+    thumbnailUrl: string;
+    caption?: string;
+    createdAt: Date;
+    likes: number;
+    comments: number;
+    status: 'published' | 'scheduled';
+    scheduledTime?: Date;
+  };
+
+
+export interface Conversation {
+  id: string;
+  participants: User[];
+  messages: ChatMessage[];
 }
 
 export interface Notification {
-    id: string;
-    text: string;
-    createdAt: Date;
-    isRead: boolean;
-    type: 'follow' | 'room_invite' | 'room_start';
-    relatedUser?: User;
-    relatedRoomId?: string;
+  id: string;
+  text: string;
+  createdAt: Date;
+  isRead: boolean;
+  link?: string; // e.g., to a room, profile, or post
 }
+
+export type ActiveView = 'home' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio';
+
+export type CurationTab = 'forYou' | 'following';
 
 export interface ModalPosition {
     top: number;
     left: number;
     width: number;
+    height: number;
 }
-
-// FIX: Centralized the ActiveView type to be used across the application, resolving type inconsistencies.
-export type ActiveView = 'home' | 'room' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation' | 'post_detail';
-
-
-// New type for the Discover feed
-export type DiscoverItem =
-  | ({ type: 'live_room' } & Room)
-  | ({ type: 'user_profile' } & User)
-  | ({
-      type: 'text_post';
-      id: string;
-      author: User;
-      content: string;
-      likes: number;
-      comments: number;
-      createdAt: Date;
-      status?: 'published' | 'scheduled';
-      scheduledTime?: Date;
-    })
-  | ({
-      type: 'image_post';
-      id: string;
-      author: User;
-      imageUrl: string;
-      caption?: string;
-      likes: number;
-      comments: number;
-      createdAt: Date;
-      status?: 'published' | 'scheduled';
-      scheduledTime?: Date;
-    })
-  | ({
-      type: 'video_post';
-      id:string;
-      author: User;
-      videoUrl: string;
-      thumbnailUrl: string;
-      caption?: string;
-      likes: number;
-      comments: number;
-      createdAt: Date;
-      status?: 'published' | 'scheduled';
-      scheduledTime?: Date;
-    });
