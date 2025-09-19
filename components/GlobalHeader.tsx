@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActiveView, Room } from '../types';
+import { ActiveView, Room, User } from '../types';
 import { SearchIcon, BellIcon } from './Icons';
 
 interface GlobalHeaderProps {
@@ -19,7 +19,6 @@ interface GlobalHeaderProps {
 }
 
 const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
-const HEADER_SCROLL_DISTANCE = 112; // Height of the live rail section
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
     const uniqueHostsInRooms = new Map<string, Room>();
@@ -76,23 +75,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     scrollTop,
 }) => {
   const isHome = activeView === 'home';
-  let title = '';
-
-  const scrollProgress = Math.min(1, scrollTop / HEADER_SCROLL_DISTANCE);
   const isScrolled = scrollTop > 10;
   
-  const uniqueHostsForCollapsedView = React.useMemo(() => {
-    const uniqueHostsInRooms = new Map<string, Room>();
-    liveRooms.forEach(room => {
-        room.hosts.forEach(host => {
-            if (!uniqueHostsInRooms.has(host.id)) {
-                uniqueHostsInRooms.set(host.id, room);
-            }
-        });
-    });
-    return Array.from(uniqueHostsInRooms.entries()).slice(0, 4).map(([hostId, room]) => room.hosts.find(h => h.id === hostId)).filter(Boolean) as Room['hosts'];
-  }, [liveRooms]);
-
+  let title = '';
 
   if (isHome) {
     if (activeFilter === 'All') {
@@ -121,104 +106,98 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
         break;
     }
   }
+
+  const TitleBarContent = (
+      <div className="flex justify-between items-center">
+          <div className="flex-1 flex justify-start">
+              {/* Placeholder for balance */}
+          </div>
+          <div className="flex items-center gap-4 min-w-0">
+              <h1 className="font-bold text-center truncate text-3xl">{title}</h1>
+          </div>
+          <div className="flex-1 flex justify-end items-center space-x-2">
+              <button 
+                  onClick={onSearchClick}
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Search"
+              >
+                  <SearchIcon className="h-6 w-6" />
+              </button>
+              <button
+              onClick={onNavigateToNotifications}
+              className="relative p-2 text-gray-400 hover:text-white transition-colors"
+              aria-label="View notifications"
+              >
+                  <BellIcon className="h-7 w-7" />
+                  {unreadNotificationCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
+                  )}
+              </button>
+          </div>
+      </div>
+  );
+
+  if (!isHome) {
+      // Non-home pages have a simple, fully sticky header
+      return (
+          <header className={`sticky top-0 z-20 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 transition-shadow ${isScrolled ? 'shadow-lg shadow-black/20' : ''}`}>
+               <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+                  {TitleBarContent}
+               </div>
+          </header>
+      );
+  }
   
   return (
-    <header className="sticky top-0 z-20 bg-gray-900/80 backdrop-blur-sm">
-        {/* Top Section: Title, Search, Bell. Always visible. */}
-        <div className={`transition-shadow ${isScrolled && isHome ? 'shadow-lg shadow-black/20' : ''}`}>
-            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:pt-6">
-              <div className="flex justify-between items-center">
-                  <div className="flex-1 flex justify-start">
-                      {/* Placeholder for balance */}
-                  </div>
-                  <div className="flex items-center gap-4 min-w-0">
-                      <h1 className="font-bold text-center truncate text-3xl">{title}</h1>
-                      {isHome && uniqueHostsForCollapsedView.length > 0 && (
-                        <div className="flex items-center -space-x-3" style={{ opacity: scrollProgress, transition: 'opacity 0.3s ease-in-out' }}>
-                            {uniqueHostsForCollapsedView.map(host => (
-                                <img key={host.id} src={host.avatarUrl} alt={host.name} className="w-9 h-9 rounded-full border-2 border-gray-900" />
-                            ))}
-                        </div>
-                      )}
-                  </div>
-                  <div className="flex-1 flex justify-end items-center space-x-2">
-                      <button 
-                          onClick={onSearchClick}
-                          className="p-2 text-gray-400 hover:text-white transition-colors"
-                          aria-label="Search"
-                      >
-                          <SearchIcon className="h-6 w-6" />
-                      </button>
-                      <button
-                      onClick={onNavigateToNotifications}
-                      className="relative p-2 text-gray-400 hover:text-white transition-colors"
-                      aria-label="View notifications"
-                      >
-                          <BellIcon className="h-7 w-7" />
-                          {unreadNotificationCount > 0 && (
-                              <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
-                          )}
-                      </button>
-                  </div>
-              </div>
-            </div>
+    <header className="bg-gray-900 z-20">
+        {/* Top Section: Title, Search, Bell. Will scroll away */}
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:pt-6">
+          {TitleBarContent}
         </div>
 
-        {/* Collapsible Section: Live Rail */}
-        {isHome && (
-            <div style={{
-                height: `${HEADER_SCROLL_DISTANCE * (1 - scrollProgress)}px`,
-                opacity: 1 - scrollProgress,
-                transition: 'height 0.3s ease-in-out, opacity 0.2s ease-in-out',
-                overflow: 'hidden',
-                pointerEvents: scrollProgress > 0.5 ? 'none' : 'auto',
-              }}>
-                <div className="max-w-6xl mx-auto px-4 md:px-6">
-                    <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-                </div>
-            </div>
-        )}
+        {/* Live Rail Section. Will scroll away */}
+        <div className="max-w-6xl mx-auto px-4 md:px-6">
+            <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+        </div>
       
-        {/* Section 2: This part sticks to the top on scroll (Home view only) */}
-        {isHome && (
-            <div className="border-y border-gray-800/50">
-                <div className="max-w-6xl mx-auto px-4 md:px-6">
-                    {/* Primary Curation Tabs */}
-                    <div className="flex justify-center border-b border-gray-800">
+        {/* Sticky Nav Section */}
+        <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${isScrolled ? 'shadow-lg shadow-black/20' : ''}`}>
+            <div className="max-w-6xl mx-auto px-4 md:px-6">
+                {/* Primary Curation Tabs */}
+                <div className="flex justify-center border-b border-gray-800">
+                <button
+                    onClick={() => setCurationTab('forYou')}
+                    className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    For You
+                </button>
+                <button
+                    onClick={() => setCurationTab('following')}
+                    className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                    Following
+                </button>
+                </div>
+                {/* Secondary Content-Type Filters */}
+                <div className="mt-4 pb-2">
+                <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                    {contentFilters.map(filter => (
                     <button
-                        onClick={() => setCurationTab('forYou')}
-                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
+                            activeFilter === filter
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                        }`}
                     >
-                        For You
+                        {filter}
                     </button>
-                    <button
-                        onClick={() => setCurationTab('following')}
-                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                        Following
-                    </button>
-                    </div>
-                    {/* Secondary Content-Type Filters */}
-                    <div className="mt-4 pb-2">
-                    <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                        {contentFilters.map(filter => (
-                        <button
-                            key={filter}
-                            onClick={() => setActiveFilter(filter)}
-                            className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                                activeFilter === filter
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                            }`}
-                        >
-                            {filter}
-                        </button>
-                        ))}
-                    </div>
-                    </div>
+                    ))}
+                </div>
                 </div>
             </div>
-        )}
+        </div>
     </header>
   );
 };
