@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded
   ];
 
   return (
-    <aside className={`hidden h-full bg-gray-900 border-r border-gray-800 md:flex flex-col transition-all duration-300 ease-in-out z-40 
+    <aside className={`hidden h-full bg-gray-900 border-r border-gray-800 lg:flex flex-col transition-all duration-300 ease-in-out z-40 
       ${isExpanded ? 'w-64' : 'w-20'}`}>
       
       <div className={`p-4 border-b border-gray-800 flex items-center ${isExpanded ? 'justify-start' : 'justify-center'}`}>
