@@ -1,19 +1,25 @@
-
 import React, { useState, useMemo } from 'react';
-import { Room, User } from './types';
+import { Room, User, UserRole } from './types';
 import { MOCK_ROOMS, MOCK_USER_HOST, MOCK_USER_LISTENER, users as MOCK_USERS } from './constants';
-import RoomCard from './components/RoomCard';
 import RoomView from './components/RoomView';
 import { UserContext } from './context/UserContext';
+import Sidebar from './components/Sidebar';
+import HomeView from './components/HomeView';
+import { TrendingView, MessagesView, ScheduledView, ProfileView, NotificationsView } from './components/PlaceholderViews';
+import { MenuIcon } from './components/Icons';
 
 // Create a unified list of users for state management, ensuring no duplicates
 const allMockUsers = [...new Map(MOCK_USERS.map(item => [item.id, item])).values()];
 
+type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications';
+
 const App: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-  const [isHostView, setIsHostView] = useState(true); 
+  const [isHostView, setIsHostView] = useState(true);
   const [users, setUsers] = useState<User[]>(allMockUsers);
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
+  const [activeView, setActiveView] = useState<ActiveView>('home');
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const currentUser = useMemo(() => {
     const currentUserId = isHostView ? MOCK_USER_HOST.id : MOCK_USER_LISTENER.id;
@@ -23,12 +29,10 @@ const App: React.FC = () => {
   const updateUserAvatar = (newAvatarUrl: string, isGenerated: boolean = false) => {
     const userId = currentUser.id;
     
-    // Update the main users list
     setUsers(currentUsers => currentUsers.map(user => 
       user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user
     ));
 
-    // Update the user within any rooms
     const updatedRooms = rooms.map(room => ({
       ...room,
       hosts: room.hosts.map(user => user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user),
@@ -37,7 +41,6 @@ const App: React.FC = () => {
     }));
     setRooms(updatedRooms);
     
-    // Also update the selectedRoom if it's open
     if (selectedRoom) {
       const updatedSelectedRoom = updatedRooms.find(r => r.id === selectedRoom.id) || null;
       setSelectedRoom(updatedSelectedRoom);
@@ -45,7 +48,6 @@ const App: React.FC = () => {
   };
 
   const stopScreenShare = (roomId: string) => {
-    // This helper ensures state is cleaned up correctly, especially when called from a stream event.
     setRooms(prevRooms => {
       const room = prevRooms.find(r => r.id === roomId);
       if (room?.screenShareStream) {
@@ -65,21 +67,17 @@ const App: React.FC = () => {
     const roomToUpdate = rooms.find(r => r.id === roomId);
     if (!roomToUpdate) return;
 
-    // If currently sharing, stop it
     if (roomToUpdate.screenShareStream) {
       stopScreenShare(roomId);
       return;
     }
 
-    // If not sharing, request to start
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        // Fix: The 'cursor' property is valid for `getDisplayMedia` but might not exist in default TypeScript DOM typings. Casting to `any` resolves the type error.
         video: { cursor: "always" } as any,
         audio: false,
       });
 
-      // Listen for when the user stops sharing via the native browser UI
       const track = stream.getVideoTracks()[0];
       track.onended = () => stopScreenShare(roomId);
 
@@ -94,7 +92,6 @@ const App: React.FC = () => {
     }
   };
 
-
   const enterRoom = (room: Room) => {
     const roomFromState = rooms.find(r => r.id === room.id);
     setSelectedRoom(roomFromState || room);
@@ -104,38 +101,65 @@ const App: React.FC = () => {
     setSelectedRoom(null);
   };
 
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'home':
+        return <HomeView rooms={rooms} onEnterRoom={enterRoom} />;
+      case 'trending':
+        return <TrendingView />;
+      case 'messages':
+        return <MessagesView />;
+      case 'scheduled':
+        return <ScheduledView />;
+      case 'profile':
+        return <ProfileView />;
+      case 'notifications':
+        return <NotificationsView />;
+      default:
+        return <HomeView rooms={rooms} onEnterRoom={enterRoom} />;
+    }
+  };
+
   return (
     <UserContext.Provider value={{ currentUser, updateUserAvatar }}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black antialiased">
-        <div className="container mx-auto max-w-lg p-4 font-sans">
-          {selectedRoom ? (
-            <RoomView 
-              room={selectedRoom} 
-              onLeave={leaveRoom} 
-              onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)} 
-            />
-          ) : (
-            <div>
-              <header className="flex justify-between items-center py-4">
-                <h1 className="text-3xl font-bold text-white tracking-tight">AuraSphere</h1>
-                <div className="flex items-center space-x-2 text-sm">
-                  <span>Listener</span>
-                   <label htmlFor="user-toggle" className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={isHostView} onChange={() => setIsHostView(!isHostView)} id="user-toggle" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                  <span>Host</span>
-                </div>
-              </header>
-              <p className="text-gray-400 mb-6">Swipe through live audio rooms. You are currently a <span className="font-bold text-indigo-400">{currentUser.role}</span>.</p>
-              <div className="space-y-4">
-                {rooms.map(room => (
-                  <RoomCard key={room.id} room={room} onEnter={() => enterRoom(room)} />
-                ))}
-              </div>
+      <div className="h-full flex bg-gradient-to-br from-gray-900 via-slate-900 to-black antialiased font-sans">
+        <Sidebar 
+          activeView={activeView}
+          setActiveView={(view) => {
+            setActiveView(view);
+            setSidebarOpen(false); // Close sidebar on selection (mobile)
+          }}
+          isHostView={isHostView}
+          setIsHostView={setIsHostView}
+          isSidebarOpen={isSidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
+        <main className="flex-1 flex flex-col overflow-y-auto">
+           {/* Mobile Header */}
+          <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10">
+            <button onClick={() => setSidebarOpen(true)} className="text-gray-300 hover:text-white">
+              <MenuIcon />
+            </button>
+            <h1 className="text-xl font-bold text-white tracking-tight">AuraSphere</h1>
+            <div className="w-6 h-6"> {/* Spacer */}
+               <img src={currentUser.avatarUrl} alt="Current user" className="w-8 h-8 rounded-full"/>
             </div>
-          )}
-        </div>
+          </div>
+          
+          <div className="flex-1">
+            {selectedRoom ? (
+              <div className="max-w-lg mx-auto p-0 md:p-4 h-full">
+                <RoomView 
+                  room={selectedRoom} 
+                  onLeave={leaveRoom} 
+                  onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)} 
+                />
+              </div>
+            ) : (
+              renderActiveView()
+            )}
+          </div>
+        </main>
       </div>
     </UserContext.Provider>
   );

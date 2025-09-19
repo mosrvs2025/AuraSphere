@@ -69,7 +69,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare 
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
       <div className="h-full flex flex-col animate-fade-in">
         <header className="flex items-center justify-between p-4 bg-gray-900/50 backdrop-blur-sm rounded-t-2xl">
-          <button onClick={onLeave} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">&larr; All Rooms</button>
+          <button onClick={onLeave} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">&larr; Back</button>
           <h1 className="text-lg font-bold text-center truncate">{room.title}</h1>
           <div className="w-24"></div>
         </header>
