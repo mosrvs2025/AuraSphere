@@ -10,6 +10,7 @@ import HostControls from './HostControls';
 import FeaturedLink from './FeaturedLink';
 import Poll from './Poll';
 import CreatePollModal from './CreatePollModal';
+import InviteUsersModal from './InviteUsersModal';
 
 
 interface RoomViewProps {
@@ -19,6 +20,7 @@ interface RoomViewProps {
   onUserSelect: (user: User, position: ModalPosition) => void;
   selectedUser: User | null;
   onOpenLink: (url: string) => void;
+  handleInviteUsers: (roomId: string, userIdsToInvite: string[]) => void;
 }
 
 const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void, isSelected: boolean }> = ({ user, size = 'large', onClick, isSelected }) => (
@@ -56,7 +58,7 @@ const ParticipantsList: React.FC<{ room: Room; selectedUser: User | null; onAvat
 );
 
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser, onOpenLink }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect, selectedUser, onOpenLink, handleInviteUsers }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
@@ -66,6 +68,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
 
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
     const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
+    const [isInviteModalOpen, setInviteModalOpen] = useState(false);
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
@@ -204,6 +207,10 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         setCurrentRoom(prev => ({ ...prev, poll: endedPoll }));
     };
 
+    const onSendInvites = (userIds: string[]) => {
+        handleInviteUsers(currentRoom.id, userIds);
+    };
+
     return (
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
       <audio ref={audioPlayerRef} onEnded={handleAudioEnded} onPause={handleAudioEnded}></audio>
@@ -248,7 +255,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           <footer className="flex-shrink-0">
              {isHost && (
                 <div className="p-4 border-t border-gray-800">
-                    <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} onCreatePoll={() => setCreatePollModalOpen(true)} />
+                    <HostControls 
+                        videoUrl={currentRoom.videoUrl} 
+                        onUpdateRoom={handleUpdateRoom} 
+                        onCreatePoll={() => setCreatePollModalOpen(true)}
+                        isPrivateRoom={currentRoom.isPrivate}
+                        onInviteClick={() => setInviteModalOpen(true)} />
                 </div>
              )}
              <div className="p-4 md:p-6 border-t border-gray-800 flex items-center space-x-4">
@@ -281,6 +293,14 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         </div>
       </div>
       {isHost && isCreatePollModalOpen && <CreatePollModal onClose={() => setCreatePollModalOpen(false)} onCreate={handleCreatePoll} />}
+      {isHost && isInviteModalOpen && (
+        <InviteUsersModal 
+            followers={currentUser.following || []}
+            onClose={() => setInviteModalOpen(false)}
+            onInvite={onSendInvites}
+            alreadyInvitedUserIds={currentRoom.invitedUserIds || []}
+        />
+      )}
     </RoomActionsContext.Provider>
     );
 };
