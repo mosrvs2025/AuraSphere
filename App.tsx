@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
@@ -369,7 +370,8 @@ const App: React.FC = () => {
             author: currentUser,
             likes: 0,
             comments: 0,
-            status: scheduleDate ? 'scheduled' : 'published' as const,
+            // FIX: The status was being inferred as `string` because `as const` only applied to one branch of the ternary. Explicitly casting the result to the correct union type resolves the assignment errors.
+            status: (scheduleDate ? 'scheduled' : 'published') as 'published' | 'scheduled',
             scheduledTime: scheduleDate,
             id: `post-${Date.now()}`,
             createdAt: new Date(),
