@@ -25,7 +25,6 @@ import CreateHubModal from './components/CreateHubModal';
 import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
 import InAppBrowser from './components/InAppBrowser';
-import SearchViewModal from './components/SearchViewModal';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -130,7 +129,7 @@ const App: React.FC = () => {
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
     const [isSidebarExpanded, setSidebarExpanded] = useState(true);
-    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
     const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
@@ -222,6 +221,10 @@ const App: React.FC = () => {
         setBrowserUrl(null);
         setViewingMedia(null);
 
+        if (view !== 'search') {
+            setSearchQuery('');
+        }
+
         // Also reset scroll position for main views
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
@@ -253,6 +256,16 @@ const App: React.FC = () => {
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
         case 'my-studio': return <MyStudioView />;
         case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        case 'search': return <GlobalSearchView 
+            query={searchQuery}
+            onSearch={setSearchQuery}
+            discoverItems={discoverItems}
+            currentUser={currentUser}
+            onEnterRoom={handleEnterRoom}
+            onViewProfile={handleViewProfile}
+            onViewMedia={setViewingMedia}
+            onViewPost={setViewingPost}
+        />;
         default: return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
       }
     };
@@ -302,7 +315,7 @@ const App: React.FC = () => {
                                 setActiveFilter={setActiveFilter}
                                 unreadNotificationCount={12}
                                 onNavigateToNotifications={() => handleNavigate('notifications')}
-                                onSearchClick={() => setSearchModalOpen(true)}
+                                onSearchClick={() => handleNavigate('search')}
                                 liveRooms={rooms.filter(r => !r.isScheduled)}
                                 onEnterRoom={handleEnterRoom}
                                 scrollTop={mainScrollTop}
@@ -324,7 +337,6 @@ const App: React.FC = () => {
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && (currentUser || viewingProfile) && <EditProfileModal user={viewingProfile ?? currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => setCurrentUser(p => ({...p, avatarUrl: url}))} />}
-                {isSearchModalOpen && <SearchViewModal onClose={() => setSearchModalOpen(false)} allRooms={rooms} allUsers={allUsers} discoverItems={discoverItems} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>}
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
                 {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContent} />}
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}

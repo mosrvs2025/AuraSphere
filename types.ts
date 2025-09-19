@@ -124,7 +124,7 @@ export interface Notification {
   link?: string; // e.g., to a room, profile, or post
 }
 
-export type ActiveView = 'home' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room';
+export type ActiveView = 'home' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
 
 export type CurationTab = 'forYou' | 'following';
 

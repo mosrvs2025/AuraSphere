@@ -1,140 +1,154 @@
-import React from 'react';
-// FIX: Imported ActiveView to resolve type conflict and handle all possible views.
-import { DiscoverItem, Conversation, Room, User, ChatMessage, ActiveView } from '../types';
-import { DiscoverCard } from './DiscoverCards';
+import React, { useState, useEffect } from 'react';
+import { Room, User, DiscoverItem } from '../types';
+import SearchView from './SearchView';
+import { SearchIcon, XIcon } from './Icons';
+import ConfirmationModal from './ConfirmationModal';
+
+// Helper functions for localStorage
+const getSearchHistory = (): string[] => JSON.parse(localStorage.getItem('aura_search_history') || '[]');
+const saveSearchHistory = (history: string[]) => localStorage.setItem('aura_search_history', JSON.stringify(history));
+
 
 interface GlobalSearchViewProps {
   query: string;
-  activeView: ActiveView;
+  onSearch: (query: string) => void;
   discoverItems: DiscoverItem[];
-  conversations: Conversation[];
   currentUser: User;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
-  onConversationSelect: (conversation: Conversation) => void;
 }
 
-const MessageSearchResult: React.FC<{ 
-    conversation: Conversation, 
-    matchingMessage: ChatMessage, 
-    currentUser: User, 
-    onClick: () => void 
-}> = ({ conversation, matchingMessage, currentUser, onClick }) => {
-    const otherParticipant = conversation.participants.find(p => p.id !== currentUser.id);
-    if (!otherParticipant) return null;
-
-    return (
-        <button onClick={onClick} className="w-full flex items-start p-3 rounded-lg bg-gray-800/50 hover:bg-gray-700/70 transition-colors text-left space-x-3">
-            <img src={otherParticipant.avatarUrl} alt={otherParticipant.name} className="w-10 h-10 rounded-full flex-shrink-0" />
-            <div className="flex-1 overflow-hidden">
-                <p className="font-bold text-white truncate">{otherParticipant.name}</p>
-                <p className="text-sm text-gray-400 mt-1 line-clamp-2">
-                    <span className="font-semibold text-gray-300">{matchingMessage.user.id === currentUser.id ? "You: " : ""}</span>
-                    {matchingMessage.text}
-                </p>
+const RecentSearches: React.FC<{
+    history: string[];
+    onSearch: (term: string) => void;
+    onClear: () => void;
+    onRemove: (term: string) => void;
+}> = ({ history, onSearch, onClear, onRemove }) => {
+    if (history.length === 0) {
+        return (
+            <div className="text-center text-gray-500 py-20">
+                <p>Your recent searches will appear here.</p>
             </div>
-        </button>
+        );
+    }
+    return (
+        <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-white">Recent</h2>
+                <button onClick={onClear} className="text-sm font-semibold text-indigo-400 hover:text-indigo-300">
+                    Clear all
+                </button>
+            </div>
+            <div className="flex flex-col">
+                {history.map(term => (
+                    <div key={term} className="flex justify-between items-center group border-b border-gray-800">
+                        <button onClick={() => onSearch(term)} className="flex-1 text-left text-gray-300 hover:text-white py-3">
+                            {term}
+                        </button>
+                        <button onClick={() => onRemove(term)} className="p-2 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                             <XIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 };
 
-const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
-  query,
-  activeView,
-  discoverItems,
-  conversations,
-  currentUser,
-  onEnterRoom,
-  onViewProfile,
-  onViewMedia,
-  onViewPost,
-  onConversationSelect
-}) => {
-  const lcQuery = query.toLowerCase();
+const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({ query: submittedQuery, onSearch, discoverItems, ...rest }) => {
+  const [localQuery, setLocalQuery] = useState(submittedQuery);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const renderDiscoverResults = () => {
-    const filteredItems = discoverItems.filter(item => {
-      switch (item.type) {
-        case 'live_room':
-          return item.title.toLowerCase().includes(lcQuery) || item.description?.toLowerCase().includes(lcQuery);
-        case 'user_profile':
-          return item.name.toLowerCase().includes(lcQuery) || item.bio?.toLowerCase().includes(lcQuery);
-        case 'text_post':
-          return item.content.toLowerCase().includes(lcQuery) || item.author.name.toLowerCase().includes(lcQuery);
-        case 'image_post':
-        case 'video_post':
-          return item.caption?.toLowerCase().includes(lcQuery) || item.author.name.toLowerCase().includes(lcQuery);
-        default:
-          return false;
-      }
-    });
+  useEffect(() => {
+    setSearchHistory(getSearchHistory());
+  }, []);
 
-    const columns = [[], [], []] as DiscoverItem[][];
-    filteredItems.forEach((item, i) => {
-        columns[i % 3].push(item);
-    });
+  const handleSearchSubmit = (searchTerm: string) => {
+    const term = searchTerm.trim();
+    if (!term) return;
 
-    if (filteredItems.length === 0) {
-        return <div className="text-center text-gray-400 py-10">No results found for "{query}".</div>
-    }
+    const newHistory = [term, ...searchHistory.filter(h => h.toLowerCase() !== term.toLowerCase())].slice(0, 8); // Limit history size
+    setSearchHistory(newHistory);
+    saveSearchHistory(newHistory);
+    
+    setLocalQuery(term);
+    onSearch(term);
+  };
 
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {columns.map((col, colIndex) => (
-                <div key={colIndex} className="flex flex-col gap-4">
-                {col.map((item) => (
-                    <DiscoverCard 
-                      key={`${item.type}-${item.id}`} 
-                      item={item}
-                      onEnterRoom={onEnterRoom}
-                      onViewProfile={onViewProfile}
-                      onViewMedia={onViewMedia}
-                      onViewPost={onViewPost}
-                    />
-                ))}
-                </div>
-            ))}
-        </div>
-    );
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearchSubmit(localQuery);
   };
   
-  const renderMessagesResults = () => {
-    const results: { conversation: Conversation, message: ChatMessage }[] = [];
-    conversations.forEach(convo => {
-        convo.messages.forEach(msg => {
-            if (msg.text?.toLowerCase().includes(lcQuery)) {
-                results.push({ conversation: convo, message: msg });
-            }
-        });
-    });
-
-     if (results.length === 0) {
-        return <div className="text-center text-gray-400 py-10">No messages found for "{query}".</div>
-    }
-
-    return (
-        <div className="space-y-2 max-w-2xl mx-auto">
-            {results.map(({ conversation, message }) => (
-                <MessageSearchResult 
-                    key={message.id}
-                    conversation={conversation}
-                    matchingMessage={message}
-                    currentUser={currentUser}
-                    onClick={() => onConversationSelect(conversation)}
-                />
-            ))}
-        </div>
-    );
+  const handleClearHistory = () => {
+    setSearchHistory([]);
+    saveSearchHistory([]);
+    setShowClearConfirm(false);
+  };
+  
+  const handleRemoveHistoryItem = (termToRemove: string) => {
+    const newHistory = searchHistory.filter(term => term !== termToRemove);
+    setSearchHistory(newHistory);
+    saveSearchHistory(newHistory);
   };
 
-
   return (
-    <div className="p-4 md:p-6 animate-fade-in">
-        <div className="max-w-6xl mx-auto">
-            {/* FIX: Default to discover results unless the view is explicitly 'messages' to handle all ActiveView types. */}
-            {activeView === 'messages' ? renderMessagesResults() : renderDiscoverResults()}
-        </div>
+    <div className="flex flex-col h-full animate-fade-in">
+      {/* Search Bar */}
+      <div className="bg-gray-900 w-full p-4 border-b border-gray-800">
+        <form onSubmit={handleFormSubmit} className="flex items-center space-x-2 max-w-4xl mx-auto">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={localQuery}
+              onChange={e => {
+                setLocalQuery(e.target.value);
+                if (e.target.value.trim() === '') {
+                  onSearch(''); // Clear results when input is empty
+                }
+              }}
+              placeholder="Search AuraSphere..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-full py-3 pl-12 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+              <SearchIcon className="w-6 h-6" />
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {submittedQuery ? (
+          <SearchView
+            query={submittedQuery}
+            discoverItems={discoverItems}
+            {...rest}
+          />
+        ) : (
+          <RecentSearches 
+            history={searchHistory}
+            onSearch={handleSearchSubmit}
+            onClear={() => setShowClearConfirm(true)}
+            onRemove={handleRemoveHistoryItem}
+          />
+        )}
+      </div>
+
+      {showClearConfirm && (
+        <ConfirmationModal
+          title="Clear Search History"
+          message="Are you sure you want to clear all recent searches? This cannot be undone."
+          confirmText="Clear All"
+          onConfirm={handleClearHistory}
+          onCancel={() => setShowClearConfirm(false)}
+          confirmButtonClass="bg-red-600 hover:bg-red-500"
+        />
+      )}
     </div>
   );
 };
