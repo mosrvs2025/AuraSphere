@@ -4,7 +4,8 @@ import { Room, User, ChatMessage, ModalPosition } from '../types';
 import ChatView from './ChatView';
 import { RoomActionsContext } from '../context/RoomActionsContext';
 import { generateIcebreakers } from '../services/geminiService';
-import { MicIcon, SendIcon } from './Icons';
+import { MicIcon } from './Icons';
+import DynamicInput from './DynamicInput';
 
 
 interface RoomViewProps {
@@ -34,7 +35,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [isChatCollapsed, setChatCollapsed] = useState(true);
 
     // State for controls, moved up from sub-components
-    const [messageText, setMessageText] = useState('');
     const [isMuted, setIsMuted] = useState(true);
     const [icebreakers, setIcebreakers] = useState<string[]>([]);
     const [isLoadingIcebreakers, setIsLoadingIcebreakers] = useState(false);
@@ -51,17 +51,15 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
       console.log(`Toggled reaction ${emoji} for message ${messageId}`);
     };
     
-    const handleSendMessage = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!messageText.trim()) return;
+    const handleSendTextMessage = (text: string) => {
+        if (!text.trim()) return;
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,
             user: currentUser,
-            text: messageText,
+            text: text,
             createdAt: new Date(),
         };
         setMessages(prev => [...prev, newMessage]);
-        setMessageText('');
     };
     
     // Host Control Handlers
@@ -204,12 +202,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             ) : (
                 // Listener Controls
                 <div className="flex items-center space-x-4">
-                    <form onSubmit={handleSendMessage} className="flex-1 flex items-center bg-gray-800 rounded-full">
-                        <input type="text" value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Send a message..." className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none" />
-                        <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300 disabled:text-gray-600" disabled={!messageText.trim()} aria-label="Send message">
-                            <SendIcon />
-                        </button>
-                    </form>
+                    <DynamicInput 
+                        onSubmitMessage={handleSendTextMessage}
+                        onStartAudioRecording={() => console.log('Start audio recording...')}
+                        onStartVideoRecording={() => console.log('Start video recording...')}
+                    />
                     <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex-shrink-0">
                         Raise Hand
                     </button>
