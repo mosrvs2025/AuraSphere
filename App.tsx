@@ -11,7 +11,6 @@ import CreateRoomModal from './components/CreateRoomModal';
 import EditProfileModal from './components/EditProfileModal';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
-import SearchViewModal from './components/SearchViewModal';
 import MiniPlayer from './components/MiniPlayer';
 import MediaViewerModal from './components/MediaViewerModal';
 import PostDetailView from './components/PostDetailView';
@@ -22,6 +21,8 @@ import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
 import BottomNavBar from './components/BottomNavBar';
 import InAppBrowser from './components/InAppBrowser';
+import GlobalHeader from './components/GlobalHeader';
+import GlobalSearchView from './components/GlobalSearchView';
 
 
 // --- MOCK DATA ---
@@ -135,10 +136,12 @@ const App: React.FC = () => {
     const [isCreateHubModalOpen, setCreateHubModalOpen] = useState(false);
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
-    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [userCard, setUserCard] = useState<{ user: User, position: ModalPosition } | null>(null);
     const [mediaToView, setMediaToView] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
     const [inAppBrowserUrl, setInAppBrowserUrl] = useState<string | null>(null);
+    
+    // Global Search State
+    const [searchQuery, setSearchQuery] = useState('');
 
     // New Content Creation States
     const [activeCreationFlow, setActiveCreationFlow] = useState<{ type: 'image' | 'video' | 'note'; fileUrl?: string } | null>(null);
@@ -157,10 +160,35 @@ const App: React.FC = () => {
         unfollowUser: (userId: string) => console.log('Unfollow user', userId),
     };
 
-    // --- Handlers ---
+    // --- Navigation Handlers ---
     const handleEnterRoom = (room: Room) => {
+        setSearchQuery('');
         setActiveRoom(room);
         setActiveView('room');
+    };
+    
+    const handleViewProfile = (user: User) => {
+        setSearchQuery('');
+        setProfileToShow(user);
+        setActiveView('profile');
+        setUserCard(null);
+    };
+
+    const handleViewMedia = (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => {
+        setSearchQuery('');
+        setMediaToView(post);
+    };
+
+    const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' }>) => {
+        setSearchQuery('');
+        setPostToShow(post);
+        setActiveView('post_detail');
+    };
+    
+    const handleSelectConversation = (c: Conversation) => {
+        setSearchQuery('');
+        setActiveConversation(c);
+        setActiveView('conversation');
     };
 
     const handleLeaveRoom = () => {
@@ -194,29 +222,6 @@ const App: React.FC = () => {
     const handleAvatarSelect = (url: string, isGenerated: boolean) => {
         userContextValue.updateCurrentUser({ avatarUrl: url });
         setAvatarCustomizerOpen(false);
-    };
-    
-    const handleViewProfile = (user: User) => {
-        setProfileToShow(user);
-        setActiveView('profile');
-        setUserCard(null); // Close card modal when opening full profile
-        setSearchModalOpen(false); // Close search modal if open
-    };
-    
-    const handleSearchClick = () => {
-        if (activeView !== 'home') {
-            setActiveView('home');
-        }
-        setSearchModalOpen(true);
-    };
-
-    const handleViewMedia = (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => {
-        setMediaToView(post);
-    };
-
-    const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' }>) => {
-        setPostToShow(post);
-        setActiveView('post_detail');
     };
     
     const handleSelectCreateOption = (option: 'live' | 'video' | 'image' | 'note') => {
@@ -327,13 +332,11 @@ const App: React.FC = () => {
 
     const renderActiveView = () => {
         const trendingViewProps = {
-            title: "Discover",
             items: discoverItems,
             onEnterRoom: handleEnterRoom,
             onViewProfile: handleViewProfile,
             onViewMedia: handleViewMedia,
             onViewPost: handleViewPost,
-            onSearchClick: () => setSearchModalOpen(true),
         };
         switch (activeView) {
             case 'room':
@@ -341,17 +344,17 @@ const App: React.FC = () => {
             case 'home':
                 return <TrendingView {...trendingViewProps} />;
             case 'messages':
-                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
             case 'scheduled':
                 return <ScheduledView rooms={rooms} />;
             case 'profile':
-                return <UserProfile user={profileToShow || currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
+                return <UserProfile user={profileToShow || currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} />;
             case 'notifications':
                 return <NotificationsView notifications={notifications} onNotificationClick={(notif) => setNotifications(n => n.map(n => n.id === notif.id ? {...n, isRead: true} : n))} />;
             case 'my-studio':
                 return <MyStudioView />;
             case 'conversation':
-                return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} onViewProfile={handleViewProfile} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+                return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} onViewProfile={handleViewProfile} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
             case 'post_detail':
                 return postToShow ? <PostDetailView post={postToShow} onBack={() => setActiveView('home')} onViewProfile={handleViewProfile} /> : <TrendingView {...trendingViewProps} />;
             default:
@@ -380,6 +383,9 @@ const App: React.FC = () => {
         return renderActiveView();
     };
     
+    const VIEWS_WITH_GLOBAL_HEADER = ['home', 'messages', 'scheduled', 'notifications'];
+    const isSearching = searchQuery && VIEWS_WITH_GLOBAL_HEADER.includes(activeView);
+
     return (
         <UserContext.Provider value={userContextValue}>
             <div className="bg-gray-900 text-gray-200 font-sans h-screen w-screen overflow-hidden flex">
@@ -391,8 +397,30 @@ const App: React.FC = () => {
                     aria-hidden="true"
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <main className={`flex-1 overflow-y-auto pb-16 ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'pb-20' : ''}`}>
-                        {renderContent()}
+                    {VIEWS_WITH_GLOBAL_HEADER.includes(activeView) && !activeCreationFlow && (
+                        <GlobalHeader 
+                            activeView={activeView}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                        />
+                    )}
+                    <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' && !activeCreationFlow ? 'pb-20' : 'pb-16'}`}>
+                       {isSearching ? (
+                            <GlobalSearchView
+                                query={searchQuery}
+                                activeView={activeView}
+                                discoverItems={discoverItems}
+                                conversations={conversations}
+                                currentUser={currentUser}
+                                onEnterRoom={handleEnterRoom}
+                                onViewProfile={handleViewProfile}
+                                onViewMedia={handleViewMedia}
+                                onViewPost={handleViewPost}
+                                onConversationSelect={handleSelectConversation}
+                            />
+                       ) : (
+                           renderContent()
+                       )}
                     </main>
                 </div>
                 
@@ -417,16 +445,6 @@ const App: React.FC = () => {
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
-                {isSearchModalOpen && <SearchViewModal 
-                    onClose={() => setSearchModalOpen(false)} 
-                    allRooms={rooms} 
-                    allUsers={users}
-                    discoverItems={discoverItems}
-                    onEnterRoom={(room) => { handleEnterRoom(room); setSearchModalOpen(false); }}
-                    onViewProfile={(user) => { handleViewProfile(user); setSearchModalOpen(false); }}
-                    onViewMedia={(post) => { setMediaToView(post); setSearchModalOpen(false); }}
-                    onViewPost={(post) => { handleViewPost(post); setSearchModalOpen(false); }}
-                />}
                 {userCard && <UserCardModal user={userCard.user} onClose={() => setUserCard(null)} onViewProfile={handleViewProfile} position={userCard.position} />}
                 {mediaToView && <MediaViewerModal post={mediaToView} onClose={() => setMediaToView(null)} />}
                 {inAppBrowserUrl && <InAppBrowser url={inAppBrowserUrl} onClose={() => setInAppBrowserUrl(null)} />}

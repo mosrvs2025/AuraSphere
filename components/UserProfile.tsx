@@ -8,9 +8,10 @@ interface UserProfileProps {
   user: User;
   allRooms: Room[];
   onEditProfile: () => void;
+  onBack: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile, onBack }) => {
     const { currentUser } = useContext(UserContext);
     
     return (
@@ -19,6 +20,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile
             allRooms={allRooms}
             onEditProfile={onEditProfile}
             currentUser={currentUser}
+            onBack={onBack}
         />
     );
 };

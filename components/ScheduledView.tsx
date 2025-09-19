@@ -96,7 +96,6 @@ const ScheduledView: React.FC<ScheduledViewProps> = ({ rooms }) => {
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Content Planner</h1>
         {scheduledRooms.length > 0 ? (
           renderCalendar()
         ) : (

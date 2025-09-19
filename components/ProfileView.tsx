@@ -7,14 +7,23 @@ interface ProfileViewProps {
   allRooms: Room[];
   onEditProfile: () => void;
   currentUser: User;
+  onBack: () => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser, onBack }) => {
   const userHostedRooms = allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled);
   const isOwnProfile = user.id === currentUser.id;
 
   return (
     <div className="p-4 md:p-6 animate-fade-in max-w-4xl mx-auto">
+        <header className="mb-6">
+            <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Back</span>
+            </button>
+        </header>
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
           <img 
