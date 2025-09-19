@@ -304,6 +304,17 @@ const App: React.FC = () => {
         setActiveView('home');
     };
 
+    const handleUpdateActiveRoom = (updatedData: Partial<Room>) => {
+        if (!activeRoom) return;
+
+        const updatedRoom = { ...activeRoom, ...updatedData };
+        setActiveRoom(updatedRoom);
+
+        setRooms(prevRooms => prevRooms.map(r =>
+            r.id === activeRoom.id ? updatedRoom : r
+        ));
+    };
+
     const handleSelectConversation = (conversation: Conversation) => {
         setPreviousView(activeView);
         setActiveConversation(conversation);
@@ -542,6 +553,7 @@ const App: React.FC = () => {
                                             selectedUser={selectedUserForCard}
                                             onOpenLink={(url) => setBrowserUrl(url)}
                                             handleInviteUsers={handleInviteUsers}
+                                            onUpdateRoom={handleUpdateActiveRoom}
                                         />;
                 return <p>Room not found</p>; // Or redirect to home
             case 'messages':

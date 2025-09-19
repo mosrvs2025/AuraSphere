@@ -46,6 +46,7 @@ export interface Room {
   messages: ChatMessage[];
   isPrivate: boolean;
   videoUrl?: string;
+  isSharingScreen?: boolean;
   isScheduled?: boolean;
   scheduledTime?: Date;
   featuredUrl?: string;

@@ -1,23 +1,27 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { generateIcebreakers } from '../services/geminiService';
-import { RoomActionsContext } from '../context/RoomActionsContext';
 import { Room } from '../types';
 import { UserPlusIcon } from './Icons';
 
 interface HostControlsProps {
-  videoUrl?: string;
+  room: Room;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onCreatePoll: () => void;
-  isPrivateRoom: boolean;
   onInviteClick: () => void;
 }
 
-const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom, onCreatePoll, isPrivateRoom, onInviteClick }) => {
+const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreatePoll, onInviteClick }) => {
   const [topic, setTopic] = useState("technology");
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [videoInput, setVideoInput] = useState('');
-  const { isSharingScreen, onToggleScreenShare } = useContext(RoomActionsContext);
+
+  const isSharingScreen = room.isSharingScreen;
+  const videoUrl = room.videoUrl;
+
+  const onToggleScreenShare = () => {
+    onUpdateRoom({ isSharingScreen: !isSharingScreen });
+  };
 
   const handleSuggestIcebreakers = async () => {
     setIsLoading(true);
@@ -42,7 +46,7 @@ const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom, onC
   return (
     <div className="relative space-y-4">
       <div className="flex items-center justify-center space-x-2 flex-wrap gap-2">
-         {isPrivateRoom && (
+         {room.isPrivate && (
             <button onClick={onInviteClick} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
                 <UserPlusIcon className="h-5 w-5" />
                 <span>Invite</span>
