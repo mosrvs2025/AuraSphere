@@ -19,6 +19,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdat
   const isHost = room.hosts.some(h => h.id === currentUser.id);
   const { isSharingScreen } = useContext(RoomActionsContext);
   const [text, setText] = useState('');
+  const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +27,37 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdat
       onSendMessage({ text: text.trim() });
       setText('');
     }
+  };
+  
+  const handleToggleReaction = (messageId: string, emoji: string) => {
+    const message = room.messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    const reactions = message.reactions || {};
+    const userList = reactions[emoji] || [];
+    
+    if (userList.includes(currentUser.id)) {
+        // User is removing their reaction
+        reactions[emoji] = userList.filter(id => id !== currentUser.id);
+    } else {
+        // User is adding a reaction
+        reactions[emoji] = [...userList, currentUser.id];
+    }
+    
+    // Cleanup empty reaction arrays
+    if (reactions[emoji].length === 0) {
+        delete reactions[emoji];
+    }
+    
+    const updatedMessages = room.messages.map(m => 
+        m.id === messageId ? { ...m, reactions } : m
+    );
+    
+    onUpdateRoom({ messages: updatedMessages });
+  };
+
+  const handlePlayAudioNote = (messageId: string) => {
+    setNowPlayingAudioNoteId(prevId => (prevId === messageId ? null : messageId));
   };
 
   return (
@@ -63,7 +95,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdat
                 <div className="mb-6">
                     <h2 className="text-lg font-bold text-indigo-400 mb-3">Hosts</h2>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                        {room.hosts.map(user => <UserProfile key={user.id} user={user} />)}
+                        {room.hosts.map(user => <UserProfile key={user.id} user={user} isDucked={!!nowPlayingAudioNoteId} />)}
                     </div>
                 </div>
 
@@ -71,7 +103,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdat
                     <div className="mb-6">
                         <h2 className="text-lg font-bold text-gray-300 mb-3">Speakers</h2>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                            {room.speakers.map(user => <UserProfile key={user.id} user={user} />)}
+                            {room.speakers.map(user => <UserProfile key={user.id} user={user} isDucked={!!nowPlayingAudioNoteId} />)}
                         </div>
                     </div>
                 )}
@@ -88,7 +120,13 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUpdat
 
         {/* Chat Sidebar */}
         <aside className="w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-gray-800 flex flex-col flex-shrink-0">
-          <ChatView messages={room.messages} />
+          <ChatView 
+             messages={room.messages} 
+             currentUser={currentUser}
+             onToggleReaction={handleToggleReaction}
+             nowPlayingAudioNoteId={nowPlayingAudioNoteId}
+             onPlayAudioNote={handlePlayAudioNote}
+          />
         </aside>
       </div>
 

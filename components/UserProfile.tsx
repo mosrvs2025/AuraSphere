@@ -5,11 +5,12 @@ import { User } from '../types';
 interface UserProfileProps {
   user: User;
   isListener?: boolean;
+  isDucked?: boolean;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, isListener }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, isListener, isDucked }) => {
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className={`flex flex-col items-center text-center transition-opacity duration-300 ${isDucked ? 'opacity-40' : 'opacity-100'}`}>
       <div className="relative">
         <img
           src={user.avatarUrl}

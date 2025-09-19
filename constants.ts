@@ -48,6 +48,13 @@ export const MOCK_ROOMS: Room[] = [
     messages: [
         { id: 'm1', user: MOCK_USER_HOST, text: 'Welcome everyone!', createdAt: new Date(Date.now() - 60000 * 5) },
         { id: 'm2', user: MOCK_USER_SPEAKER, text: 'Excited to be here!', createdAt: new Date(Date.now() - 60000 * 4) },
+        { 
+          id: 'm3', 
+          user: MOCK_USER_LISTENER, 
+          voiceMemo: { url: 'audio.mp3', duration: 15 }, 
+          createdAt: new Date(Date.now() - 60000 * 3),
+          reactions: { '👍': ['user-2', 'user-4'], '🔥': ['user-3'] }
+        },
     ],
     isPrivate: false,
   },

@@ -13,11 +13,15 @@ export interface ChatMessage {
   user: User;
   text?: string;
   createdAt: Date;
-  voiceMemo?: string; // URL to voice memo
+  voiceMemo?: {
+    url: string;
+    duration: number; // in seconds
+  };
+  reactions?: Record<string, string[]>; // emoji -> User IDs
 }
 
 export interface Room {
-  id: string;
+  id:string;
   title: string;
   description?: string;
   hosts: User[];
