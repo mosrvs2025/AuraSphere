@@ -508,8 +508,6 @@ const App: React.FC = () => {
             return true;
         });
 
-        const liveRooms = rooms.filter(r => !r.isScheduled);
-
         if (searchQuery && (activeView === 'home' || activeView === 'messages')) {
             return <GlobalSearchView 
                         query={searchQuery} 
@@ -530,7 +528,6 @@ const App: React.FC = () => {
                 return <TrendingView 
                             items={publishedDiscoverItems} 
                             currentUser={currentUser}
-                            liveRooms={liveRooms}
                             initialFilter={initialHomeFilter}
                             onEnterRoom={handleEnterRoom} 
                             onViewProfile={handleViewProfile} 
@@ -604,6 +601,7 @@ const App: React.FC = () => {
     }
 
     const unreadNotifications = notifications.filter(n => !n.isRead);
+    const liveRooms = rooms.filter(r => !r.isScheduled);
 
     if (renderCreationView()) {
         return (
@@ -627,7 +625,9 @@ const App: React.FC = () => {
                         unreadNotificationCount={unreadNotifications.length}
                         onNavigateToNotifications={() => changeView('notifications')}
                         onNavigateToLive={handleNavigateToLive}
-                        hasActiveLiveRooms={rooms.filter(r => !r.isScheduled).length > 0}
+                        hasActiveLiveRooms={liveRooms.length > 0}
+                        liveRooms={liveRooms}
+                        onEnterRoom={handleEnterRoom}
                     />
                     <div className="flex-1 overflow-y-auto">
                         {renderActiveView()}

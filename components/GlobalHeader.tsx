@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActiveView } from '../types';
+import { ActiveView, Room } from '../types';
 import { SearchIcon, XIcon, BellIcon } from './Icons';
 
 interface GlobalHeaderProps {
@@ -10,11 +10,56 @@ interface GlobalHeaderProps {
   onNavigateToNotifications: () => void;
   onNavigateToLive: () => void;
   hasActiveLiveRooms: boolean;
+  liveRooms: Room[];
+  onEnterRoom: (room: Room) => void;
 }
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms }) => {
+const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
+    if (liveRooms.length === 0) {
+        return null;
+    }
+
+    const uniqueHostsInRooms = new Map<string, Room>();
+    liveRooms.forEach(room => {
+        room.hosts.forEach(host => {
+            if (!uniqueHostsInRooms.has(host.id)) {
+                uniqueHostsInRooms.set(host.id, room);
+            }
+        });
+    });
+
+    return (
+        <div className="flex items-center space-x-4 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+            {Array.from(uniqueHostsInRooms.entries()).map(([hostId, room]) => {
+                const host = room.hosts.find(h => h.id === hostId);
+                if (!host) return null;
+                return (
+                    <button key={host.id} onClick={() => onEnterRoom(room)} className="flex flex-col items-center space-y-2 flex-shrink-0 w-20 text-center focus:outline-none group">
+                        <div className="relative">
+                            <img 
+                                src={host.avatarUrl} 
+                                alt={host.name} 
+                                className="w-16 h-16 rounded-full border-2 border-gray-700 group-hover:border-indigo-500 transition-colors" 
+                            />
+                            <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-xs font-bold uppercase px-1.5 py-0.5 rounded-md border-2 border-gray-900">
+                                Live
+                            </div>
+                            <div className="absolute inset-0 rounded-full animate-pulse-live pointer-events-none"></div>
+                        </div>
+                        <p className="text-xs text-white font-semibold truncate w-full">{host.name}</p>
+                    </button>
+                )
+            })}
+        </div>
+    );
+};
+
+
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms, liveRooms, onEnterRoom }) => {
   let title = '';
   let placeholder = '';
+
+  const isHome = activeView === 'home';
 
   switch (activeView) {
     case 'home':
@@ -43,12 +88,14 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                    <button 
-                        onClick={onNavigateToLive} 
-                        className={`text-lg font-extrabold tracking-wider text-red-500 border border-red-500/50 rounded-lg px-3 py-1 transition-colors hover:bg-red-500/20 ${hasActiveLiveRooms ? 'animate-pulse-live' : ''}`}
-                    >
-                        LIVE
-                    </button>
+                    {!isHome && (
+                      <button 
+                          onClick={onNavigateToLive} 
+                          className={`text-lg font-extrabold tracking-wider text-red-500 border border-red-500/50 rounded-lg px-3 py-1 transition-colors hover:bg-red-500/20 ${hasActiveLiveRooms ? 'animate-pulse-live' : ''}`}
+                      >
+                          LIVE
+                      </button>
+                    )}
                     <h1 className="text-3xl font-bold">{title}</h1>
                 </div>
                 <button
@@ -86,6 +133,11 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
                 </div>
             )}
         </div>
+        {isHome && (
+            <div className="max-w-6xl mx-auto mt-4">
+                 <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+            </div>
+        )}
     </header>
   );
 };

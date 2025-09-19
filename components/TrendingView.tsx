@@ -5,7 +5,6 @@ import { DiscoverCard } from './DiscoverCards';
 interface TrendingViewProps {
   items: DiscoverItem[];
   currentUser: User;
-  liveRooms: Room[];
   initialFilter?: string | null;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
@@ -23,51 +22,7 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'Posts': 'text_post',
 };
 
-const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
-    if (liveRooms.length === 0) {
-        return null;
-    }
-
-    const uniqueHostsInRooms = new Map<string, Room>();
-    liveRooms.forEach(room => {
-        room.hosts.forEach(host => {
-            if (!uniqueHostsInRooms.has(host.id)) {
-                uniqueHostsInRooms.set(host.id, room);
-            }
-        });
-    });
-
-    return (
-        <div className="mb-8">
-            <div className="flex items-center space-x-4 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
-                {Array.from(uniqueHostsInRooms.entries()).map(([hostId, room]) => {
-                    const host = room.hosts.find(h => h.id === hostId);
-                    if (!host) return null;
-                    return (
-                        <button key={host.id} onClick={() => onEnterRoom(room)} className="flex flex-col items-center space-y-2 flex-shrink-0 w-20 text-center focus:outline-none group">
-                            <div className="relative">
-                                <img 
-                                    src={host.avatarUrl} 
-                                    alt={host.name} 
-                                    className="w-16 h-16 rounded-full border-2 border-gray-700 group-hover:border-indigo-500 transition-colors" 
-                                />
-                                <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-xs font-bold uppercase px-1.5 py-0.5 rounded-md border-2 border-gray-900">
-                                    Live
-                                </div>
-                                {/* FIX: Replaced the misaligned ring with a perfectly concentric, glowing animation that sits flush against the avatar. */}
-                                <div className="absolute inset-0 rounded-full animate-pulse-live pointer-events-none"></div>
-                            </div>
-                            <p className="text-xs text-white font-semibold truncate w-full">{host.name}</p>
-                        </button>
-                    )
-                })}
-            </div>
-        </div>
-    );
-};
-
-
-const TrendingView: React.FC<TrendingViewProps> = ({ items, currentUser, liveRooms, initialFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
+const TrendingView: React.FC<TrendingViewProps> = ({ items, currentUser, initialFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
   const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
   const [activeFilter, setActiveFilter] = useState(initialFilter || 'All');
 
@@ -123,8 +78,6 @@ const TrendingView: React.FC<TrendingViewProps> = ({ items, currentUser, liveRoo
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
-        <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-
         {/* Primary Curation Tabs */}
         <div className="flex justify-center mb-4 border-b border-gray-800">
             <button
