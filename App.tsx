@@ -14,7 +14,7 @@ import NotificationsView from './components/NotificationsView';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
 import { MyStudioView, TrendingView } from './components/PlaceholderViews';
-import { User, Room, ChatMessage, Conversation, Notification, ActiveView } from './types';
+import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition } from './types';
 import { UserContext } from './context/UserContext';
 
 // --- MOCK DATA ---
@@ -109,6 +109,7 @@ const App: React.FC = () => {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [userCardModalUser, setUserCardModalUser] = useState<User | null>(null);
+  const [userCardModalPosition, setUserCardModalPosition] = useState<ModalPosition | null>(null);
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
@@ -181,9 +182,10 @@ const App: React.FC = () => {
       }
   };
 
-  const handleUserSelect = (user: User) => {
+  const handleUserSelect = (user: User, position?: ModalPosition) => {
     if (user.id !== currentUser.id) {
         setUserCardModalUser(user);
+        setUserCardModalPosition(position || null);
     }
   };
 
@@ -270,7 +272,11 @@ const App: React.FC = () => {
         {userCardModalUser && (
             <UserCardModal
                 user={userCardModalUser}
-                onClose={() => setUserCardModalUser(null)}
+                position={userCardModalPosition}
+                onClose={() => {
+                    setUserCardModalUser(null);
+                    setUserCardModalPosition(null);
+                }}
                 onViewProfile={handleViewProfile}
             />
         )}

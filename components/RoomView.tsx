@@ -1,6 +1,6 @@
 // Implemented RoomView, the main interface for participating in a live audio room.
 import React, { useState } from 'react';
-import { Room, User, ChatMessage } from '../types';
+import { Room, User, ChatMessage, ModalPosition } from '../types';
 import ChatView from './ChatView';
 import HostControls from './HostControls';
 import ListenerControls from './ListenerControls';
@@ -10,10 +10,10 @@ interface RoomViewProps {
   room: Room;
   currentUser: User;
   onLeave: () => void;
-  onUserSelect: (user: User) => void;
+  onUserSelect: (user: User, position: ModalPosition) => void;
 }
 
-const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: () => void }> = ({ user, size = 'large', onClick }) => (
+const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }> = ({ user, size = 'large', onClick }) => (
     <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full">
         <img 
             src={user.avatarUrl} 
@@ -45,6 +45,15 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
 
     const onToggleScreenShare = async () => {
       setIsSharingScreen(!isSharingScreen);
+    };
+
+    const handleAvatarClick = (event: React.MouseEvent<HTMLButtonElement>, user: User) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        onUserSelect(user, {
+            top: rect.bottom,
+            left: rect.left,
+            width: rect.width
+        });
     };
 
     return (
@@ -83,19 +92,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} onClick={() => onUserSelect(user)} />)}
+                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} onClick={() => onUserSelect(user)} />)}
+                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
                <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
-                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" onClick={() => onUserSelect(user)} />)}
+                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" onClick={(e) => handleAvatarClick(e, user)} />)}
                   </div>
               </div>
           </div>

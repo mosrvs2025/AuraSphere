@@ -1,15 +1,16 @@
 // Implemented the UserCardModal for displaying a brief user profile.
 import React, { useContext } from 'react';
-import { User } from '../types';
+import { User, ModalPosition } from '../types';
 import { UserContext } from '../context/UserContext';
 
 interface UserCardModalProps {
   user: User;
   onClose: () => void;
   onViewProfile: (user: User) => void;
+  position: ModalPosition | null;
 }
 
-const UserCardModal: React.FC<UserCardModalProps> = ({ user, onClose, onViewProfile }) => {
+const UserCardModal: React.FC<UserCardModalProps> = ({ user, onClose, onViewProfile, position }) => {
   const { currentUser, followUser, unfollowUser } = useContext(UserContext);
   const isFollowing = currentUser.following?.some(u => u.id === user.id);
   const isOwnProfile = currentUser.id === user.id;
@@ -22,13 +23,44 @@ const UserCardModal: React.FC<UserCardModalProps> = ({ user, onClose, onViewProf
     }
   };
 
+  const getModalStyle = (): React.CSSProperties => {
+      if (!position) {
+          // Fallback to centered for safety
+          return {
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+          };
+      }
+      
+      const modalWidth = 320; // Corresponds to max-w-xs
+      let left = position.left + (position.width / 2) - (modalWidth / 2);
+
+      // Boundary checks to keep it on screen
+      const margin = 16; // 1rem
+      if (left < margin) {
+          left = margin;
+      }
+      if (left + modalWidth > window.innerWidth - margin) {
+          left = window.innerWidth - modalWidth - margin;
+      }
+
+      return {
+          position: 'fixed',
+          top: `${position.top + 8}px`, // 8px margin below avatar
+          left: `${left}px`,
+      };
+  };
+
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+      className="fixed inset-0 bg-black/20 z-50"
       onClick={onClose}
     >
       <div 
-        className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-xs m-4 text-white shadow-2xl animate-slide-up text-center"
+        style={getModalStyle()}
+        className="absolute bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-xs text-white shadow-2xl animate-fade-in text-center"
         onClick={(e) => e.stopPropagation()}
       >
         <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto border-4 border-gray-700" />

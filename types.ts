@@ -50,5 +50,11 @@ export interface Notification {
     relatedRoomId?: string;
 }
 
+export interface ModalPosition {
+    top: number;
+    left: number;
+    width: number;
+}
+
 // FIX: Centralized the ActiveView type to be used across the application, resolving type inconsistencies.
 export type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation';
