@@ -6,6 +6,8 @@ export interface IUserContext {
   currentUser: User;
   updateCurrentUser: (userData: Partial<User>) => void;
   getUserById: (id: string) => User | undefined;
+  followUser: (userId: string) => void;
+  unfollowUser: (userId: string) => void;
 }
 
 // This dummy user will be replaced by the state in App.tsx
@@ -24,4 +26,6 @@ export const UserContext = createContext<IUserContext>({
     console.warn('getUserById called outside of a UserContext.Provider');
     return undefined;
   },
+  followUser: () => console.warn('followUser called outside of a UserContext.Provider'),
+  unfollowUser: () => console.warn('unfollowUser called outside of a UserContext.Provider'),
 });

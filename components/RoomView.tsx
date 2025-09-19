@@ -10,21 +10,22 @@ interface RoomViewProps {
   room: Room;
   currentUser: User;
   onLeave: () => void;
+  onUserSelect: (user: User) => void;
 }
 
-const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small' }> = ({ user, size = 'large' }) => (
-    <div className="flex flex-col items-center space-y-1 text-center">
+const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: () => void }> = ({ user, size = 'large', onClick }) => (
+    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full">
         <img 
             src={user.avatarUrl} 
             alt={user.name} 
             className={`${size === 'large' ? 'w-20 h-20' : 'w-12 h-12'} rounded-full border-2 border-gray-600 shadow-md`}
         />
         <p className={`font-semibold truncate w-24 ${size === 'large' ? 'text-sm' : 'text-xs'}`}>{user.name}</p>
-    </div>
+    </button>
 );
 
 
-const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserSelect }) => {
     const [messages, setMessages] = useState<ChatMessage[]>(room.messages);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
@@ -82,19 +83,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave }) => {
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} />)}
+                      {currentRoom.hosts.map(user => <UserAvatar key={user.id} user={user} onClick={() => onUserSelect(user)} />)}
                   </div>
               </div>
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Speakers</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} />)}
+                      {currentRoom.speakers.map(user => <UserAvatar key={user.id} user={user} onClick={() => onUserSelect(user)} />)}
                   </div>
               </div>
                <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Listeners</h2>
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
-                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" />)}
+                      {currentRoom.listeners.map(user => <UserAvatar key={user.id} user={user} size="small" onClick={() => onUserSelect(user)} />)}
                   </div>
               </div>
           </div>

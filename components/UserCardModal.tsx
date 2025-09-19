@@ -1,6 +1,7 @@
 // Implemented the UserCardModal for displaying a brief user profile.
-import React from 'react';
+import React, { useContext } from 'react';
 import { User } from '../types';
+import { UserContext } from '../context/UserContext';
 
 interface UserCardModalProps {
   user: User;
@@ -9,6 +10,18 @@ interface UserCardModalProps {
 }
 
 const UserCardModal: React.FC<UserCardModalProps> = ({ user, onClose, onViewProfile }) => {
+  const { currentUser, followUser, unfollowUser } = useContext(UserContext);
+  const isFollowing = currentUser.following?.some(u => u.id === user.id);
+  const isOwnProfile = currentUser.id === user.id;
+
+  const handleFollowToggle = () => {
+    if (isFollowing) {
+      unfollowUser(user.id);
+    } else {
+      followUser(user.id);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
@@ -29,9 +42,11 @@ const UserCardModal: React.FC<UserCardModalProps> = ({ user, onClose, onViewProf
           <button onClick={() => onViewProfile(user)} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full transition">
             View Profile
           </button>
-           <button className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition">
-            Follow
-          </button>
+           {!isOwnProfile && (
+             <button onClick={handleFollowToggle} className={`w-full font-bold py-2 px-4 rounded-full transition ${isFollowing ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-200 text-black'}`}>
+                {isFollowing ? 'Unfollow' : 'Follow'}
+             </button>
+           )}
         </div>
       </div>
     </div>

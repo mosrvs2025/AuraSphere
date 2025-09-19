@@ -1,72 +1,137 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// Fix: Implemented the main App component, including state management, view routing, and mock data to create a functional application structure and resolve compilation errors.
+import React, { useState, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
-import ProfileView from './components/ProfileView';
-import MessagesView from './components/MessagesView';
-import ConversationView from './components/ConversationView';
-import NotificationsView from './components/NotificationsView';
-import ScheduledView from './components/ScheduledView';
-import { TrendingView, MyStudioView } from './components/PlaceholderViews';
+import Header from './components/Header';
 import CreateRoomModal from './components/CreateRoomModal';
 import EditProfileModal from './components/EditProfileModal';
+import UserProfile from './components/UserProfile';
+import MessagesView from './components/MessagesView';
+import ConversationView from './components/ConversationView';
+import ScheduledView from './components/ScheduledView';
+import NotificationsView from './components/NotificationsView';
 import AvatarCustomizer from './components/AvatarCustomizer';
-import Header from './components/Header';
+import UserCardModal from './components/UserCardModal';
+import { MyStudioView, TrendingView } from './components/PlaceholderViews';
+import { User, Room, ChatMessage, Conversation, Notification, ActiveView } from './types';
 import { UserContext } from './context/UserContext';
-import { ActiveView, User, Room, ChatMessage, Conversation, Notification } from './types';
 
 // --- MOCK DATA ---
-const ALL_USERS: User[] = [
-    { id: 'u1', name: 'Alex', avatarUrl: 'https://i.pravatar.cc/150?img=11', bio: 'Host of The Future of Tech. Web3 enthusiast.', followers: [], following: [] },
-    { id: 'u2', name: 'Maria', avatarUrl: 'https://i.pravatar.cc/150?img=12', bio: 'UX Designer & creative mind. Love talking about design systems.', followers: [], following: [] },
-    { id: 'u3', name: 'David', avatarUrl: 'https://i.pravatar.cc/150?img=13', bio: 'Building in public. Founder @ Cool Startup.', followers: [], following: [] },
-    { id: 'u4', name: 'Sophia', avatarUrl: 'https://i.pravatar.cc/150?img=14', bio: 'AI researcher and podcast host.', followers: [], following: [] },
-    { id: 'u5', name: 'Leo', avatarUrl: 'https://i.pravatar.cc/150?img=15', followers: [], following: [] },
-    { id: 'u6', name: 'Isabella', avatarUrl: 'https://i.pravatar.cc/150?img=16', followers: [], following: [] },
-    { id: 'u7', name: 'Ethan', avatarUrl: 'https://i.pravatar.cc/150?img=17', followers: [], following: [] },
+const allUsersData: User[] = [
+  { id: 'u1', name: 'Alex Reid', avatarUrl: 'https://i.pravatar.cc/150?img=11', bio: 'Building the future of audio.', followers: [], following: [] },
+  { id: 'u2', name: 'Bella Chen', avatarUrl: 'https://i.pravatar.cc/150?img=12', bio: 'Designer & Dreamer.', followers: [], following: [] },
+  { id: 'u3', name: 'Chris Evans', avatarUrl: 'https://i.pravatar.cc/150?img=13', bio: 'Exploring the web3 space.', followers: [], following: [] },
+  { id: 'u4', name: 'Diana Prince', avatarUrl: 'https://i.pravatar.cc/150?img=14', bio: 'Musician and coffee enthusiast.', followers: [], following: [] },
+  { id: 'u5', name: 'Ethan Hunt', avatarUrl: 'https://i.pravatar.cc/150?img=15', bio: 'Just here for the conversations.', followers: [], following: [] },
+];
+
+const initialCurrentUser: User = {
+  id: 'u0',
+  name: 'Jordan Lee',
+  avatarUrl: 'https://i.pravatar.cc/150?img=10',
+  bio: 'Host of the "Future Tech" room & avid learner.',
+  followers: [allUsersData[0], allUsersData[2], allUsersData[3]],
+  following: [allUsersData[1], allUsersData[4]],
+};
+
+// Establish reciprocal relationships for mock data
+allUsersData[0].followers = [initialCurrentUser];
+allUsersData[1].followers = [initialCurrentUser];
+allUsersData[2].followers = [initialCurrentUser];
+allUsersData[3].followers = [initialCurrentUser];
+allUsersData[4].followers = [initialCurrentUser];
+
+
+allUsersData.push(initialCurrentUser);
+
+const initialRooms: Room[] = [
+  {
+    id: 'r1',
+    title: '🚀 Future of Web Development in 2025',
+    hosts: [allUsersData.find(u => u.id === 'u1')!],
+    speakers: [allUsersData.find(u => u.id === 'u2')!],
+    listeners: [allUsersData.find(u => u.id === 'u3')!, allUsersData.find(u => u.id === 'u4')!, initialCurrentUser],
+    messages: [
+        { id: 'm1', user: allUsersData[1], text: 'Great point about WASM!', createdAt: new Date(Date.now() - 60000 * 5) },
+        { id: 'm2', user: allUsersData[3], text: 'What about AI code assistants?', createdAt: new Date(Date.now() - 60000 * 3) },
+        { id: 'm3', user: initialCurrentUser, text: 'I think they are the future!', createdAt: new Date(Date.now() - 60000 * 1) },
+    ],
+    isPrivate: false,
+  },
+  {
+    id: 'r2',
+    title: '🎨 The Art of UI/UX Design',
+    hosts: [allUsersData.find(u => u.id === 'u2')!],
+    speakers: [],
+    listeners: [allUsersData.find(u => u.id === 'u1')!, allUsersData.find(u => u.id === 'u5')!],
+    messages: [],
+    isPrivate: false,
+  },
+   {
+    id: 'r3',
+    title: '🗓️ Weekly Standup & Chill',
+    hosts: [initialCurrentUser],
+    speakers: [],
+    listeners: [],
+    messages: [],
+    isPrivate: true,
+    isScheduled: true,
+    scheduledTime: new Date(Date.now() + 86400000 * 2), // 2 days from now
+  },
+];
+
+const initialConversations: Conversation[] = [
+    {
+        id: 'c1',
+        participants: [initialCurrentUser, allUsersData.find(u=> u.id === 'u2')!],
+        messages: [
+            { id: 'c1m1', user: allUsersData.find(u=> u.id === 'u2')!, text: 'Hey, loved your room yesterday!', createdAt: new Date(Date.now() - 3600000) },
+            { id: 'c1m2', user: initialCurrentUser, text: 'Thanks Bella! Glad you could make it.', createdAt: new Date(Date.now() - 3540000) },
+        ]
+    }
+];
+
+const initialNotifications: Notification[] = [
+    { id: 'n1', text: 'Alex Reid started a new room: "Future of Web..."', createdAt: new Date(Date.now() - 1000 * 60 * 10), isRead: false, type: 'room_start', relatedUser: allUsersData.find(u=> u.id === 'u1'), relatedRoomId: 'r1' },
+    { id: 'n2', text: 'Bella Chen followed you.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true, type: 'follow', relatedUser: allUsersData.find(u=> u.id === 'u2') },
 ];
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User>({ ...ALL_USERS[0], followers: [ALL_USERS[1], ALL_USERS[3]], following: [ALL_USERS[2]] });
+  const [currentUser, setCurrentUser] = useState<User>(initialCurrentUser);
+  const [allUsers, setAllUsers] = useState<User[]>(allUsersData);
+  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [profileUser, setProfileUser] = useState<User>(currentUser);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [userCardModalUser, setUserCardModalUser] = useState<User | null>(null);
+
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
 
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  useEffect(() => {
-    // This would be a fetch call in a real app
-    setRooms([
-        { id: 'r1', title: 'The Future of Tech 🚀', hosts: [ALL_USERS[0]], speakers: [ALL_USERS[1]], listeners: [ALL_USERS[2], ALL_USERS[3], ALL_USERS[4]], messages: [], isPrivate: false },
-        { id: 'r2', title: 'Design Systems & You', hosts: [ALL_USERS[1]], speakers: [ALL_USERS[0]], listeners: [ALL_USERS[3], ALL_USERS[5], ALL_USERS[6]], messages: [], isPrivate: false },
-        { id: 'r3', title: 'Startup Grind: Building in Public', hosts: [ALL_USERS[2]], speakers: [], listeners: [ALL_USERS[0], ALL_USERS[1], ALL_USERS[4]], messages: [], isPrivate: false },
-        { id: 'r4', title: 'Scheduled: AI Ethics Discussion', hosts: [ALL_USERS[3]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
-    ]);
-    setConversations([
-        { id: 'c1', participants: [currentUser, ALL_USERS[1]], messages: [{ id: 'm1', user: ALL_USERS[1], text: 'Hey, great talk yesterday!', createdAt: new Date(Date.now() - 60000) }] },
-        { id: 'c2', participants: [currentUser, ALL_USERS[2]], messages: [{ id: 'm2', user: ALL_USERS[2], text: 'Can you send me that link?', createdAt: new Date(Date.now() - 120000) }] },
-    ]);
-    setNotifications([
-        { id: 'n1', text: 'Maria started following you.', relatedUser: ALL_USERS[1], type: 'follow', createdAt: new Date(), isRead: false },
-        { id: 'n2', text: 'The room "AI Ethics Discussion" is starting soon.', relatedRoomId: 'r4', type: 'room_start', createdAt: new Date(), isRead: true },
-    ]);
-  }, [currentUser]);
-
-  const updateCurrentUser = (userData: Partial<User>) => {
-    setCurrentUser(prev => ({ ...prev, ...userData }));
+  const handleSetActiveView = (view: ActiveView) => {
+    setActiveView(view);
+    setActiveRoom(null);
+    setActiveConversation(null);
+    if (view !== 'profile') {
+        setProfileUser(null);
+    }
+    setSidebarOpen(false);
   };
 
-  const getUserById = useCallback((id: string): User | undefined => {
-    return ALL_USERS.find(u => u.id === id) || (id === currentUser.id ? currentUser : undefined);
-  }, [currentUser]);
+  const handleEnterRoom = (room: Room) => {
+    setActiveRoom(room);
+  };
+
+  const handleLeaveRoom = () => {
+    setActiveRoom(null);
+  };
 
   const handleCreateRoom = (title: string, description: string, isPrivate: boolean) => {
     const newRoom: Room = {
@@ -82,73 +147,133 @@ const App: React.FC = () => {
     setRooms(prev => [newRoom, ...prev]);
     setCreateRoomModalOpen(false);
     setActiveRoom(newRoom);
-    setActiveView('home'); // To ensure view logic shows the room
   };
-  
-  const handleEditProfile = (name: string, bio: string) => {
-      updateCurrentUser({ name, bio });
-      setEditProfileModalOpen(false);
-  };
-  
-  const handleAvatarSelect = (url: string) => {
-      updateCurrentUser({ avatarUrl: url });
-      setAvatarCustomizerOpen(false);
-  };
-  
+
   const handleViewProfile = (user: User) => {
     setProfileUser(user);
     setActiveView('profile');
-    setActiveRoom(null);
+    setUserCardModalUser(null); // Close card modal when viewing full profile
   };
 
-  const changeView = (view: ActiveView) => {
-    setActiveView(view);
-    setActiveRoom(null);
-    setActiveConversation(null);
-    if(view === 'profile') setProfileUser(currentUser);
-    setSidebarOpen(false);
+  const handleEditProfile = (name: string, bio: string) => {
+    setCurrentUser(prev => ({ ...prev, name, bio }));
+    setEditProfileModalOpen(false);
+  };
+  
+  const handleAvatarSelect = (url: string) => {
+    setCurrentUser(prev => ({...prev, avatarUrl: url}));
+    setAvatarCustomizerOpen(false);
   }
+  
+  const handleConversationSelect = (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    setActiveView('conversation');
+  };
 
-  const renderView = () => {
+  const handleNotificationClick = (notification: Notification) => {
+      setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, isRead: true} : n));
+      // Potentially navigate based on notification type
+      if (notification.relatedRoomId) {
+          const room = rooms.find(r => r.id === notification.relatedRoomId);
+          if (room) handleEnterRoom(room);
+      } else if (notification.type === 'follow' && notification.relatedUser) {
+          handleViewProfile(notification.relatedUser);
+      }
+  };
+
+  const handleUserSelect = (user: User) => {
+    if (user.id !== currentUser.id) {
+        setUserCardModalUser(user);
+    }
+  };
+
+  const handleFollowUser = (userIdToFollow: string) => {
+    const userToFollow = allUsers.find(u => u.id === userIdToFollow);
+    if (!userToFollow || currentUser.following?.some(u => u.id === userIdToFollow)) return;
+
+    setCurrentUser(prev => ({...prev, following: [...(prev.following || []), userToFollow]}));
+    setAllUsers(prev => prev.map(u => u.id === userIdToFollow ? {...u, followers: [...(u.followers || []), currentUser]} : u));
+  };
+  
+  const handleUnfollowUser = (userIdToUnfollow: string) => {
+    setCurrentUser(prev => ({...prev, following: (prev.following || []).filter(u => u.id !== userIdToUnfollow)}));
+    setAllUsers(prev => prev.map(u => u.id === userIdToUnfollow ? {...u, followers: (u.followers || []).filter(follower => follower.id !== currentUser.id)} : u));
+  };
+
+  const userContextValue = useMemo(() => ({
+    currentUser,
+    updateCurrentUser: (userData: Partial<User>) => setCurrentUser(prev => ({ ...prev, ...userData })),
+    getUserById: (id: string) => allUsers.find(u => u.id === id),
+    followUser: handleFollowUser,
+    unfollowUser: handleUnfollowUser,
+  }), [currentUser, allUsers]);
+
+  const renderActiveView = () => {
     if (activeRoom) {
-      return <RoomView room={activeRoom} currentUser={currentUser} onLeave={() => setActiveRoom(null)} />;
+      return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={handleUserSelect} />;
     }
-    if (activeConversation) {
-        return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} />;
-    }
-    
+
     switch (activeView) {
-      case 'home': return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={setActiveRoom} />;
-      case 'trending': return <TrendingView />;
-      case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
-      case 'scheduled': return <ScheduledView rooms={rooms} />;
-      case 'profile': return <ProfileView user={profileUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} currentUser={currentUser}/>;
-      case 'notifications': return <NotificationsView notifications={notifications} onNotificationClick={(n) => setNotifications(notifs => notifs.map(x => x.id === n.id ? {...x, isRead: true} : x))} />;
-      case 'my-studio': return <MyStudioView />;
-      default: return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={setActiveRoom} />;
+      case 'home':
+        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+      case 'profile':
+         // When 'profile' nav is clicked, show current user's profile.
+        const userToShow = profileUser || currentUser;
+        return <UserProfile user={userToShow} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
+      case 'messages':
+        return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleConversationSelect} />;
+      case 'conversation':
+        return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => handleSetActiveView('messages')} /> : <div/>;
+      case 'scheduled':
+        return <ScheduledView rooms={rooms} />;
+      case 'notifications':
+        return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
+      case 'trending':
+        return <TrendingView />;
+      case 'my-studio':
+        return <MyStudioView />;
+      default:
+        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
     }
   };
 
   return (
-    <UserContext.Provider value={{ currentUser, updateCurrentUser, getUserById }}>
-      <div className="flex h-screen bg-gray-900 text-gray-100 font-sans">
+    <UserContext.Provider value={userContextValue}>
+      <div className="bg-gray-900 text-white h-screen flex overflow-hidden font-sans">
         <Sidebar 
             activeView={activeView}
-            setActiveView={changeView}
+            setActiveView={handleSetActiveView}
             isSidebarOpen={isSidebarOpen}
             setSidebarOpen={setSidebarOpen}
             onCreateRoom={() => setCreateRoomModalOpen(true)}
             unreadNotificationCount={notifications.filter(n => !n.isRead).length}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
-          <Header onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
-          <div className="flex-1 overflow-y-auto">
-            {renderView()}
-          </div>
+            <Header onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
+            <div className="flex-1 overflow-y-auto">
+                {renderActiveView()}
+            </div>
         </main>
-        {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
-        {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfile} />}
-        {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
+        
+        {isCreateRoomModalOpen && (
+          <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />
+        )}
+        
+        {isEditProfileModalOpen && (
+          <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfile} />
+        )}
+
+        {isAvatarCustomizerOpen && (
+            <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />
+        )}
+
+        {userCardModalUser && (
+            <UserCardModal
+                user={userCardModalUser}
+                onClose={() => setUserCardModalUser(null)}
+                onViewProfile={handleViewProfile}
+            />
+        )}
       </div>
     </UserContext.Provider>
   );
