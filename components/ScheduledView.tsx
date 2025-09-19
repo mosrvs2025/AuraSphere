@@ -64,7 +64,11 @@ const ScheduledView: React.FC<ScheduledViewProps> = ({ rooms, discoverItems }) =
 
     const getPostTitle = (post: typeof scheduledPosts[0]) => {
         if (post.type === 'text_post') return post.content;
-        return post.caption || `Scheduled ${post.type.split('_')[0]}`;
+        // FIX: Added a type check to ensure the post has a 'caption' property before accessing it.
+        if (post.type === 'image_post' || post.type === 'video_post') {
+            return post.caption || `Scheduled ${post.type.split('_')[0]}`;
+        }
+        return 'Scheduled Post';
     };
 
     const getPostIcon = (post: typeof scheduledPosts[0]) => {
@@ -91,7 +95,8 @@ const ScheduledView: React.FC<ScheduledViewProps> = ({ rooms, discoverItems }) =
           {weekdays.map(day => <div key={day} className="text-center text-xs text-gray-400 font-bold py-2 bg-gray-900/30">{day}</div>)}
           {days.map(({ date, isCurrentMonth }, index) => {
             const dayRooms = scheduledRooms.filter(room => room.scheduledTime && new Date(room.scheduledTime).toDateString() === date.toDateString());
-            const dayPosts = scheduledPosts.filter(post => post.scheduledTime && new Date(post.scheduledTime).toDateString() === date.toDateString());
+            // FIX: Added a check for 'scheduledTime' to ensure the property exists before being accessed.
+            const dayPosts = scheduledPosts.filter(post => 'scheduledTime' in post && post.scheduledTime && new Date(post.scheduledTime).toDateString() === date.toDateString());
             const isToday = new Date().toDateString() === date.toDateString();
 
             return (

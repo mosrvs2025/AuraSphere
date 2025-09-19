@@ -115,4 +115,412 @@ const App: React.FC = () => {
 
     const [notifications, setNotifications] = useState<Notification[]>([
         { id: 'n1', text: `${users[1].name} started a new room: "Tech Talk Weekly"`, createdAt: new Date(), isRead: false, type: 'room_start', relatedRoomId: 'room-1' },
-        { id: 'n2', text: `${users[4].name} followed you.`, createdAt: new Date(Date.now() - 3600
+        { id: 'n2', text: `${users[4].name} followed you.`, createdAt: new Date(Date.now() - 3600000), isRead: false, type: 'follow', relatedUser: users[4] },
+    ]);
+
+    const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>([
+      { type: 'live_room', ...rooms[0] },
+      { type: 'image_post', id: 'dp-1', author: users[5], imageUrl: 'https://picsum.photos/seed/discover1/600/800', caption: 'Exploring the city vibes today!', likes: 128, comments: 12, createdAt: new Date(Date.now() - 3600000 * 2), status: 'published' },
+      { type: 'user_profile', ...users[8] },
+      { type: 'live_room', ...rooms[1] },
+      { type: 'text_post', id: 'dp-2', author: users[9], content: "Just had a breakthrough on a project I've been working on for weeks. The feeling is incredible! Never underestimate the power of persistence. #developer #coding #success", likes: 42, comments: 5, createdAt: new Date(Date.now() - 3600000 * 5), status: 'published' },
+      { type: 'video_post', id: 'dp-3', author: users[10], videoUrl: '#', thumbnailUrl: 'https://picsum.photos/seed/discover3/800/600', caption: 'Quick jam session from this afternoon.', likes: 250, comments: 23, createdAt: new Date(Date.now() - 3600000 * 8), status: 'published' },
+    ]);
+
+    // --- App State ---
+    const [activeView, setActiveView] = useState<ActiveView>('home');
+    const [previousView, setPreviousView] = useState<ActiveView | null>(null);
+    const [activeRoom, setActiveRoom] = useState<Room | null>(null);
+    const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+    const [activeProfile, setActiveProfile] = useState<User | null>(null);
+    const [activePost, setActivePost] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
+    const [activeMediaPost, setActiveMediaPost] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
+    
+    // --- Modal State ---
+    const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+    const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
+    const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
+    const [isUserCardOpen, setUserCardOpen] = useState(false);
+    const [isCreateHubOpen, setCreateHubOpen] = useState(false);
+    const [selectedUserForCard, setSelectedUserForCard] = useState<User | null>(null);
+    const [userCardPosition, setUserCardPosition] = useState<ModalPosition | null>(null);
+
+    // --- Create Flow State ---
+    const [activeCreateView, setActiveCreateView] = useState<'image' | 'video' | 'note' | null>(null);
+    const [selectedFile, setSelectedFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
+
+    // --- In-App Browser State ---
+    const [browserUrl, setBrowserUrl] = useState<string | null>(null);
+
+    // --- Search State ---
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // --- Automatic Content Publishing ---
+    useEffect(() => {
+        const publishingInterval = setInterval(() => {
+            const now = new Date();
+            let itemsChanged = false;
+
+            const updatedItems = discoverItems.map(item => {
+                if (
+                    (item.type === 'text_post' || item.type === 'image_post' || item.type === 'video_post') &&
+                    item.status === 'scheduled' &&
+                    item.scheduledTime &&
+                    new Date(item.scheduledTime) <= now
+                ) {
+                    itemsChanged = true;
+                    // Fulfills the scheduling by publishing the post
+                    return { ...item, status: 'published' as 'published' };
+                }
+                return item;
+            });
+
+            if (itemsChanged) {
+                setDiscoverItems(updatedItems);
+            }
+        }, 10000); // Check for posts to publish every 10 seconds
+
+        return () => clearInterval(publishingInterval);
+    }, [discoverItems]);
+
+
+    // --- Context Providers ---
+    const getUserById = (id: string): User | undefined => {
+        if (id === currentUser.id) return currentUser;
+        return users.find(u => u.id === id);
+    };
+
+    const followUser = (userId: string) => {
+        const userToFollow = getUserById(userId);
+        if (userToFollow && !currentUser.following?.some(u => u.id === userId)) {
+            setCurrentUser(prev => ({
+                ...prev,
+                following: [...(prev.following || []), userToFollow]
+            }));
+            // In a real app, you'd also update the followed user's followers list
+        }
+    };
+    
+    const unfollowUser = (userId: string) => {
+        setCurrentUser(prev => ({
+            ...prev,
+            following: (prev.following || []).filter(u => u.id !== userId)
+        }));
+    };
+
+    const updateCurrentUser = (userData: Partial<User>) => {
+        setCurrentUser(prev => ({ ...prev, ...userData }));
+    };
+
+    const userContextValue = { currentUser, updateCurrentUser, getUserById, followUser, unfollowUser };
+
+    // --- Navigation Handlers ---
+    const changeView = (view: ActiveView) => {
+        setPreviousView(activeView);
+        setActiveView(view);
+        // Reset specific views when navigating away
+        setActiveProfile(null);
+        setActiveConversation(null);
+        setActivePost(null);
+    };
+
+    const handleBackNavigation = () => {
+      // Simple back navigation logic
+      if (activeProfile || activeConversation || activePost) {
+          setActiveProfile(null);
+          setActiveConversation(null);
+          setActivePost(null);
+          // Return to the view that was active before showing the detail view
+          if (previousView) {
+            setActiveView(previousView);
+            setPreviousView(null);
+          } else {
+            setActiveView('home'); // Fallback
+          }
+      } else if (activeView === 'room' && activeRoom) {
+          // Do nothing, handled by MiniPlayer/Leave button
+      } else {
+          setActiveView('home'); // Default back action
+      }
+    };
+    
+
+    const handleEnterRoom = (room: Room) => {
+        setActiveRoom(room);
+        changeView('room');
+    };
+
+    const handleLeaveRoom = () => {
+        setActiveRoom(null);
+        setActiveView('home');
+    };
+
+    const handleSelectConversation = (conversation: Conversation) => {
+        setActiveConversation(conversation);
+        changeView('conversation');
+    };
+    
+    const handleViewProfile = (user: User) => {
+        setActiveProfile(user);
+        changeView('profile');
+    };
+
+    const handleViewMedia = (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => {
+        setActiveMediaPost(post);
+    };
+
+    const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' }>) => {
+        setActivePost(post);
+        changeView('post_detail');
+    };
+
+
+    // --- Modal Handlers ---
+    const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string) => {
+        const newRoom: Room = {
+            id: `room-${Date.now()}`,
+            title,
+            description,
+            hosts: [currentUser],
+            speakers: [],
+            listeners: [],
+            messages: [],
+            isPrivate,
+            featuredUrl: featuredUrl || undefined,
+        };
+        setRooms(prev => [...prev, newRoom]);
+        setCreateRoomModalOpen(false);
+        handleEnterRoom(newRoom);
+    };
+
+    const handleEditProfileSave = (name: string, bio: string) => {
+        updateCurrentUser({ name, bio });
+        setEditProfileModalOpen(false);
+    };
+
+    const handleAvatarSelect = (url: string) => {
+        updateCurrentUser({ avatarUrl: url });
+        setAvatarCustomizerOpen(false);
+    };
+    
+    const handleUserSelectForCard = (user: User, position: ModalPosition) => {
+        if (selectedUserForCard?.id === user.id) {
+            setUserCardOpen(false);
+            setSelectedUserForCard(null);
+        } else {
+            setSelectedUserForCard(user);
+            setUserCardPosition(position);
+            setUserCardOpen(true);
+        }
+    };
+
+    const handleCloseUserCard = () => {
+        setUserCardOpen(false);
+        // Delay clearing user to allow for fade-out animation
+        setTimeout(() => setSelectedUserForCard(null), 300);
+    };
+
+    // --- Notification Handler ---
+    const handleNotificationClick = (notification: Notification) => {
+        // Mark as read
+        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
+        
+        // Navigate
+        if (notification.type === 'room_start' && notification.relatedRoomId) {
+            const room = rooms.find(r => r.id === notification.relatedRoomId);
+            if (room) handleEnterRoom(room);
+        }
+        if (notification.type === 'follow' && notification.relatedUser) {
+            handleViewProfile(notification.relatedUser);
+        }
+    };
+
+    // --- Create Content Handlers ---
+    const handleCreateContentSelect = (option: 'live' | 'video' | 'image' | 'note') => {
+        setCreateHubOpen(false);
+        switch (option) {
+            case 'live':
+                setCreateRoomModalOpen(true);
+                break;
+            case 'image':
+                setSelectedFile({ url: 'https://picsum.photos/seed/newpost/1080/1350', type: 'image' });
+                setActiveCreateView('image');
+                break;
+             case 'video':
+                setSelectedFile({ url: '#', type: 'video' });
+                setActiveCreateView('video');
+                break;
+            case 'note':
+                setActiveCreateView('note');
+                break;
+        }
+    };
+    
+    // FIX: Refactored function to use a common base object, resolving type errors and making caption optional to support different post types.
+    const handlePublishPost = (
+        postData: { caption?: string; content?: string; fileUrl?: string; fileType?: 'image' | 'video' },
+        scheduleDate?: Date
+    ) => {
+        let newPostWithSpecifics: DiscoverItem;
+
+        const basePostData = {
+            author: currentUser,
+            likes: 0,
+            comments: 0,
+            status: scheduleDate ? 'scheduled' : 'published' as const,
+            scheduledTime: scheduleDate,
+            id: `post-${Date.now()}`,
+            createdAt: new Date(),
+        };
+
+        if (activeCreateView === 'note' && postData.content) {
+            newPostWithSpecifics = {
+                ...basePostData,
+                type: 'text_post',
+                content: postData.content,
+            };
+        } else if (selectedFile) {
+            if (selectedFile.type === 'image') {
+                newPostWithSpecifics = {
+                    ...basePostData,
+                    type: 'image_post',
+                    imageUrl: selectedFile.url,
+                    caption: postData.caption,
+                };
+            } else { // video
+                newPostWithSpecifics = {
+                    ...basePostData,
+                    type: 'video_post',
+                    videoUrl: selectedFile.url,
+                    thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/800/600`,
+                    caption: postData.caption,
+                };
+            }
+        } else {
+             console.error("No content or file to post.");
+             return;
+        }
+        
+        setDiscoverItems(prev => [newPostWithSpecifics, ...prev]);
+
+        // Close creation views
+        setActiveCreateView(null);
+        setSelectedFile(null);
+    };
+
+    const handleCloseCreateView = () => {
+        setActiveCreateView(null);
+        setSelectedFile(null);
+    };
+
+    // --- Render Logic ---
+    const renderActiveView = () => {
+        const publishedDiscoverItems = discoverItems.filter(item => {
+            // FIX: The filter logic for discover items was incorrect, causing scheduled posts to appear in the main feed.
+            // This now correctly filters to only show published posts, or items that don't have a status (like rooms and users).
+            if ('status' in item) {
+                return item.status === 'published';
+            }
+            return true;
+        });
+
+        if (searchQuery && (activeView === 'home' || activeView === 'messages')) {
+            return <GlobalSearchView 
+                        query={searchQuery} 
+                        activeView={activeView}
+                        discoverItems={publishedDiscoverItems}
+                        conversations={conversations}
+                        currentUser={currentUser}
+                        onEnterRoom={handleEnterRoom}
+                        onViewProfile={handleViewProfile}
+                        onViewMedia={handleViewMedia}
+                        onViewPost={handleViewPost}
+                        onConversationSelect={handleSelectConversation}
+                    />;
+        }
+
+        switch (activeView) {
+            case 'home':
+                return <TrendingView items={publishedDiscoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
+            case 'room':
+                if (activeRoom) return <RoomView 
+                                            room={activeRoom} 
+                                            currentUser={currentUser} 
+                                            onLeave={handleLeaveRoom} 
+                                            onUserSelect={handleUserSelectForCard}
+                                            selectedUser={selectedUserForCard}
+                                            onOpenLink={(url) => setBrowserUrl(url)}
+                                        />;
+                return null;
+            case 'messages':
+                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
+            case 'conversation':
+                if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={handleBackNavigation} onViewProfile={handleViewProfile} />;
+                return null;
+            case 'scheduled':
+                // The ScheduledView should see ALL items to display what's upcoming
+                return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
+            case 'profile':
+                const userToView = activeProfile || currentUser;
+                return <UserProfile user={userToView} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={handleBackNavigation} />;
+            case 'notifications':
+                return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
+            case 'post_detail':
+                if (activePost) return <PostDetailView post={activePost} onBack={handleBackNavigation} onViewProfile={handleViewProfile} />;
+                return null;
+            case 'my-studio':
+                return <MyStudioView />;
+            default:
+                return <TrendingView items={publishedDiscoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
+        }
+    };
+    
+    if (activeCreateView && (activeCreateView === 'image' || activeCreateView === 'video') && selectedFile) {
+        return <CreatePostView file={selectedFile} onPost={handlePublishPost} onClose={handleCloseCreateView} />;
+    }
+    if (activeCreateView === 'note') {
+        // FIX: Correctly typed the onPost prop for CreateNoteView by adapting handlePublishPost.
+        return <CreateNoteView onPost={handlePublishPost} onClose={handleCloseCreateView} />;
+    }
+
+    const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
+
+    return (
+        <UserContext.Provider value={userContextValue}>
+            <div className="h-full flex flex-col bg-gray-900 text-white font-sans">
+                {activeView !== 'room' && (
+                    <GlobalHeader 
+                        activeView={activeView}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                    />
+                )}
+                <main className="flex-1 overflow-y-auto pb-16">
+                    {renderActiveView()}
+                </main>
+
+                {activeView !== 'room' && (
+                  <BottomNavBar 
+                      activeView={activeView} 
+                      setActiveView={changeView}
+                      onCreateContent={() => setCreateHubOpen(true)}
+                      unreadNotificationCount={unreadNotificationCount}
+                  />
+                )}
+                
+                {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
+                {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfileSave} />}
+                {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
+                {isUserCardOpen && selectedUserForCard && <UserCardModal user={selectedUserForCard} onClose={handleCloseUserCard} onViewProfile={handleViewProfile} position={userCardPosition} />}
+                {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => setActiveView('room')} />}
+                {activeMediaPost && <MediaViewerModal post={activeMediaPost} onClose={() => setActiveMediaPost(null)} />}
+                {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContentSelect} />}
+                {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
+            </div>
+        </UserContext.Provider>
+    );
+};
+
+export default App;

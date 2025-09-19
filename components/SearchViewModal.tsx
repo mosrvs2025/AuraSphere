@@ -59,8 +59,8 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
             onViewProfile={onViewProfile}
           />
         ) : (
+          // FIX: Removed the unsupported 'title' prop from TrendingView.
           <TrendingView
-            title="Discover"
             items={discoverItems}
             onEnterRoom={onEnterRoom}
             onViewProfile={onViewProfile}
