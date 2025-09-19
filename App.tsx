@@ -617,7 +617,7 @@ const App: React.FC = () => {
         <UserContext.Provider value={userContextValue}>
             <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
                 {/* Main Content Area */}
-                <main className="flex-1 flex flex-col overflow-hidden relative">
+                <main className="flex-1 flex flex-col overflow-hidden">
                      <GlobalHeader
                         activeView={activeView}
                         curationTab={curationTab}
@@ -660,9 +660,7 @@ const App: React.FC = () => {
             
             {/* --- Global Components --- */}
             {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
-            <div className="md:hidden">
-              <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
-            </div>
+            <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
         </UserContext.Provider>
     );
 };

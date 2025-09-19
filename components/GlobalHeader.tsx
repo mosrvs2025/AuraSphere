@@ -123,14 +123,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             <div className="max-w-6xl mx-auto">
                 <div className="flex justify-between items-center">
                     <div className="flex-1 flex justify-start">
-                        {!isHome && (
-                        <button 
-                            onClick={onNavigateToLive} 
-                            className={`text-lg font-extrabold tracking-wider text-red-500 border border-red-500/50 rounded-lg px-3 py-1 transition-colors hover:bg-red-500/20 ${hasActiveLiveRooms ? 'animate-pulse-live' : ''}`}
-                        >
-                            LIVE
-                        </button>
-                        )}
+                        {/* The redundant LIVE button was here. It has been removed, but the container remains to ensure the title stays centered. */}
                     </div>
 
                     <div className="flex items-center gap-4 transition-all duration-300 ease-in-out min-w-0">

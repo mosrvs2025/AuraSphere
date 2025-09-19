@@ -28,7 +28,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, 
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700/50 z-30">
+    <div className="fixed bottom-0 left-0 right-0 h-16 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700/50 z-30 md:hidden">
       <div className="flex justify-around items-center h-full max-w-lg mx-auto">
         {navItems.map(item => {
           const isActive = activeView === item.id;
