@@ -1,6 +1,6 @@
 // Implemented placeholder components for Trending and My Studio views.
 import React from 'react';
-import { TrendingIcon, StudioIcon } from './Icons';
+import { StudioIcon } from './Icons';
 
 const PlaceholderCard: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
   <div className="h-full flex items-center justify-center p-8">
@@ -14,5 +14,4 @@ const PlaceholderCard: React.FC<{ title: string; icon: React.ReactNode }> = ({ t
   </div>
 );
 
-export const TrendingView = () => <PlaceholderCard title="Trending Rooms" icon={<TrendingIcon />} />;
 export const MyStudioView = () => <PlaceholderCard title="My Studio" icon={<StudioIcon />} />;

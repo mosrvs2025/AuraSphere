@@ -1,7 +1,6 @@
 // Fix: Implemented the main App component, including state management, view routing, and mock data to create a functional application structure and resolve compilation errors.
 import React, { useState, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
-import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
 import Header from './components/Header';
 import CreateRoomModal from './components/CreateRoomModal';
@@ -13,8 +12,9 @@ import ScheduledView from './components/ScheduledView';
 import NotificationsView from './components/NotificationsView';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
-import SearchViewModal from './components/SearchViewModal';
-import { MyStudioView, TrendingView } from './components/PlaceholderViews';
+import DiscoverView from './components/SearchViewModal';
+import TrendingView from './components/TrendingView';
+import { MyStudioView } from './components/PlaceholderViews';
 import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition, DiscoverItem } from './types';
 import { UserContext } from './context/UserContext';
 
@@ -111,6 +111,13 @@ const discoverFeedData: DiscoverItem[] = [
     { type: 'user_profile', ...allUsersData[3] },
 ];
 
+const trendingFeedData: DiscoverItem[] = [
+    { type: 'video_post', id: 'dp3', author: allUsersData[0], thumbnailUrl: 'https://images.unsplash.com/photo-1529686342540-1b42b7c4a525?q=80&w=800', videoUrl: '#', caption: 'Unboxing the new dev kit!', likes: 302, comments: 45, createdAt: new Date(Date.now() - 3600000 * 5) },
+    { type: 'image_post', id: 'dp4', author: allUsersData[1], imageUrl: 'https://images.unsplash.com/photo-1555099962-4199c345e546?q=80&w=800', caption: 'Finally finished this component design.', likes: 250, comments: 30, createdAt: new Date(Date.now() - 3600000 * 8) },
+    { type: 'live_room', ...initialRooms[0] },
+    { type: 'image_post', id: 'dp1', author: allUsersData[3], imageUrl: 'https://images.unsplash.com/photo-1517423568342-be669f65d36a?q=80&w=800', caption: 'Morning coffee vibes ☕️', likes: 120, comments: 15, createdAt: new Date(Date.now() - 3600000 * 2) },
+];
+
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User>(initialCurrentUser);
@@ -130,12 +137,13 @@ const App: React.FC = () => {
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
-  const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+  const [focusSearchOnDiscover, setFocusSearchOnDiscover] = useState(false);
 
   const handleSetActiveView = (view: ActiveView) => {
     setActiveView(view);
     setActiveRoom(null);
     setActiveConversation(null);
+    setFocusSearchOnDiscover(false); // Reset focus trigger on any navigation
     if (view !== 'profile') {
         setProfileUser(null);
     }
@@ -143,6 +151,11 @@ const App: React.FC = () => {
     if (window.innerWidth < 768) {
         setSidebarExpanded(false);
     }
+  };
+  
+  const handleSearchIconClick = () => {
+    handleSetActiveView('home');
+    setFocusSearchOnDiscover(true);
   };
 
   const handleEnterRoom = (room: Room) => {
@@ -237,7 +250,14 @@ const App: React.FC = () => {
 
     switch (activeView) {
       case 'home':
-        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        return <DiscoverView
+                allRooms={rooms}
+                allUsers={allUsers}
+                discoverFeed={discoverFeedData}
+                onEnterRoom={handleEnterRoom}
+                onViewProfile={handleViewProfile}
+                autoFocusSearch={focusSearchOnDiscover}
+            />;
       case 'profile':
          // When 'profile' nav is clicked, show current user's profile.
         const userToShow = profileUser || currentUser;
@@ -251,11 +271,22 @@ const App: React.FC = () => {
       case 'notifications':
         return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
       case 'trending':
-        return <TrendingView />;
+        return <TrendingView 
+                 feed={trendingFeedData}
+                 onEnterRoom={handleEnterRoom}
+                 onViewProfile={handleViewProfile}
+               />;
       case 'my-studio':
         return <MyStudioView />;
       default:
-        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        return <DiscoverView
+                allRooms={rooms}
+                allUsers={allUsers}
+                discoverFeed={discoverFeedData}
+                onEnterRoom={handleEnterRoom}
+                onViewProfile={handleViewProfile}
+                autoFocusSearch={focusSearchOnDiscover}
+            />;
     }
   };
 
@@ -271,7 +302,7 @@ const App: React.FC = () => {
             unreadNotificationCount={notifications.filter(n => !n.isRead).length}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchModalOpen(true)} />
+            <Header onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={handleSearchIconClick} />
             <div className="flex-1 overflow-y-auto">
                 {renderActiveView()}
             </div>
@@ -298,22 +329,6 @@ const App: React.FC = () => {
                     setUserCardModalPosition(null);
                 }}
                 onViewProfile={handleViewProfile}
-            />
-        )}
-        {isSearchModalOpen && (
-            <SearchViewModal
-                allRooms={rooms}
-                allUsers={allUsers}
-                discoverFeed={discoverFeedData}
-                onClose={() => setSearchModalOpen(false)}
-                onEnterRoom={(room) => {
-                    handleEnterRoom(room);
-                    setSearchModalOpen(false);
-                }}
-                onViewProfile={(user) => {
-                    handleViewProfile(user);
-                    setSearchModalOpen(false);
-                }}
             />
         )}
       </div>
