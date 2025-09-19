@@ -1,6 +1,5 @@
-
 import React, { useState, useContext, useEffect, useRef } from 'react';
-import { Room, User, ChatMessage, Poll as PollType } from '../types';
+import { Room, User, ChatMessage, Poll as PollType, RequestToSpeak } from '../types';
 import ChatView from './ChatView';
 import HostControls from './HostControls';
 import UserCardModal from './UserCardModal';
@@ -9,10 +8,12 @@ import Poll from './Poll';
 import { UserContext } from '../context/UserContext';
 import FeaturedLink from './FeaturedLink';
 import AiAssistantPanel from './AiAssistantPanel';
-import { SparklesIcon, MicIcon } from './Icons';
+import { SparklesIcon, MicIcon, UserPlusIcon } from './Icons';
 import InviteUsersModal from './InviteUsersModal';
 import CreatePollModal from './CreatePollModal';
 import DynamicInput from './DynamicInput';
+import RequestToSpeakModal from './RequestToSpeakModal';
+import RequestQueueView from './RequestQueueView';
 
 interface RoomViewProps {
   room: Room;
@@ -45,6 +46,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
   const [isCreatePollModalOpen, setCreatePollModalOpen] = useState(false);
+  const [isRequestModalOpen, setRequestModalOpen] = useState(false);
+  const [sidePanelView, setSidePanelView] = useState<'chat' | 'requests'>('chat');
   const [isMuted, setIsMuted] = useState(true);
   
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -161,9 +164,50 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       setTimeout(() => setAnimatedReaction(null), 1000);
   }
 
+  const handleSubmitRequest = (requestData: { text?: string; voiceMemo?: { url: string; duration: number }}) => {
+    const newRequest: RequestToSpeak = {
+        id: `req-${Date.now()}`,
+        user: currentUser,
+        createdAt: new Date(),
+        likes: [],
+        ...requestData,
+    };
+    onUpdateRoom({ requestsToSpeak: [...(room.requestsToSpeak || []), newRequest] });
+    setRequestModalOpen(false);
+  };
+
+  const handleLikeRequest = (requestId: string) => {
+      const newRequests = (room.requestsToSpeak || []).map(req => {
+          if (req.id === requestId) {
+              const likedByUser = req.likes.includes(currentUser.id);
+              const newLikes = likedByUser 
+                  ? req.likes.filter(id => id !== currentUser.id)
+                  : [...req.likes, currentUser.id];
+              return { ...req, likes: newLikes };
+          }
+          return req;
+      });
+      onUpdateRoom({ requestsToSpeak: newRequests });
+  };
+
+  const handleApproveRequest = (request: RequestToSpeak) => {
+    // 1. Move user from listeners to speakers
+    const newListeners = room.listeners.filter(u => u.id !== request.user.id);
+    const newSpeakers = [...room.speakers, request.user];
+
+    // 2. Remove the request from the queue
+    const newRequests = (room.requestsToSpeak || []).filter(r => r.id !== request.id);
+
+    onUpdateRoom({
+        listeners: newListeners,
+        speakers: newSpeakers,
+        requestsToSpeak: newRequests
+    });
+  };
+
   return (
     <div className="h-full bg-gray-900 text-white flex flex-col md:flex-row animate-fade-in">
-      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto min-h-0">
         <header className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-2xl font-bold">{room.title}</h1>
@@ -178,7 +222,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         
         {room.poll && <Poll poll={room.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex-1">
           <ParticipantGrid users={room.hosts} onUserClick={handleUserClick} title="Hosts" />
           <ParticipantGrid users={room.speakers} onUserClick={handleUserClick} title="Speakers" />
           <ParticipantGrid users={room.listeners} onUserClick={handleUserClick} title="Listeners" gridClass="grid-cols-5" />
@@ -186,17 +230,48 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       </div>
 
       <div className={`relative md:w-80 lg:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-700/50 flex flex-col ${isChatCollapsed ? 'h-16' : 'h-2/5 md:h-full'}`}>
-        <ChatView
-            messages={room.messages}
-            currentUser={currentUser}
-            onToggleReaction={handleToggleReactionWithAnimation}
-            nowPlayingAudioNoteId={nowPlayingAudioNoteId}
-            onPlayAudioNote={setNowPlayingAudioNoteId}
-            isCollapsed={isChatCollapsed}
-            onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
-            animatedReaction={animatedReaction}
-        />
-        {!isChatCollapsed && (
+        <div className="flex border-b border-gray-700/50 flex-shrink-0">
+            <button
+                onClick={() => setSidePanelView('chat')}
+                className={`flex-1 py-2 text-sm font-bold transition-colors ${sidePanelView === 'chat' ? 'text-white bg-gray-700/50' : 'text-gray-400 hover:bg-gray-800'}`}
+            >
+                Chat
+            </button>
+            <button
+                onClick={() => setSidePanelView('requests')}
+                className={`flex-1 py-2 text-sm font-bold transition-colors relative ${sidePanelView === 'requests' ? 'text-white bg-gray-700/50' : 'text-gray-400 hover:bg-gray-800'}`}
+            >
+                Requests
+                {(room.requestsToSpeak?.length || 0) > 0 && (
+                    <span className="absolute top-1/2 -translate-y-1/2 right-3 ml-2 bg-indigo-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {room.requestsToSpeak.length}
+                    </span>
+                )}
+            </button>
+        </div>
+
+        {sidePanelView === 'chat' ? (
+            <ChatView
+                messages={room.messages}
+                currentUser={currentUser}
+                onToggleReaction={handleToggleReactionWithAnimation}
+                nowPlayingAudioNoteId={nowPlayingAudioNoteId}
+                onPlayAudioNote={setNowPlayingAudioNoteId}
+                isCollapsed={isChatCollapsed}
+                onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+                animatedReaction={animatedReaction}
+            />
+        ) : (
+            <RequestQueueView
+                requests={room.requestsToSpeak || []}
+                onLikeRequest={handleLikeRequest}
+                onApproveRequest={handleApproveRequest}
+                isHost={isHost}
+                currentUser={currentUser}
+            />
+        )}
+        
+        {sidePanelView === 'chat' && !isChatCollapsed && (
           <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50 mt-auto">
             {isHost ? (
               <div className="space-y-4">
@@ -227,9 +302,10 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                         onSubmitVideoNote={handleSendVideoNote}
                     />
                   </div>
-                   <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
-                      Raise Hand
-                  </button>
+                   <button onClick={() => setRequestModalOpen(true)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
+                        <UserPlusIcon className="h-5 w-5" />
+                        <span>Request</span>
+                    </button>
                 </div>
             )}
           </footer>
@@ -280,6 +356,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
             onClose={() => setCreatePollModalOpen(false)}
             onCreate={handleCreatePoll}
           />
+      )}
+      {isRequestModalOpen && (
+        <RequestToSpeakModal 
+            onClose={() => setRequestModalOpen(false)}
+            onSubmit={handleSubmitRequest}
+        />
       )}
     </div>
   );

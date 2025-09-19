@@ -57,7 +57,10 @@ const allUsers = generateUsers(20);
 const currentUserData = allUsers[0];
 
 const generateRooms = (users: User[]): Room[] => ([
-    { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false },
+    { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false, requestsToSpeak: [
+        { id: 'req-1', user: users[4], text: 'I have a question about the new framework!', createdAt: new Date(Date.now() - 60000), likes: [users[5].id, users[6].id] },
+        { id: 'req-2', user: users[5], voiceMemo: { url: 'https://file-examples.com/storage/fe55cb6d3362d5899981a17/2017/11/file_example_MP3_700KB.mp3', duration: 8 }, createdAt: new Date(), likes: [users[4].id] },
+    ] },
     { id: 'room-2', title: 'Design Critics', description: 'A friendly place to share and critique design work.', hosts: [users[7]], speakers: [users[8], users[9]], listeners: [...users.slice(10, 15)], messages: [], isPrivate: false },
     { id: 'room-3', title: 'Scheduled Event', description: 'This room is scheduled for a future date.', hosts: [users[0]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
 ]);

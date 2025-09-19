@@ -38,6 +38,18 @@ export interface Poll {
   isActive: boolean;
 }
 
+export interface RequestToSpeak {
+  id: string;
+  user: User;
+  text?: string;
+  voiceMemo?: {
+    url: string;
+    duration: number;
+  };
+  likes: string[]; // user ids
+  createdAt: Date;
+}
+
 export interface Room {
   id: string;
   title: string;
@@ -54,6 +66,7 @@ export interface Room {
   isScheduled?: boolean;
   scheduledTime?: Date;
   invitedUserIds?: string[];
+  requestsToSpeak?: RequestToSpeak[];
 }
 
 // For the discover/trending feed
