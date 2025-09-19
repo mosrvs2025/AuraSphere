@@ -209,10 +209,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                 </div>
              )}
              <div className="p-4 md:p-6 border-t border-gray-800 flex items-center space-x-4">
-                <button className="p-3 bg-gray-700 rounded-full hover:bg-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                </button>
-                
                 <DynamicInput 
                     onSubmitMessage={handleSendTextMessage}
                     onSubmitAudioNote={handleSendAudioNote}
