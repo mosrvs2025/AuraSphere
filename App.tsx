@@ -227,24 +227,24 @@ const App: React.FC = () => {
         setActivePost(null);
     };
 
+    // FIX: Refactored back navigation logic to prevent the "double tap" bug. This ensures a single click correctly returns to the previous view and resets state atomically.
     const handleBackNavigation = () => {
-      // Simple back navigation logic
-      if (activeProfile || activeConversation || activePost || activeView === 'notifications') {
-          setActiveProfile(null);
-          setActiveConversation(null);
-          setActivePost(null);
-          // Return to the view that was active before showing the detail view
-          if (previousView) {
+        // If we're in a detail view (one with a `previousView` stored), go back.
+        if (previousView) {
             setActiveView(previousView);
+            
+            // Reset state for the detail view we are leaving
+            setActiveProfile(null);
+            setActiveConversation(null);
+            setActivePost(null);
+    
+            // Clear previousView as we've now used it. The new previousView will be set
+            // if the user navigates forward again. This prevents multi-level back issues.
             setPreviousView(null);
-          } else {
-            setActiveView('home'); // Fallback
-          }
-      } else if (activeView === 'room' && activeRoom) {
-          // Do nothing, handled by MiniPlayer/Leave button
-      } else {
-          setActiveView('home'); // Default back action
-      }
+        } else {
+            // Default back action from a main view is to go home
+            setActiveView('home');
+        }
     };
     
 

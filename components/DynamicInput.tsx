@@ -1,6 +1,7 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
-import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, XIcon } from './Icons';
+import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon } from './Icons';
 import VideoRecorderModal from './VideoRecorderModal';
 
 interface DynamicInputProps {
@@ -184,18 +185,12 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         setModeSelectorOpen(false);
     };
 
-    const cancelRecording = () => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-            mediaRecorderRef.current.onstop = null; // Prevent preview creation
-            mediaRecorderRef.current.stop();
-        }
-        cleanupAudioContext();
-        stopMediaStream();
-        audioChunksRef.current = [];
-        setMode('idle');
-    };
-
+    // FIX: Bug where delete button was non-functional. This now correctly stops the player, clears its source, revokes the blob URL, and resets all state.
     const deletePreview = () => {
+        if (audioPreviewRef.current) {
+            audioPreviewRef.current.pause();
+            audioPreviewRef.current.src = '';
+        }
         if (audioPreview) {
             URL.revokeObjectURL(audioPreview.url);
         }
@@ -316,12 +311,9 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                     </form>
                 )}
 
+                {/* FIX: Removed the redundant 'X' (cancel) button from the recording UI to simplify the user flow, per user feedback. */}
                 {mode === 'recording' && (
-                    <div className="w-full flex items-center justify-between px-2 h-[48px]">
-                        <button onClick={cancelRecording} className="p-2 text-gray-400 hover:text-white" aria-label="Cancel recording">
-                            <XIcon className="h-6 w-6" />
-                        </button>
-
+                    <div className="w-full flex items-center justify-between px-4 h-[48px]">
                         <div className="flex items-center text-sm text-gray-300 flex-1 justify-center">
                              <div className="flex items-center space-x-0.5 h-6 mr-3">
                                 {Array.from({ length: 24 }).map((_, i) => {

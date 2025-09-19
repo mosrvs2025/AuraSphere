@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { TrashIcon } from './Icons';
 
 interface VideoRecorderModalProps {
@@ -106,10 +107,12 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
     onClose();
   };
 
-  return (
+  // FIX: Use a portal to render the modal at the top level of the DOM. This prevents it from being clipped by parent container styles (e.g., in DMs).
+  return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center animate-fade-in p-4">
       
       {/* Header */}
+      {/* FIX: Removed redundant 'X' close button from recording/preview states to avoid confusion. It is kept for loading/denied states to allow the user to escape. */}
       <header className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
         {mode === 'recording' && (
           <div className="flex items-center text-white bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full font-mono text-lg">
@@ -117,7 +120,9 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
             0:{countdown.toString().padStart(2, '0')}
           </div>
         )}
-        <button onClick={onClose} className="text-white text-3xl font-bold ml-auto">&times;</button>
+        {(mode === 'denied' || mode === 'loading') && (
+            <button onClick={onClose} className="text-white text-3xl font-bold ml-auto">&times;</button>
+        )}
       </header>
 
       {/* Main Content */}
@@ -157,7 +162,8 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
           </div>
         ) : null}
       </footer>
-    </div>
+    </div>,
+    document.body
   );
 };
 
