@@ -1,5 +1,4 @@
 
-
 import React, { useState, useContext } from 'react';
 import { Room, User, ChatMessage, Poll as PollType } from '../types';
 import ChatView from './ChatView';
@@ -157,7 +156,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         </div>
       </div>
 
-      <div className={`relative md:w-80 lg:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-700/50 flex flex-col ${isChatCollapsed ? 'h-16' : 'h-1/2 md:h-full'}`}>
+      <div className={`relative md:w-80 lg:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-700/50 flex flex-col ${isChatCollapsed ? 'h-16' : 'h-2/5 md:h-full'}`}>
         <ChatView
             messages={room.messages}
             currentUser={currentUser}
