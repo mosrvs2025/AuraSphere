@@ -1,9 +1,8 @@
 import React from 'react';
 
-const PlaceholderView: React.FC<{title: string; description: string}> = ({ title, description }) => (
-  <div className="p-8 animate-fade-in">
+const PlaceholderView: React.FC<{description: string}> = ({ description }) => (
+  <div className="p-4 md:p-6 animate-fade-in">
     <div className="max-w-md">
-        <h1 className="text-3xl font-bold text-white tracking-tight">{title}</h1>
         <p className="text-gray-400 mt-2">{description}</p>
         <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
             <p className="text-center text-gray-300">Content for this section is coming soon!</p>
@@ -13,9 +12,8 @@ const PlaceholderView: React.FC<{title: string; description: string}> = ({ title
 );
 
 export const MyStudioView: React.FC = () => (
-    <div className="p-4 md:p-8 animate-fade-in">
+    <div className="p-4 md:p-6 animate-fade-in">
         <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold text-white tracking-tight">My Studio</h1>
             <p className="text-gray-400 mt-2">This is your creator dashboard. Manage scheduled rooms, view past history, and prepare drafts.</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
@@ -37,4 +35,4 @@ export const MyStudioView: React.FC = () => (
 );
 
 
-export const TrendingView = () => <PlaceholderView title="Trending" description="Discover the most popular rooms and topics right now." />;
+export const TrendingView = () => <PlaceholderView description="Discover the most popular rooms and topics right now." />;

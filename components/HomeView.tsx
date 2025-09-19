@@ -10,8 +10,7 @@ interface HomeViewProps {
 
 const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom }) => {
   return (
-    <div className="p-4 md:p-8 animate-fade-in">
-      <h1 className="text-3xl font-bold text-white tracking-tight mb-6">Live Now</h1>
+    <div className="p-4 md:p-6 animate-fade-in">
       {rooms.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map(room => (

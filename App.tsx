@@ -7,6 +7,7 @@ import { RoomActionsContext } from './context/RoomActionsContext';
 import { User, Room, Notification, Conversation, ActiveView } from './types';
 import { MOCK_ROOMS, MOCK_USER_LISTENER, MOCK_NOTIFICATIONS, MOCK_CONVERSATIONS } from './constants';
 import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
 import ProfileView from './components/ProfileView';
@@ -18,7 +19,6 @@ import NotificationsView from './components/NotificationsView';
 import CreateRoomModal from './components/CreateRoomModal';
 import EditProfileModal from './components/EditProfileModal';
 import AvatarCustomizer from './components/AvatarCustomizer';
-import { MenuIcon } from './components/Icons';
 
 
 const App: React.FC = () => {
@@ -58,6 +58,7 @@ const App: React.FC = () => {
     setRooms(prev => [newRoom, ...prev]);
     setCurrentRoom(newRoom);
     setIsCreatingRoom(false);
+    setSidebarOpen(false); // UX Polish: Close sidebar on Go Live
   };
 
   const handleUpdateRoom = (updatedData: Partial<Room>) => {
@@ -82,7 +83,20 @@ const App: React.FC = () => {
   
   const handleNotificationClick = (notification: Notification) => {
     setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, isRead: true} : n));
-    // In a real app, you might navigate somewhere
+    
+    if (notification.type === 'follow' && notification.relatedUser) {
+        handleSetActiveView('profile');
+        setViewingProfile(notification.relatedUser);
+    } else if ((notification.type === 'room_start' || notification.type === 'room_invite') && notification.relatedRoomId) {
+        const room = rooms.find(r => r.id === notification.relatedRoomId);
+        if (room) {
+            if (room.isScheduled) {
+                handleSetActiveView('scheduled');
+            } else {
+                setCurrentRoom(room);
+            }
+        }
+    }
   };
 
   const handleToggleScreenShare = async () => {
@@ -138,11 +152,22 @@ const App: React.FC = () => {
     if (view !== 'profile') {
         setViewingProfile(null);
     }
-    if (view === 'profile') {
+    if (view === 'profile' && !viewingProfile) {
         setViewingProfile(currentUser);
     }
     setSidebarOpen(false);
-  }, [currentUser]);
+  }, [currentUser, viewingProfile]);
+  
+  const viewTitles: Record<ActiveView, string> = {
+    home: 'Live Now',
+    trending: 'Trending',
+    messages: 'Messages',
+    conversation: '', // Handled in ConversationView
+    scheduled: 'Scheduled Rooms',
+    profile: 'Profile',
+    'my-studio': 'My Studio',
+    notifications: 'Notifications',
+  };
 
   return (
     <UserContext.Provider value={{ currentUser, updateUserAvatar }}>
@@ -158,13 +183,13 @@ const App: React.FC = () => {
           />
 
           <main className="flex-1 flex flex-col relative">
-             <button
-                onClick={() => setSidebarOpen(true)}
-                className="md:hidden absolute top-4 left-4 z-20 p-2 bg-gray-800/50 rounded-full"
-                aria-label="Open sidebar"
-              >
-                <MenuIcon />
-            </button>
+            {!currentRoom && activeView !== 'conversation' && (
+              <Header
+                title={viewingProfile ? viewingProfile.name : viewTitles[activeView]}
+                onMenuClick={() => setSidebarOpen(true)}
+                showSearch={activeView === 'home'}
+              />
+            )}
             <div className="flex-1 overflow-y-auto">
               {renderActiveView()}
             </div>
@@ -183,6 +208,7 @@ const App: React.FC = () => {
               onClose={() => setIsEditingProfile(false)}
               onSave={(name, bio) => {
                 setCurrentUser(prev => ({ ...prev, name, bio }));
+                setViewingProfile(prev => prev ? { ...prev, name, bio } : null);
                 setIsEditingProfile(false);
               }}
             />

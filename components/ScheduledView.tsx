@@ -11,9 +11,6 @@ const ScheduledView: React.FC<ScheduledViewProps> = ({ rooms }) => {
 
   return (
     <div className="p-4 md:p-6 animate-fade-in">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Scheduled Rooms</h1>
-      </header>
       <div className="max-w-2xl mx-auto space-y-4">
         {sortedRooms.length > 0 ? (
           sortedRooms.map(room => (

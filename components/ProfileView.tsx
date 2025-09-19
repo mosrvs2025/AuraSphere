@@ -14,8 +14,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
   const isOwnProfile = user.id === currentUser.id;
 
   return (
-    <div className="p-4 md:p-8 animate-fade-in">
-      <div className="max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 animate-fade-in max-w-4xl mx-auto">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
           <img 
@@ -56,7 +55,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

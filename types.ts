@@ -41,6 +41,9 @@ export interface Notification {
     text: string;
     createdAt: Date;
     isRead: boolean;
+    type: 'follow' | 'room_invite' | 'room_start';
+    relatedUser?: User;
+    relatedRoomId?: string;
 }
 
 // FIX: Centralized the ActiveView type to be used across the application, resolving type inconsistencies.
