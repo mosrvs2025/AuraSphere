@@ -45,8 +45,8 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
             audioContextRef.current.close().catch(console.error);
-            audioContextRef.current = null;
         }
+        audioContextRef.current = null;
         analyserRef.current = null;
         setDataArray(new Uint8Array(0));
     };
@@ -82,8 +82,6 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
         cleanupAudioContext();
         stopMediaStream();
-        setMode('preview');
-        setIsAudioPreviewPlaying(false);
     };
 
     // Effect to stop recording when countdown finishes
@@ -151,19 +149,28 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
 
                 // Setup recorder
                 audioChunksRef.current = [];
-                mediaRecorderRef.current = new MediaRecorder(stream);
-                mediaRecorderRef.current.ondataavailable = event => {
+                const recorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = recorder;
+                
+                recorder.ondataavailable = event => {
                     audioChunksRef.current.push(event.data);
                 };
-                mediaRecorderRef.current.onstop = () => {
-                    const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
-                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    setAudioPreview({ url: audioUrl, blob: audioBlob });
-                    audioChunksRef.current = [];
-                };
-                mediaRecorderRef.current.start();
                 
+                recorder.onstop = () => {
+                    const mimeType = recorder.mimeType || 'audio/webm';
+                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+                    audioChunksRef.current = [];
+                    if (audioBlob.size > 0) {
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        setAudioPreview({ url: audioUrl, blob: audioBlob });
+                        setMode('preview');
+                    } else {
+                        console.warn("Recording resulted in an empty audio file.");
+                        setMode('idle');
+                    }
+                };
+                
+                recorder.start();
                 setMode('recording');
                 visualize();
 
@@ -178,10 +185,12 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
 
     const cancelRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.onstop = null; // Prevent preview creation
             mediaRecorderRef.current.stop();
         }
         cleanupAudioContext();
         stopMediaStream();
+        audioChunksRef.current = [];
         setMode('idle');
     };
 
@@ -199,7 +208,8 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         if (audioPreview) {
             const recordedDuration = RECORDING_DURATION - countdown;
             onSubmitAudioNote(audioPreview.url, recordedDuration > 0 ? recordedDuration : 1);
-            setAudioPreview(null); // URL is now owned by parent
+            // URL is now owned by parent, don't revoke here.
+            setAudioPreview(null);
         }
         cleanupAudioContext();
         setMode('idle');
@@ -236,7 +246,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
             if (isAudioPreviewPlaying) {
                 audioPreviewRef.current.pause();
             } else {
-                audioPreviewRef.current.play();
+                audioPreviewRef.current.play().catch(console.error);
             }
         }
     };
@@ -324,7 +334,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                     </div>
                 )}
                 
-                {mode === 'preview' && (
+                {mode === 'preview' && audioPreview && (
                      <div className="w-full flex items-center justify-between p-2 h-[48px]">
                          <button onClick={deletePreview} className="p-2 text-gray-400 hover:text-white" aria-label="Delete recording">
                              <TrashIcon className="h-6 w-6" />
