@@ -127,14 +127,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
   }, [messages, isCollapsed]);
 
   return (
-    <div className="flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden md:h-full">
+    <div className="flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden">
       <header className="p-4 border-b border-gray-700/50 flex-shrink-0">
          <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold disabled:cursor-default" disabled={!onToggleCollapse}>
             <span>Room Chat</span>
             <ChevronDownIcon className={`h-5 w-5 transform transition-transform duration-300 ${!onToggleCollapse ? 'hidden' : ''} ${!isCollapsed ? 'rotate-180' : ''}`} />
         </button>
       </header>
-      <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] md:max-h-full opacity-100 p-4 space-y-4'}`}>
+      <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => {
           // Fix: Add type assertion for users to resolve 'unknown' type error.
           const totalReactions = Object.values(msg.reactions || {}).reduce((sum, users) => sum + (users as string[]).length, 0);

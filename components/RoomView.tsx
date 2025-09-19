@@ -206,7 +206,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   };
 
   return (
-    <div className="h-full bg-gray-900 text-white flex flex-col md:flex-row animate-fade-in">
+    <div className="h-full bg-gray-900 text-white flex flex-col animate-fade-in">
+      {/* TOP PART: The scrolling area */}
       <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto min-h-0">
         <header className="flex justify-between items-start mb-6">
           <div>
@@ -222,14 +223,15 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         
         {room.poll && <Poll poll={room.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
 
-        <div className="space-y-6 flex-1">
+        <div className="space-y-6">
           <ParticipantGrid users={room.hosts} onUserClick={handleUserClick} title="Hosts" />
           <ParticipantGrid users={room.speakers} onUserClick={handleUserClick} title="Speakers" />
           <ParticipantGrid users={room.listeners} onUserClick={handleUserClick} title="Listeners" gridClass="grid-cols-5" />
         </div>
       </div>
 
-      <div className={`relative md:w-80 lg:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-700/50 flex flex-col ${isChatCollapsed ? 'h-16' : 'h-2/5 md:h-full'}`}>
+      {/* BOTTOM PART: The chat/controls panel */}
+      <div className="flex-shrink-0 border-t border-gray-700/50 flex flex-col bg-gray-900">
         <div className="flex border-b border-gray-700/50 flex-shrink-0">
             <button
                 onClick={() => setSidePanelView('chat')}
@@ -262,17 +264,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                 animatedReaction={animatedReaction}
             />
         ) : (
-            <RequestQueueView
-                requests={room.requestsToSpeak || []}
-                onLikeRequest={handleLikeRequest}
-                onApproveRequest={handleApproveRequest}
-                isHost={isHost}
-                currentUser={currentUser}
-            />
+             <div className="max-h-[300px] overflow-y-auto">
+                <RequestQueueView
+                    requests={room.requestsToSpeak || []}
+                    onLikeRequest={handleLikeRequest}
+                    onApproveRequest={handleApproveRequest}
+                    isHost={isHost}
+                    currentUser={currentUser}
+                />
+            </div>
         )}
         
         {sidePanelView === 'chat' && !isChatCollapsed && (
-          <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50 mt-auto">
+          <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
             {isHost ? (
               <div className="space-y-4">
                 <HostControls 
@@ -313,7 +317,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       </div>
 
       {isHost && (
-        <button onClick={() => setAiPanelOpen(!isAiPanelOpen)} className="absolute bottom-4 right-4 md:bottom-24 md:right-[21rem] lg:right-[25rem] z-30 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-lg transform transition-transform hover:scale-110">
+        <button onClick={() => setAiPanelOpen(!isAiPanelOpen)} className="absolute bottom-4 right-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-lg transform transition-transform hover:scale-110">
             <SparklesIcon />
         </button>
       )}
