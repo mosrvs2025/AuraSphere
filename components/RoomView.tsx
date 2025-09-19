@@ -1,3 +1,5 @@
+
+
 import React, { useState, useContext } from 'react';
 import { Room, User, ChatMessage, Poll as PollType } from '../types';
 import ChatView from './ChatView';
@@ -56,6 +58,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const handleSendMessage = (message: Omit<ChatMessage, 'id' | 'createdAt'>) => {
       const newMessage: ChatMessage = {
           id: `msg-${Date.now()}`,
+          // FIX: Corrected typo from `new date()` to `new Date()`.
           createdAt: new Date(),
           ...message
       };
@@ -166,35 +169,42 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
             animatedReaction={animatedReaction}
         />
         {!isChatCollapsed && (
-            <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
-              {isHost ? (
+          <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
+            {isHost ? (
+              <div className="space-y-4">
                 <HostControls 
-                    room={room} 
-                    onUpdateRoom={onUpdateRoom}
-                    onCreatePoll={() => setCreatePollModalOpen(true)}
-                    onInviteClick={() => setInviteModalOpen(true)}
+                  room={room} 
+                  onUpdateRoom={onUpdateRoom}
+                  onCreatePoll={() => setCreatePollModalOpen(true)}
+                  onInviteClick={() => setInviteModalOpen(true)}
                 />
-              ) : (
-                 <div className="flex items-center space-x-4">
-                    <button 
-                        onClick={() => setIsMuted(!isMuted)}
-                        className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}
-                    >
-                        <MicIcon />
-                    </button>
-                    <div className="flex-1">
-                      <DynamicInput
-                          onSubmitMessage={handleSendTextMessage}
-                          onSubmitAudioNote={handleSendAudioNote}
-                          onSubmitVideoNote={handleSendVideoNote}
-                      />
-                    </div>
-                     <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
-                        Raise Hand
-                    </button>
+                <DynamicInput
+                  onSubmitMessage={handleSendTextMessage}
+                  onSubmitAudioNote={handleSendAudioNote}
+                  onSubmitVideoNote={handleSendVideoNote}
+                />
+              </div>
+            ) : (
+               <div className="flex items-center space-x-4">
+                  <button 
+                      onClick={() => setIsMuted(!isMuted)}
+                      className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}
+                  >
+                      <MicIcon />
+                  </button>
+                  <div className="flex-1">
+                    <DynamicInput
+                        onSubmitMessage={handleSendTextMessage}
+                        onSubmitAudioNote={handleSendAudioNote}
+                        onSubmitVideoNote={handleSendVideoNote}
+                    />
                   </div>
-              )}
-            </footer>
+                   <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+                      Raise Hand
+                  </button>
+                </div>
+            )}
+          </footer>
         )}
       </div>
 
