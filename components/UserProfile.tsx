@@ -15,7 +15,8 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost }) => {
-    const { currentUser } = useContext(UserContext);
+    const { currentUser, followUser, unfollowUser } = useContext(UserContext);
+    const isFollowing = currentUser.following?.some(u => u.id === user.id);
     
     return (
         <ProfileView 
@@ -27,6 +28,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile
             allPosts={allPosts}
             onViewMedia={onViewMedia}
             onViewPost={onViewPost}
+            isFollowing={isFollowing}
+            followUser={() => followUser(user.id)}
+            unfollowUser={() => unfollowUser(user.id)}
         />
     );
 };

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Room, DiscoverItem } from '../types';
 import RoomCard from './RoomCard';
-import { DocumentTextIcon, VideoCameraIcon } from './Icons';
+import { DocumentTextIcon, VideoCameraIcon, EyeIcon, UsersIcon } from './Icons';
 
 interface ProfileViewProps {
   user: User;
@@ -12,6 +12,9 @@ interface ProfileViewProps {
   allPosts: DiscoverItem[];
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  isFollowing: boolean;
+  followUser: () => void;
+  unfollowUser: () => void;
 }
 
 const ContentGridItem: React.FC<{ 
@@ -47,13 +50,91 @@ const ContentGridItem: React.FC<{
     }
 };
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser, onBack, allPosts, onViewMedia, onViewPost }) => {
-  const userHostedRooms = allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled);
+const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser, onBack, allPosts, onViewMedia, onViewPost, isFollowing, followUser, unfollowUser }) => {
   const isOwnProfile = user.id === currentUser.id;
 
-  const userPosts = (allPosts.filter(
+  const [activeTab, setActiveTab] = useState(isOwnProfile ? 'Posts' : 'All');
+
+  useEffect(() => {
+    setActiveTab(isOwnProfile ? 'Posts' : 'All');
+  }, [isOwnProfile, user.id]);
+  
+  const ownerTabs = ['Posts', 'Liked', 'Saved'];
+  const visitorTabs = ['All', 'Live', 'Images', 'Videos', 'Posts'];
+  const tabs = isOwnProfile ? ownerTabs : visitorTabs;
+  
+  const userHostedRooms = useMemo(() => allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled), [allRooms, user.id]);
+  
+  const userPosts = useMemo(() => (allPosts.filter(
       p => ('author' in p) && p.author.id === user.id && (p.type === 'image_post' || p.type === 'video_post' || p.type === 'text_post')
-  ) as Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  ) as Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [allPosts, user.id]);
+  
+  const handleFollowToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isFollowing) {
+      unfollowUser();
+    } else {
+      followUser();
+    }
+  };
+
+  const renderContent = () => {
+    let content: React.ReactNode;
+    let items: any[] = [];
+    
+    if (isOwnProfile) {
+        switch (activeTab) {
+            case 'Posts': items = userPosts; break;
+            case 'Liked': content = <Placeholder text="Your liked posts will appear here." />; break;
+            case 'Saved': content = <Placeholder text="Your saved content will appear here." />; break;
+            default: items = userPosts;
+        }
+    } else {
+        switch (activeTab) {
+            case 'All': items = userPosts; break;
+            case 'Live': items = userHostedRooms; break;
+            case 'Images': items = userPosts.filter(p => p.type === 'image_post'); break;
+            case 'Videos': items = userPosts.filter(p => p.type === 'video_post'); break;
+            case 'Posts': items = userPosts.filter(p => p.type === 'text_post'); break;
+            default: items = userPosts;
+        }
+    }
+
+    if (content) return content;
+
+    if (items.length === 0) {
+        return <Placeholder text={`${user.name} hasn't shared any ${activeTab.toLowerCase()} yet.`} />;
+    }
+    
+    if (activeTab === 'Live' && !isOwnProfile) {
+        return (
+             <div className="space-y-4">
+              {items.map(room => (
+                <RoomCard key={room.id} room={room} onEnter={() => { /* In-profile navigation not implemented */}} />
+              ))}
+            </div>
+        )
+    }
+
+    return (
+        <div className="grid grid-cols-3 gap-1">
+            {items.map(post => (
+                <ContentGridItem 
+                    key={post.id} 
+                    post={post}
+                    onViewMedia={onViewMedia}
+                    onViewPost={onViewPost}
+                />
+            ))}
+        </div>
+    );
+  };
+
+  const Placeholder: React.FC<{ text: string }> = ({ text }) => (
+    <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700">
+        <p className="text-gray-400">{text}</p>
+    </div>
+  );
 
 
   return (
@@ -80,53 +161,62 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
               <div><span className="font-bold text-white">{user.following?.length ?? 0}</span> Following</div>
             </div>
             <p className="text-gray-300 mt-4 max-w-lg">{user.bio || 'No bio provided.'}</p>
-            {isOwnProfile && (
-                <button 
-                  onClick={onEditProfile}
-                  className="mt-6 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition"
-                >
-                  Edit Profile
-                </button>
-            )}
+             <div className="mt-6">
+                {isOwnProfile ? (
+                    <button 
+                      onClick={onEditProfile}
+                      className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition"
+                    >
+                      Edit Profile
+                    </button>
+                ) : (
+                   <button 
+                      onClick={handleFollowToggle}
+                      className={`font-bold py-2 px-8 rounded-full transition text-sm ${isFollowing ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-200 text-black'}`}
+                    >
+                      {isFollowing ? 'Unfollow' : 'Follow'}
+                   </button>
+                )}
+            </div>
           </div>
         </div>
+        
+        {isOwnProfile && (
+            <div className="mt-8 flex items-center justify-center space-x-4">
+                <button className="flex items-center space-x-2 text-sm font-semibold text-gray-300 bg-gray-800/50 hover:bg-gray-700/70 py-2 px-4 rounded-full transition">
+                    <EyeIcon className="h-5 w-5" /> 
+                    <span>Profile Views</span>
+                </button>
+                <button className="flex items-center space-x-2 text-sm font-semibold text-gray-300 bg-gray-800/50 hover:bg-gray-700/70 py-2 px-4 rounded-full transition">
+                    <UsersIcon className="h-5 w-5" /> 
+                    <span>Find Friends</span>
+                </button>
+            </div>
+        )}
 
-        {/* Creator Content Grid */}
+        {/* Tabbed Content Section */}
         <div className="mt-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Content</h2>
-            {userPosts.length > 0 ? (
-                <div className="grid grid-cols-3 gap-1">
-                    {userPosts.map(post => (
-                        <ContentGridItem 
-                            key={post.id} 
-                            post={post}
-                            onViewMedia={onViewMedia}
-                            onViewPost={onViewPost}
-                        />
+            <div className="border-b border-gray-700">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                activeTab === tab
+                                ? 'border-indigo-500 text-indigo-400'
+                                : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'
+                            }`}
+                        >
+                            {tab}
+                        </button>
                     ))}
-                </div>
-            ) : (
-                <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700">
-                    <p className="text-gray-400">{user.name} hasn't posted anything yet.</p>
-                </div>
-            )}
-        </div>
-
-
-        {/* Past Rooms */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-white mb-4">Past Rooms</h2>
-          {userHostedRooms.length > 0 ? (
-            <div className="space-y-4">
-              {userHostedRooms.map(room => (
-                <RoomCard key={room.id} room={room} onEnter={() => { /* In-profile navigation not implemented */}} />
-              ))}
+                </nav>
             </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700">
-              <p className="text-gray-400">{user.name} hasn't hosted any rooms yet.</p>
+
+            <div className="mt-6">
+              {renderContent()}
             </div>
-          )}
         </div>
     </div>
   );

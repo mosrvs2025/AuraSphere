@@ -148,8 +148,21 @@ const App: React.FC = () => {
         currentUser,
         updateCurrentUser: (userData) => setCurrentUser(prev => ({ ...prev, ...userData })),
         getUserById: (id: string) => allUsers.find(u => u.id === id),
-        followUser: (userId: string) => { /* logic to update followers */ },
-        unfollowUser: (userId: string) => { /* logic to update followers */ },
+        followUser: (userId: string) => {
+            setCurrentUser(prevUser => {
+                const userToFollow = allUsers.find(u => u.id === userId);
+                // Prevent following if already following or user not found
+                if (!userToFollow || prevUser.following.some(f => f.id === userId)) {
+                    return prevUser;
+                }
+                return { ...prevUser, following: [...prevUser.following, userToFollow] };
+            });
+        },
+        unfollowUser: (userId: string) => {
+            setCurrentUser(prevUser => {
+                return { ...prevUser, following: prevUser.following.filter(f => f.id !== userId) };
+            });
+        },
     };
 
     const handleEnterRoom = (room: Room) => {
@@ -309,7 +322,7 @@ const App: React.FC = () => {
                 </div>
 
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
-                {isEditProfileModalOpen && viewingProfile && <EditProfileModal user={viewingProfile} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
+                {isEditProfileModalOpen && (currentUser || viewingProfile) && <EditProfileModal user={viewingProfile ?? currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => setCurrentUser(p => ({...p, avatarUrl: url}))} />}
                 {isSearchModalOpen && <SearchViewModal onClose={() => setSearchModalOpen(false)} allRooms={rooms} allUsers={allUsers} discoverItems={discoverItems} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>}
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
