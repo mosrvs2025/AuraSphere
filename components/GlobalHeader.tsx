@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ActiveView, Room } from '../types';
 import { SearchIcon, BellIcon } from './Icons';
@@ -15,7 +16,6 @@ interface GlobalHeaderProps {
   onSearchClick: () => void;
   liveRooms: Room[];
   onEnterRoom: (room: Room) => void;
-  isScrolled: boolean;
 }
 
 const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
@@ -69,12 +69,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     setActiveFilter,
     unreadNotificationCount, 
     onNavigateToNotifications, 
-    onNavigateToLive, 
-    hasActiveLiveRooms, 
     onSearchClick, 
     liveRooms, 
     onEnterRoom, 
-    isScrolled 
 }) => {
   const isHome = activeView === 'home';
   let title = '';
@@ -106,110 +103,93 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
         break;
     }
   }
-
-  const uniqueHostsInRooms = new Map<string, Room>();
-    liveRooms.forEach(room => {
-        room.hosts.forEach(host => {
-            if (!uniqueHostsInRooms.has(host.id)) {
-                uniqueHostsInRooms.set(host.id, room);
-            }
-        });
-    });
-  const collapsedHosts = Array.from(uniqueHostsInRooms.entries()).slice(0, 4);
-
+  
   return (
-    <header className={`sticky top-0 flex-shrink-0 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm z-10 transition-all duration-300 ease-in-out`}>
-        <div className={`px-4 md:px-6 transition-all duration-300 ease-in-out ${isScrolled && isHome ? 'py-3' : 'py-4 md:pt-6'}`}>
-            <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center">
-                    <div className="flex-1 flex justify-start">
-                        {/* The redundant LIVE button was here. It has been removed, but the container remains to ensure the title stays centered. */}
-                    </div>
+    <>
+      {/* Section 1: This part scrolls out of view */}
+      <div className="bg-gray-900 z-10">
+        <div className="px-4 md:px-6 py-4 md:pt-6">
+          <div className="max-w-6xl mx-auto">
+              <div className="flex justify-between items-center">
+                  <div className="flex-1 flex justify-start">
+                      {/* Placeholder for balance */}
+                  </div>
 
-                    <div className="flex items-center gap-4 transition-all duration-300 ease-in-out min-w-0">
-                        <h1 className={`font-bold text-center truncate transition-all duration-300 ease-in-out ${isScrolled && isHome ? 'text-2xl' : 'text-3xl'}`}>{title}</h1>
-                        
-                        {/* Collapsed Avatars */}
-                        <div className={`flex items-center transition-all duration-300 ease-in-out ${isScrolled && isHome && collapsedHosts.length > 0 ? 'visible opacity-100 w-auto -space-x-2' : 'invisible opacity-0 w-0'}`}>
-                        {collapsedHosts.map(([hostId, room]) => {
-                            const host = room.hosts.find(h => h.id === hostId);
-                            if (!host) return null;
-                            return (
-                                <button key={host.id} onClick={() => onEnterRoom(room)} className="focus:outline-none flex-shrink-0">
-                                    <img src={host.avatarUrl} alt={host.name} className="w-8 h-8 rounded-full border-2 border-gray-900 hover:z-10 hover:scale-110 transition-transform"/>
-                                </button>
-                            );
-                        })}
-                        </div>
-                    </div>
-                    
-                    <div className="flex-1 flex justify-end items-center space-x-2">
-                        <button 
-                            onClick={onSearchClick}
-                            className="p-2 text-gray-400 hover:text-white transition-colors"
-                            aria-label="Search"
-                        >
-                            <SearchIcon className="h-6 w-6" />
-                        </button>
-                        <button
-                        onClick={onNavigateToNotifications}
-                        className="relative p-2 text-gray-400 hover:text-white transition-colors"
-                        aria-label="View notifications"
-                        >
-                            <BellIcon className="h-7 w-7" />
-                            {unreadNotificationCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
+                  <div className="flex items-center gap-4 min-w-0">
+                      <h1 className="font-bold text-center truncate text-3xl">{title}</h1>
+                  </div>
+                  
+                  <div className="flex-1 flex justify-end items-center space-x-2">
+                      <button 
+                          onClick={onSearchClick}
+                          className="p-2 text-gray-400 hover:text-white transition-colors"
+                          aria-label="Search"
+                      >
+                          <SearchIcon className="h-6 w-6" />
+                      </button>
+                      <button
+                      onClick={onNavigateToNotifications}
+                      className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                      aria-label="View notifications"
+                      >
+                          <BellIcon className="h-7 w-7" />
+                          {unreadNotificationCount > 0 && (
+                              <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
+                          )}
+                      </button>
+                  </div>
+              </div>
+          </div>
         </div>
 
         {isHome && (
-            <>
-                <div className={`max-w-6xl mx-auto px-4 md:px-6 transition-all duration-300 ease-in-out ${isScrolled ? 'max-h-0 opacity-0 mt-0 overflow-hidden invisible' : 'max-h-48 opacity-100 mt-4 visible'}`}>
-                    <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-                </div>
-                {/* Sticky Navigation Bar */}
-                <div className="max-w-6xl mx-auto px-4 md:px-6">
-                    {/* Primary Curation Tabs */}
-                    <div className="flex justify-center border-b border-gray-800">
-                        <button
-                            onClick={() => setCurationTab('forYou')}
-                            className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500'}`}
-                        >
-                            For You
-                        </button>
-                        <button
-                            onClick={() => setCurationTab('following')}
-                            className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500'}`}
-                        >
-                            Following
-                        </button>
-                    </div>
-                    {/* Secondary Content-Type Filters */}
-                    <div className="mt-4 pb-2">
-                        <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                            {contentFilters.map(filter => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setActiveFilter(filter)}
-                                    className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                                        activeFilter === filter
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                    }`}
-                                >
-                                    {filter}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </>
+          <div className="max-w-6xl mx-auto px-4 md:px-6 mt-4">
+            <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+          </div>
         )}
-    </header>
+      </div>
+      
+      {/* Section 2: This part sticks to the top on scroll (Home view only) */}
+      {isHome && (
+        <div className="sticky top-0 z-20 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50">
+          <div className="max-w-6xl mx-auto px-4 md:px-6">
+            {/* Primary Curation Tabs */}
+            <div className="flex justify-center border-b border-gray-800">
+              <button
+                  onClick={() => setCurationTab('forYou')}
+                  className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                  For You
+              </button>
+              <button
+                  onClick={() => setCurationTab('following')}
+                  className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                  Following
+              </button>
+            </div>
+            {/* Secondary Content-Type Filters */}
+            <div className="mt-4 pb-2">
+              <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                {contentFilters.map(filter => (
+                  <button
+                      key={filter}
+                      onClick={() => setActiveFilter(filter)}
+                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
+                          activeFilter === filter
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                  >
+                      {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

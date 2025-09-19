@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage } from './types';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
@@ -25,6 +25,7 @@ import CreateHubModal from './components/CreateHubModal';
 import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
 import InAppBrowser from './components/InAppBrowser';
+import SearchViewModal from './components/SearchViewModal';
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
   const users: User[] = [];
@@ -72,40 +73,72 @@ const generateDiscoverItems = (users: User[], rooms: Room[]): DiscoverItem[] => 
 
 let allDiscoverItems = generateDiscoverItems(allUsers, allRooms);
 
+const generateConversations = (users: User[], currentUser: User): Conversation[] => {
+  const conversations: Conversation[] = [];
+  const otherUsers = users.filter(u => u.id !== currentUser.id).slice(0, 5); // Create conversations with 5 other users
+
+  otherUsers.forEach((otherUser, index) => {
+    const messages: ChatMessage[] = [
+      {
+        id: `msg-${index}-1`,
+        user: otherUser,
+        text: `Hey! Just wanted to check in. How are things?`,
+        createdAt: new Date(Date.now() - (index + 1) * 60000 * 5), // 5, 10, 15... mins ago
+      },
+      {
+        id: `msg-${index}-2`,
+        user: currentUser,
+        text: `Hey ${otherUser.name}! I'm doing great, thanks for asking. Just working on some cool new features for AuraSphere.`,
+        createdAt: new Date(Date.now() - (index + 1) * 60000 * 2), // 2, 4, 6... mins ago
+      },
+       {
+        id: `msg-${index}-3`,
+        user: otherUser,
+        text: `That sounds awesome! Can't wait to see them.`,
+        createdAt: new Date(Date.now() - (index + 1) * 60000 * 1), // 1, 2, 3... mins ago
+      },
+    ];
+    if(index === 1) { // Add some media messages to the second convo
+        messages.push({
+            id: `msg-${index}-4`,
+            user: currentUser,
+            createdAt: new Date(),
+            voiceMemo: { url: 'https://example.com/audio.mp3', duration: 15 }
+        });
+    }
+
+    conversations.push({
+      id: `convo-${index}`,
+      participants: [currentUser, otherUser],
+      messages,
+    });
+  });
+
+  return conversations;
+};
+
+const allConversations = generateConversations(allUsers, currentUserData);
+
 const App: React.FC = () => {
     const [activeView, setActiveView] = useState<ActiveView>('home');
     const [currentUser, setCurrentUser] = useState<User>(currentUserData);
+    const [conversations, setConversations] = useState<Conversation[]>(allConversations);
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [viewingProfile, setViewingProfile] = useState<User | null>(null);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
     const [isSidebarExpanded, setSidebarExpanded] = useState(true);
-    const [isSearchOpen, setSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
     const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
     const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
     const [activeFilter, setActiveFilter] = useState('All');
-    const [isScrolled, setIsScrolled] = useState(false);
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
     const [createPostFile, setCreatePostFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
     const [createNote, setCreateNote] = useState(false);
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
-
-    const mainContentRef = React.useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            if (mainContentRef.current) {
-                setIsScrolled(mainContentRef.current.scrollTop > 20);
-            }
-        };
-        const mainEl = mainContentRef.current;
-        mainEl?.addEventListener('scroll', handleScroll);
-        return () => mainEl?.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const userContextValue: IUserContext = {
         currentUser,
@@ -146,13 +179,9 @@ const App: React.FC = () => {
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={() => {}} />;
       if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={() => {}} />;
 
-      if (isSearchOpen && searchQuery) {
-        return <GlobalSearchView query={searchQuery} activeView={activeView} discoverItems={allDiscoverItems} conversations={[]} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} onConversationSelect={setActiveConversation} />
-      }
-
       switch (activeView) {
         case 'home': return <TrendingView items={allDiscoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
-        case 'messages': return <MessagesView conversations={[]} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
+        case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
         case 'scheduled': return <ScheduledView rooms={allRooms} discoverItems={allDiscoverItems} />;
         case 'profile': return <UserProfile user={currentUser} allRooms={allRooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} allPosts={allDiscoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => setActiveView('home')} />;
@@ -194,24 +223,21 @@ const App: React.FC = () => {
                 />
                 
                 <div className="flex flex-col flex-1 h-full">
-                    {/* Universal Global Header */}
-                    <GlobalHeader
-                        activeView={activeView}
-                        curationTab={curationTab}
-                        setCurationTab={setCurationTab}
-                        activeFilter={activeFilter}
-                        setActiveFilter={setActiveFilter}
-                        unreadNotificationCount={3}
-                        onNavigateToNotifications={() => setActiveView('notifications')}
-                        onNavigateToLive={() => {}}
-                        hasActiveLiveRooms={true}
-                        onSearchClick={() => setSearchOpen(true)}
-                        liveRooms={allRooms.filter(r => !r.isScheduled)}
-                        onEnterRoom={handleEnterRoom}
-                        isScrolled={isScrolled}
-                    />
-                    
-                    <main ref={mainContentRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                      <GlobalHeader
+                          activeView={activeView}
+                          curationTab={curationTab}
+                          setCurationTab={setCurationTab}
+                          activeFilter={activeFilter}
+                          setActiveFilter={setActiveFilter}
+                          unreadNotificationCount={3}
+                          onNavigateToNotifications={() => setActiveView('notifications')}
+                          onNavigateToLive={() => {}}
+                          hasActiveLiveRooms={true}
+                          onSearchClick={() => setSearchModalOpen(true)}
+                          liveRooms={allRooms.filter(r => !r.isScheduled)}
+                          onEnterRoom={handleEnterRoom}
+                      />
                       {activeRoom && !viewingProfile ? (
                         <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={() => {}} onSendMessage={() => {}} onToggleReaction={() => {}} onViewProfile={handleViewProfile}/>
                       ) : (
@@ -231,6 +257,29 @@ const App: React.FC = () => {
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
                 {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContent} />}
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
+                {isSearchModalOpen && <SearchViewModal
+                    onClose={() => setSearchModalOpen(false)}
+                    allRooms={allRooms}
+                    allUsers={allUsers}
+                    discoverItems={allDiscoverItems}
+                    currentUser={currentUser}
+                    onEnterRoom={(room) => {
+                        handleEnterRoom(room);
+                        setSearchModalOpen(false);
+                    }}
+                    onViewProfile={(user) => {
+                        handleViewProfile(user);
+                        setSearchModalOpen(false);
+                    }}
+                    onViewMedia={(post) => {
+                        setViewingMedia(post);
+                        setSearchModalOpen(false);
+                    }}
+                    onViewPost={(post) => {
+                        setViewingPost(post);
+                        setSearchModalOpen(false);
+                    }}
+                />}
             </div>
         </UserContext.Provider>
     );
