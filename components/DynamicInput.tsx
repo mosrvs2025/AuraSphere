@@ -15,16 +15,43 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     const [actionMode, setActionMode] = useState<'audio' | 'video'>('audio');
     const [isModeSelectorOpen, setModeSelectorOpen] = useState(false);
     
-    // New state management for audio recording flow
+    // Recording flow state
     const [mode, setMode] = useState<'idle' | 'recording' | 'preview'>('idle');
     const [countdown, setCountdown] = useState(RECORDING_DURATION);
     const [isAudioPreviewPlaying, setIsAudioPreviewPlaying] = useState(false);
     const [isVideoRecorderOpen, setVideoRecorderOpen] = useState(false);
 
+    // Audio visualization state
+    const [dataArray, setDataArray] = useState<Uint8Array>(new Uint8Array(0));
+    
+    // Refs
     const countdownInterval = useRef<number | null>(null);
     const longPressTimer = useRef<number | null>(null);
+    const mediaStreamRef = useRef<MediaStream | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const animationFrameIdRef = useRef<number | null>(null);
 
-    // Countdown Timer Logic
+
+    // --- Audio Cleanup ---
+    const stopAndCleanupAudio = () => {
+        if (animationFrameIdRef.current) {
+            cancelAnimationFrame(animationFrameIdRef.current);
+            animationFrameIdRef.current = null;
+        }
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+        analyserRef.current = null;
+        setDataArray(new Uint8Array(0));
+    };
+    
+    // --- Countdown Timer Logic ---
     useEffect(() => {
         if (mode === 'recording') {
             countdownInterval.current = window.setInterval(() => {
@@ -41,6 +68,12 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         };
     }, [mode]);
 
+    const finishRecording = () => {
+        stopAndCleanupAudio();
+        setMode('preview');
+        setIsAudioPreviewPlaying(false);
+    };
+
     // Effect to stop recording when countdown finishes
     useEffect(() => {
         if (countdown <= 0 && mode === 'recording') {
@@ -48,6 +81,18 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
     }, [countdown, mode]);
 
+    // --- Visualization Logic ---
+    const visualize = () => {
+        if (!analyserRef.current) return;
+        
+        const newArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(newArray);
+        setDataArray(newArray);
+
+        animationFrameIdRef.current = requestAnimationFrame(visualize);
+    };
+
+    // --- Handlers ---
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (text.trim()) {
@@ -56,27 +101,43 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
     };
     
-    const startRecording = () => {
+    const startRecording = async () => {
         if (actionMode === 'audio') {
-            setMode('recording');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaStreamRef.current = stream;
+
+                const context = new (window.AudioContext)();
+                audioContextRef.current = context;
+                
+                const source = context.createMediaStreamSource(stream);
+                const analyserNode = context.createAnalyser();
+                analyserNode.fftSize = 128; // smaller for performance, 64 bins
+                source.connect(analyserNode);
+                analyserRef.current = analyserNode;
+                
+                setDataArray(new Uint8Array(analyserNode.frequencyBinCount));
+                setMode('recording');
+                visualize();
+            } catch (err) {
+                console.error("Mic access denied:", err);
+                // In a real app, you'd show user feedback for permissions denial
+            }
         } else {
             setVideoRecorderOpen(true);
         }
         setModeSelectorOpen(false);
     };
 
-    const finishRecording = () => {
-        setMode('preview');
-        setIsAudioPreviewPlaying(false);
-    };
-
     const cancelRecording = () => {
+        stopAndCleanupAudio();
         setMode('idle');
     };
 
     const deletePreview = () => {
         setMode('idle');
         setIsAudioPreviewPlaying(false);
+        // Cleanup already happened on finishRecording
     };
     
     const sendPreview = () => {
@@ -85,17 +146,19 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         setMode('idle');
         setIsAudioPreviewPlaying(false);
     };
-
+    
     const handleActionPress = () => {
         if (longPressTimer.current) clearTimeout(longPressTimer.current);
         longPressTimer.current = window.setTimeout(() => {
-            setModeSelectorOpen(true);
+            if (mode === 'idle') {
+                setModeSelectorOpen(true);
+            }
             longPressTimer.current = null;
-        }, 500);
+        }, 500); // Long press duration
     };
 
     const handleActionRelease = () => {
-        if (longPressTimer.current) {
+        if (longPressTimer.current) { // It was a short press
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
             if (mode === 'idle') {
@@ -159,14 +222,25 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                         <button onClick={cancelRecording} className="p-2 text-gray-400 hover:text-white" aria-label="Cancel recording">
                             <XIcon className="h-6 w-6" />
                         </button>
-                        <div className="flex items-center text-sm text-gray-300">
-                            <span className="relative flex h-2.5 w-2.5 mr-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                            </span>
-                            Recording audio...
-                            <span className="font-mono ml-2 text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
+
+                        <div className="flex items-center text-sm text-gray-300 flex-1 justify-center">
+                             <div className="flex items-center space-x-0.5 h-6 mr-3">
+                                {Array.from({ length: 24 }).map((_, i) => {
+                                    const sampleIndex = Math.floor(i * (dataArray.length / 24));
+                                    const value = dataArray[sampleIndex] || 0;
+                                    const heightPercent = Math.max(5, (value / 255) * 100); 
+                                    return (
+                                        <div 
+                                            key={i} 
+                                            className="w-0.5 bg-red-400 rounded-full" 
+                                            style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                            <span className="font-mono text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
                         </div>
+                        
                         <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording">
                             <StopIcon className="h-8 w-8" />
                         </button>
