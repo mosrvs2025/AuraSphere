@@ -23,6 +23,7 @@ import BottomNavBar from './components/BottomNavBar';
 import InAppBrowser from './components/InAppBrowser';
 import GlobalHeader from './components/GlobalHeader';
 import GlobalSearchView from './components/GlobalSearchView';
+import Sidebar from './components/Sidebar';
 
 
 // --- MOCK DATA ---
@@ -165,6 +166,7 @@ const App: React.FC = () => {
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
     const [selectedUserForCard, setSelectedUserForCard] = useState<User | null>(null);
     const [userCardPosition, setUserCardPosition] = useState<ModalPosition | null>(null);
+    const [isSidebarExpanded, setSidebarExpanded] = useState(true);
 
     // --- Create Flow State ---
     const [activeCreateView, setActiveCreateView] = useState<'image' | 'video' | 'note' | null>(null);
@@ -615,7 +617,15 @@ const App: React.FC = () => {
 
     return (
         <UserContext.Provider value={userContextValue}>
-            <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
+            <div className="h-full flex flex-col lg:flex-row bg-gray-900 text-white font-sans">
+                <Sidebar
+                    activeView={activeView}
+                    setActiveView={changeView}
+                    isExpanded={isSidebarExpanded}
+                    setExpanded={setSidebarExpanded}
+                    onCreateContent={() => setCreateHubOpen(true)}
+                    unreadNotificationCount={unreadNotifications.length}
+                />
                 {/* Main Content Area */}
                 <main className="flex-1 flex flex-col overflow-hidden relative">
                      <GlobalHeader
@@ -628,6 +638,8 @@ const App: React.FC = () => {
                         hasActiveLiveRooms={liveRooms.length > 0}
                         liveRooms={liveRooms}
                         onEnterRoom={handleEnterRoom}
+                        isSidebarExpanded={isSidebarExpanded}
+                        onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)}
                     />
                     <div className="flex-1 overflow-y-auto">
                         {renderActiveView()}
@@ -645,7 +657,7 @@ const App: React.FC = () => {
             
             {/* --- Global Components --- */}
             {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
             </div>
         </UserContext.Provider>

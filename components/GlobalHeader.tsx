@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActiveView, Room } from '../types';
 import { SearchIcon, XIcon, BellIcon } from './Icons';
+import AnimatedHamburgerIcon from './AnimatedHamburgerIcon';
 
 interface GlobalHeaderProps {
   activeView: ActiveView;
@@ -12,6 +13,8 @@ interface GlobalHeaderProps {
   hasActiveLiveRooms: boolean;
   liveRooms: Room[];
   onEnterRoom: (room: Room) => void;
+  isSidebarExpanded: boolean;
+  onToggleSidebar: () => void;
 }
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
@@ -55,7 +58,7 @@ const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) 
 };
 
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms, liveRooms, onEnterRoom }) => {
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms, liveRooms, onEnterRoom, isSidebarExpanded, onToggleSidebar }) => {
   let title = '';
   let placeholder = '';
 
@@ -87,7 +90,10 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
     <header className="p-4 md:p-6 flex-shrink-0 border-b border-gray-800 bg-gray-900 z-10">
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <button onClick={onToggleSidebar} className="hidden lg:flex items-center justify-center p-2 -ml-2 text-gray-400 hover:text-white">
+                        <AnimatedHamburgerIcon isOpen={isSidebarExpanded} onClick={() => {}} />
+                    </button>
                     {!isHome && (
                       <button 
                           onClick={onNavigateToLive} 
@@ -132,12 +138,12 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
                     )}
                 </div>
             )}
+            {isHome && (
+                <div className="mt-4">
+                     <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+                </div>
+            )}
         </div>
-        {isHome && (
-            <div className="max-w-6xl mx-auto mt-4">
-                 <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-            </div>
-        )}
     </header>
   );
 };
