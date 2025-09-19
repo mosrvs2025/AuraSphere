@@ -115,7 +115,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
   }, [messages, isCollapsed]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-800/50 overflow-hidden">
+    <div className={`flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden md:h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'h-14' : 'h-1/2'}`}>
       <header className="p-4 border-b border-gray-700/50 flex-shrink-0">
          <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold">
             <span>Room Chat</span>

@@ -15,7 +15,7 @@ interface RoomViewProps {
 }
 
 const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }> = ({ user, size = 'large', onClick }) => (
-    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-4 focus:ring-indigo-500/30 rounded-full">
+    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-4 focus:ring-indigo-500/30 rounded-full transition-shadow duration-300 hover:shadow-lg hover:shadow-indigo-500/20">
         <img 
             src={user.avatarUrl} 
             alt={user.name} 
@@ -31,7 +31,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
     const [currentRoom, setCurrentRoom] = useState<Room>(room);
-    const [isChatCollapsed, setChatCollapsed] = useState(false);
+    const [isChatCollapsed, setChatCollapsed] = useState(true);
 
     // State for controls, moved up from sub-components
     const [messageText, setMessageText] = useState('');
@@ -102,7 +102,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
       <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
         {/* Main Room Content */}
-        <div className="flex-1 flex flex-col bg-gray-900 p-4 md:p-6">
+        <div className="flex-1 flex flex-col bg-gray-900 p-4 md:p-6 overflow-hidden">
           <header className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
@@ -187,26 +187,26 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                 </div>
             ) : (
                 // Listener Controls
-                <div className="flex items-center justify-between space-x-4">
-                    <button onClick={() => setIsMuted(!isMuted)} className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}>
-                        <MicIcon />
-                    </button>
+                <div className="flex items-center space-x-4">
                     <form onSubmit={handleSendMessage} className="flex-1 flex items-center bg-gray-800 rounded-full">
                         <input type="text" value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Send a message..." className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none" />
                         <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300 disabled:text-gray-600" disabled={!messageText.trim()} aria-label="Send message">
                             <SendIcon />
                         </button>
                     </form>
-                    <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+                    <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex-shrink-0">
                         Raise Hand
+                    </button>
+                    <button onClick={() => setIsMuted(!isMuted)} className={`p-3 rounded-full transition flex-shrink-0 ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}>
+                        <MicIcon />
                     </button>
                 </div>
             )}
           </footer>
         </div>
 
-        {/* Chat Sidebar */}
-        <div className="w-full md:w-80 lg:w-96 border-l border-gray-800 flex-shrink-0 h-1/2 md:h-full">
+        {/* Chat Sidebar - Absolute on mobile, relative on desktop */}
+        <div className="md:relative absolute bottom-0 left-0 right-0 w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-gray-800 flex-shrink-0 md:h-full z-20">
           <ChatView 
             messages={messages} 
             currentUser={currentUser}
