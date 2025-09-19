@@ -1,6 +1,7 @@
 // Fix: Combined imports and updated API key handling to align with guidelines.
 // The API key is assumed to be present in `process.env.API_KEY` and should not be checked at runtime.
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { ChatMessage } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -56,5 +57,31 @@ export const generateAvatarImage = async (): Promise<string | null> => {
   } catch (error) {
     console.error("Error generating avatar image:", error);
     return null;
+  }
+};
+
+export const summarizeChat = async (messages: ChatMessage[]): Promise<string> => {
+  if (messages.length < 2) {
+    return "There aren't enough messages to generate a meaningful summary yet.";
+  }
+
+  // Format messages for the prompt
+  const formattedChat = messages
+    .map(msg => `${msg.user.name}: ${msg.text || '[Audio/Video Note]'}`)
+    .join('\n');
+
+  try {
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Please provide a concise summary of the key points and overall sentiment from the following chat conversation:\n\n${formattedChat}`,
+      config: {
+        temperature: 0.3,
+      }
+    });
+
+    return response.text.trim();
+  } catch (error) {
+    console.error("Error summarizing chat:", error);
+    return "An error occurred while generating the summary.";
   }
 };

@@ -1,11 +1,12 @@
 // Implemented RoomView, the main interface for participating in a live audio room.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Room, User, ChatMessage, ModalPosition } from '../types';
 import ChatView from './ChatView';
 import { RoomActionsContext } from '../context/RoomActionsContext';
 import { generateIcebreakers } from '../services/geminiService';
-import { MicIcon } from './Icons';
+import { MicIcon, SparklesIcon } from './Icons';
 import DynamicInput from './DynamicInput';
+import AiAssistantPanel from './AiAssistantPanel';
 
 
 interface RoomViewProps {
@@ -57,12 +58,17 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
     const [currentRoom, setCurrentRoom] = useState<Room>(room);
     const [isChatCollapsed, setChatCollapsed] = useState(true);
+    const [animatedReaction, setAnimatedReaction] = useState<{ messageId: string, emoji: string } | null>(null);
 
-    const [isMuted, setIsMuted] = useState(true);
-    const [icebreakers, setIcebreakers] = useState<string[]>([]);
-    const [isLoadingIcebreakers, setIsLoadingIcebreakers] = useState(false);
+    const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
     const [videoInput, setVideoInput] = useState('');
 
+    useEffect(() => {
+        if (animatedReaction) {
+            const timer = setTimeout(() => setAnimatedReaction(null), 500); // Animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [animatedReaction]);
 
     const isHost = currentRoom.hosts.some(h => h.id === currentUser.id);
     const hasMedia = isSharingScreen || !!currentRoom.videoUrl;
@@ -72,7 +78,26 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     };
 
     const handleToggleReaction = (messageId: string, emoji: string) => {
-      console.log(`Toggled reaction ${emoji} for message ${messageId}`);
+        setMessages(prevMessages => 
+            prevMessages.map(msg => {
+                if (msg.id === messageId) {
+                    const reactions = { ...(msg.reactions || {}) };
+                    const usersForEmoji = reactions[emoji] || [];
+                    const userIndex = usersForEmoji.indexOf(currentUser.id);
+
+                    if (userIndex > -1) {
+                        usersForEmoji.splice(userIndex, 1);
+                        if(usersForEmoji.length === 0) delete reactions[emoji];
+                    } else {
+                        usersForEmoji.push(currentUser.id);
+                    }
+                    reactions[emoji] = usersForEmoji;
+                    return { ...msg, reactions };
+                }
+                return msg;
+            })
+        );
+        setAnimatedReaction({ messageId, emoji });
     };
     
     const handleSendTextMessage = (text: string) => {
@@ -106,15 +131,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         setMessages(prev => [...prev, newMessage]);
     };
     
-    // Host Control Handlers
-    const handleSuggestIcebreakers = async () => {
-        setIsLoadingIcebreakers(true);
-        setIcebreakers([]);
-        const suggestions = await generateIcebreakers(currentRoom.title);
-        setIcebreakers(suggestions);
-        setIsLoadingIcebreakers(false);
-    };
-
     const handleShareVideo = (e: React.FormEvent) => {
         e.preventDefault();
         if (videoInput.trim()) {
@@ -144,7 +160,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
       <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
         {/* Main Panel (Left side on desktop, full screen on mobile) */}
-        <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden relative">
           <header className="p-4 md:p-6 flex-shrink-0 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
@@ -196,6 +212,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                onPlayAudioNote={setNowPlayingAudioNoteId}
                isCollapsed={isChatCollapsed}
                onToggleCollapse={() => setChatCollapsed(!isChatCollapsed)}
+               animatedReaction={animatedReaction}
              />
            </div>
 
@@ -220,18 +237,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                                 <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
                             </form>
                         )}
-                        <button onClick={handleSuggestIcebreakers} disabled={isLoadingIcebreakers} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full disabled:bg-indigo-800 disabled:cursor-not-allowed text-sm transition">
-                            {isLoadingIcebreakers ? '...' : '✨ Suggest'}
+                        <button onClick={() => setIsAiPanelOpen(prev => !prev)} className={`font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2 ${isAiPanelOpen ? 'bg-indigo-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}>
+                           <SparklesIcon className="h-5 w-5" />
+                           <span>AI Assistant</span>
                         </button>
                     </div>
-                     {icebreakers.length > 0 && (
-                        <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
-                            <h5 className="font-bold text-indigo-400 mb-2">Icebreaker Ideas:</h5>
-                            <ul className="list-disc list-inside text-sm space-y-1">
-                                {icebreakers.map((q, i) => <li key={i}>{q}</li>)}
-                            </ul>
-                        </div>
-                    )}
                 </div>
             ) : (
                 // Listener Controls
@@ -247,6 +257,13 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
                 </div>
             )}
           </footer>
+            {isHost && isAiPanelOpen && (
+                <AiAssistantPanel 
+                    room={currentRoom}
+                    messages={messages}
+                    onClose={() => setIsAiPanelOpen(false)}
+                />
+            )}
         </div>
 
         {/* Chat Sidebar (Desktop only) */}
@@ -259,6 +276,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             onPlayAudioNote={setNowPlayingAudioNoteId}
             isCollapsed={false}
             onToggleCollapse={() => {}}
+            animatedReaction={animatedReaction}
           />
         </div>
       </div>

@@ -6,17 +6,9 @@ import { ChevronDownIcon } from './Icons';
 
 // --- Sub-component for Audio Notes ---
 
-const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🔥'];
+const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🔥', '💡', '🎉'];
 
-interface AudioNoteBubbleProps {
-    message: ChatMessage;
-    currentUser: User;
-    isPlaying: boolean;
-    onPlay: () => void;
-    onToggleReaction: (emoji: string) => void;
-}
-
-const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, currentUser, isPlaying, onPlay, onToggleReaction }) => {
+const LongPressWrapper: React.FC<{ onToggleReaction: (emoji: string) => void, children: React.ReactNode }> = ({ onToggleReaction, children }) => {
     const [isPickerOpen, setPickerOpen] = useState(false);
     const pressTimer = useRef<number | null>(null);
 
@@ -37,8 +29,6 @@ const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, currentUser,
         onToggleReaction(emoji);
         setPickerOpen(false);
     };
-    
-    const totalReactions = Object.values(message.reactions || {}).reduce((sum, users) => sum + users.length, 0);
 
     return (
         <div 
@@ -49,35 +39,9 @@ const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, currentUser,
             onTouchEnd={handlePressEnd}
             onMouseLeave={handlePressEnd}
         >
-            <div className="flex items-center space-x-2 bg-gray-700 p-2 rounded-lg w-48">
-                <button onClick={onPlay} className="p-2 bg-indigo-500 rounded-full text-white">
-                    {/* Play/Pause Icon */}
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                       {isPlaying ? <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1zm6 0a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1z" clipRule="evenodd" /> : <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />}
-                    </svg>
-                </button>
-                {/* Simplified Waveform */}
-                <div className="flex-1 h-6 flex items-center space-x-0.5">
-                    {[0.6, 0.9, 0.7, 0.8, 0.5, 0.9, 0.4].map((h, i) => (
-                        <div key={i} style={{ height: `${h * 100}%` }} className="w-1 bg-gray-500 rounded-full"></div>
-                    ))}
-                </div>
-                <span className="text-xs text-gray-400 font-mono">0:{message.voiceMemo?.duration.toString().padStart(2, '0')}</span>
-            </div>
-
-            {/* Reactions Display */}
-            {totalReactions > 0 && (
-                 <div className="absolute -bottom-3 right-2 flex items-center space-x-1 bg-gray-800 border border-gray-900 px-1.5 py-0.5 rounded-full text-xs">
-                     {Object.entries(message.reactions || {}).map(([emoji, users]) => 
-                        users.length > 0 ? <span key={emoji}>{emoji} {users.length}</span> : null
-                     )}
-                 </div>
-            )}
-
-
-            {/* Reaction Picker */}
+            {children}
             {isPickerOpen && (
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 flex items-center bg-gray-900 border border-gray-700 p-1 rounded-full shadow-lg z-10">
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 flex items-center bg-gray-900 border border-gray-700 p-1 rounded-full shadow-lg z-20">
                     {EMOJI_REACTIONS.map(emoji => (
                         <button key={emoji} onClick={() => handleReactionSelect(emoji)} className="p-2 text-xl hover:scale-125 transition-transform">
                             {emoji}
@@ -85,6 +49,29 @@ const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, currentUser,
                     ))}
                 </div>
             )}
+        </div>
+    );
+};
+
+interface AudioNoteBubbleProps {
+    message: ChatMessage;
+    isPlaying: boolean;
+    onPlay: () => void;
+}
+const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, isPlaying, onPlay }) => {
+    return (
+        <div className="flex items-center space-x-2 bg-gray-700 p-2 rounded-lg w-48">
+            <button onClick={onPlay} className="p-2 bg-indigo-500 rounded-full text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                   {isPlaying ? <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1zm6 0a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1z" clipRule="evenodd" /> : <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />}
+                </svg>
+            </button>
+            <div className="flex-1 h-6 flex items-center space-x-0.5">
+                {[0.6, 0.9, 0.7, 0.8, 0.5, 0.9, 0.4].map((h, i) => (
+                    <div key={i} style={{ height: `${h * 100}%` }} className="w-1 bg-gray-500 rounded-full"></div>
+                ))}
+            </div>
+            <span className="text-xs text-gray-400 font-mono">0:{message.voiceMemo?.duration.toString().padStart(2, '0')}</span>
         </div>
     );
 };
@@ -122,9 +109,10 @@ interface ChatViewProps {
   onPlayAudioNote: (messageId: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  animatedReaction: { messageId: string, emoji: string } | null;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, nowPlayingAudioNoteId, onPlayAudioNote, isCollapsed, onToggleCollapse }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, nowPlayingAudioNoteId, onPlayAudioNote, isCollapsed, onToggleCollapse, animatedReaction }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -146,25 +134,48 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
         </button>
       </header>
       <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] md:max-h-full opacity-100 p-4 space-y-4'}`}>
-        {messages.map(msg => (
-          <div key={msg.id} className="flex items-start space-x-3">
-            <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-8 h-8 rounded-full flex-shrink-0" />
-            <div>
-              <p className="font-bold text-sm text-indigo-300">{msg.user.name}</p>
-              {msg.text && <p className="text-sm text-gray-200">{msg.text}</p>}
-              {msg.voiceMemo && (
-                <AudioNoteBubble 
-                    message={msg}
-                    currentUser={currentUser}
-                    isPlaying={nowPlayingAudioNoteId === msg.id}
-                    onPlay={() => onPlayAudioNote(msg.id)}
-                    onToggleReaction={(emoji) => onToggleReaction(msg.id, emoji)}
-                />
-              )}
-               {msg.videoNote && <VideoNoteBubble message={msg} />}
+        {messages.map(msg => {
+          const totalReactions = Object.values(msg.reactions || {}).reduce((sum, users) => sum + users.length, 0);
+          return (
+            <div key={msg.id} className="flex items-start space-x-3">
+              <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-8 h-8 rounded-full flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <p className="font-bold text-sm text-indigo-300">{msg.user.name}</p>
+                <div className="relative inline-block">
+                    {msg.text && (
+                        <LongPressWrapper onToggleReaction={(emoji) => onToggleReaction(msg.id, emoji)}>
+                            <p className="text-sm text-gray-200 bg-gray-700/50 px-3 py-2 rounded-lg inline-block">{msg.text}</p>
+                        </LongPressWrapper>
+                    )}
+                    {msg.voiceMemo && (
+                        <LongPressWrapper onToggleReaction={(emoji) => onToggleReaction(msg.id, emoji)}>
+                            <AudioNoteBubble 
+                                message={msg}
+                                isPlaying={nowPlayingAudioNoteId === msg.id}
+                                onPlay={() => onPlayAudioNote(msg.id)}
+                            />
+                        </LongPressWrapper>
+                    )}
+                    {msg.videoNote && <VideoNoteBubble message={msg} />}
+                    
+                    {totalReactions > 0 && (
+                        <div className="absolute -bottom-4 left-2 flex items-center space-x-1.5 bg-gray-900 px-1.5 py-0.5 rounded-full text-xs z-10">
+                            {Object.entries(msg.reactions || {}).map(([emoji, users]) => 
+                                users.length > 0 ? (
+                                    <span 
+                                        key={emoji}
+                                        className={`${animatedReaction?.messageId === msg.id && animatedReaction?.emoji === emoji ? 'animate-reaction' : ''}`}
+                                    >
+                                        {emoji} <span className="text-gray-400">{users.length}</span>
+                                    </span>
+                                ) : null
+                            )}
+                        </div>
+                    )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+        )})}
         <div ref={messagesEndRef} />
       </div>
     </div>
