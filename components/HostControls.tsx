@@ -4,15 +4,16 @@ import { RoomActionsContext } from '../context/RoomActionsContext';
 import { Room } from '../types';
 
 interface HostControlsProps {
+  videoUrl?: string;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onSendMessage: (message: { text: string }) => void;
 }
 
-const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom, onSendMessage }) => {
+const HostControls: React.FC<HostControlsProps> = ({ videoUrl, onUpdateRoom, onSendMessage }) => {
   const [topic, setTopic] = useState("technology");
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoInput, setVideoInput] = useState('');
   const [text, setText] = useState('');
   const { isSharingScreen, onToggleScreenShare } = useContext(RoomActionsContext);
 
@@ -26,10 +27,14 @@ const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom, onSendMessage
   
   const handleShareVideo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (videoUrl.trim()) {
-      onUpdateRoom({ videoUrl });
-      setVideoUrl('');
+    if (videoInput.trim()) {
+      onUpdateRoom({ videoUrl: videoInput.trim() });
+      setVideoInput('');
     }
+  };
+
+  const handleStopVideo = () => {
+    onUpdateRoom({ videoUrl: undefined });
   };
   
   const handleTextSubmit = (e: React.FormEvent) => {
@@ -57,10 +62,22 @@ const HostControls: React.FC<HostControlsProps> = ({ onUpdateRoom, onSendMessage
           <span>{isSharingScreen ? 'Stop' : 'Screen'}</span>
         </button>
         
-        <form onSubmit={handleShareVideo} className="flex items-center bg-gray-800 rounded-full">
-            <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="YouTube URL..." className="bg-transparent pl-4 p-2 text-sm w-32 focus:outline-none" />
-            <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
-        </form>
+        {videoUrl ? (
+          <button 
+            onClick={handleStopVideo} 
+            className="flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition bg-red-600 hover:bg-red-500 text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5z" />
+            </svg>
+            <span>Stop Video</span>
+          </button>
+        ) : (
+          <form onSubmit={handleShareVideo} className="flex items-center bg-gray-800 rounded-full">
+              <input type="text" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} placeholder="YouTube URL..." className="bg-transparent pl-4 p-2 text-sm w-32 focus:outline-none" />
+              <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
+          </form>
+        )}
 
         <button onClick={handleSuggestIcebreakers} disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full disabled:bg-indigo-800 disabled:cursor-not-allowed text-sm transition">
           {isLoading ? '...' : '✨ Suggest'}

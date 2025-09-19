@@ -88,6 +88,31 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare,
     onUpdateRoom({ moderationQueue: updatedQueue });
   };
 
+  const handleRoomUpdate = (updatedData: Partial<Room>) => {
+    if (updatedData.videoUrl && !room.videoUrl) {
+      const systemMessage: ChatMessage = {
+        id: `sys-msg-${Date.now()}`,
+        user: { id: 'system', name: 'System', avatarUrl: '', role: UserRole.HOST },
+        text: `${currentUser.name} started sharing a video.`,
+        createdAt: new Date(),
+      };
+      setMessages(prev => [...prev, systemMessage]);
+    }
+    
+    if (updatedData.hasOwnProperty('videoUrl') && updatedData.videoUrl === undefined && room.videoUrl) {
+       const systemMessage: ChatMessage = {
+        id: `sys-msg-${Date.now()}`,
+        user: { id: 'system', name: 'System', avatarUrl: '', role: UserRole.HOST },
+        text: `Video sharing has stopped.`,
+        createdAt: new Date(),
+      };
+      setMessages(prev => [...prev, systemMessage]);
+    }
+
+    onUpdateRoom(updatedData);
+  };
+
+
   const isSharingScreen = !!room.screenShareStream;
   const isSharingVideo = !!room.videoUrl;
 
@@ -121,7 +146,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare,
         </div>
         
         <footer className="sticky bottom-0 p-4 bg-gray-900/70 backdrop-blur-sm">
-          {isHost ? <HostControls onUpdateRoom={onUpdateRoom} onSendMessage={handleSendMessage} /> : <ListenerControls onSendMessage={handleSendMessage} />}
+          {isHost ? <HostControls videoUrl={room.videoUrl} onUpdateRoom={handleRoomUpdate} onSendMessage={handleSendMessage} /> : <ListenerControls onSendMessage={handleSendMessage} />}
         </footer>
       </div>
     </RoomActionsContext.Provider>
