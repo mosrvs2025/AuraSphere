@@ -86,12 +86,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         setMessages(prev => [...prev, newMessage]);
     };
     
-    const handleSendAudioNote = () => {
+    const handleSendAudioNote = (duration: number) => {
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,
             user: currentUser,
             createdAt: new Date(),
-            voiceMemo: { url: '#', duration: 30 }
+            voiceMemo: { url: '#', duration: Math.round(duration) }
         };
         setMessages(prev => [...prev, newMessage]);
     };
