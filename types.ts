@@ -18,7 +18,7 @@ export interface ChatMessage {
     duration: number; // in seconds
   };
   videoNote?: {
-    url: string;
+    url:string;
     thumbnailUrl: string;
     duration: number; // in seconds
   };
@@ -63,3 +63,39 @@ export interface ModalPosition {
 
 // FIX: Centralized the ActiveView type to be used across the application, resolving type inconsistencies.
 export type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation';
+
+
+// New type for the Discover feed
+export type DiscoverItem =
+  | ({ type: 'live_room' } & Room)
+  | ({ type: 'user_profile' } & User)
+  | ({
+      type: 'text_post';
+      id: string;
+      author: User;
+      content: string;
+      likes: number;
+      comments: number;
+      createdAt: Date;
+    })
+  | ({
+      type: 'image_post';
+      id: string;
+      author: User;
+      imageUrl: string;
+      caption?: string;
+      likes: number;
+      comments: number;
+      createdAt: Date;
+    })
+  | ({
+      type: 'video_post';
+      id:string;
+      author: User;
+      videoUrl: string;
+      thumbnailUrl: string;
+      caption?: string;
+      likes: number;
+      comments: number;
+      createdAt: Date;
+    });

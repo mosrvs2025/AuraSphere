@@ -15,7 +15,7 @@ import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
 import SearchViewModal from './components/SearchViewModal';
 import { MyStudioView, TrendingView } from './components/PlaceholderViews';
-import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition } from './types';
+import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition, DiscoverItem } from './types';
 import { UserContext } from './context/UserContext';
 
 // --- MOCK DATA ---
@@ -97,6 +97,20 @@ const initialNotifications: Notification[] = [
     { id: 'n1', text: 'Alex Reid started a new room: "Future of Web..."', createdAt: new Date(Date.now() - 1000 * 60 * 10), isRead: false, type: 'room_start', relatedUser: allUsersData.find(u=> u.id === 'u1'), relatedRoomId: 'r1' },
     { id: 'n2', text: 'Bella Chen followed you.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true, type: 'follow', relatedUser: allUsersData.find(u=> u.id === 'u2') },
 ];
+
+// --- MOCK DATA FOR DISCOVER PAGE ---
+const discoverFeedData: DiscoverItem[] = [
+    { type: 'image_post', id: 'dp1', author: allUsersData[3], imageUrl: 'https://images.unsplash.com/photo-1517423568342-be669f65d36a?q=80&w=800', caption: 'Morning coffee vibes ☕️', likes: 120, comments: 15, createdAt: new Date(Date.now() - 3600000 * 2) },
+    { type: 'live_room', ...initialRooms[0] },
+    { type: 'text_post', id: 'dp2', author: allUsersData[2], content: 'Just had a breakthrough on a new Web3 concept. The decentralization possibilities are endless!', likes: 54, comments: 12, createdAt: new Date(Date.now() - 3600000 * 3) },
+    { type: 'user_profile', ...allUsersData[4] },
+    { type: 'video_post', id: 'dp3', author: allUsersData[0], thumbnailUrl: 'https://images.unsplash.com/photo-1529686342540-1b42b7c4a525?q=80&w=800', videoUrl: '#', caption: 'Unboxing the new dev kit!', likes: 302, comments: 45, createdAt: new Date(Date.now() - 3600000 * 5) },
+    { type: 'live_room', ...initialRooms[1] },
+    { type: 'image_post', id: 'dp4', author: allUsersData[1], imageUrl: 'https://images.unsplash.com/photo-1555099962-4199c345e546?q=80&w=800', caption: 'Finally finished this component design.', likes: 250, comments: 30, createdAt: new Date(Date.now() - 3600000 * 8) },
+    { type: 'text_post', id: 'dp5', author: initialCurrentUser, content: 'Excited to host my weekly standup room later. Hope to see you all there!', likes: 99, comments: 8, createdAt: new Date(Date.now() - 3600000 * 1) },
+    { type: 'user_profile', ...allUsersData[3] },
+];
+
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User>(initialCurrentUser);
@@ -290,6 +304,7 @@ const App: React.FC = () => {
             <SearchViewModal
                 allRooms={rooms}
                 allUsers={allUsers}
+                discoverFeed={discoverFeedData}
                 onClose={() => setSearchModalOpen(false)}
                 onEnterRoom={(room) => {
                     handleEnterRoom(room);

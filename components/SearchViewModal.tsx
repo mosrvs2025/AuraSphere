@@ -1,17 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { Room, User } from '../types';
+import { Room, User, DiscoverItem } from '../types';
 import SearchView from './SearchView';
 import { SearchIcon } from './Icons';
+import { DiscoverItemRenderer } from './DiscoverCards';
 
 interface SearchViewModalProps {
   onClose: () => void;
   allRooms: Room[];
   allUsers: User[];
+  discoverFeed: DiscoverItem[];
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
 }
 
-const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, allUsers, onEnterRoom, onViewProfile }) => {
+const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, allUsers, discoverFeed, onEnterRoom, onViewProfile }) => {
   const [query, setQuery] = useState('');
 
   const filteredRooms = useMemo(() => {
@@ -60,9 +62,20 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
             onViewProfile={onViewProfile}
           />
         ) : (
-          <div className="text-center p-8 text-gray-500 mt-10">
-            <p>Start typing to find live rooms and interesting people.</p>
-          </div>
+           <div className="p-4 md:p-6 animate-fade-in">
+                <h1 className="text-3xl font-bold mb-6">Discover</h1>
+                <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+                    {discoverFeed.map((item) => (
+                        <div key={`${item.type}-${item.id}`} className="break-inside-avoid">
+                            <DiscoverItemRenderer
+                                item={item}
+                                onEnterRoom={onEnterRoom}
+                                onViewProfile={onViewProfile}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
         )}
       </div>
     </div>
