@@ -618,7 +618,7 @@ const App: React.FC = () => {
         <UserContext.Provider value={userContextValue}>
             <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
                 {/* Main Content Area */}
-                <main className="flex-1 flex flex-col overflow-hidden relative">
+                <main className="flex-1 flex flex-col overflow-hidden">
                      <GlobalHeader
                         activeView={activeView}
                         curationTab={curationTab}
@@ -634,9 +634,16 @@ const App: React.FC = () => {
                         onEnterRoom={handleEnterRoom}
                         isScrolled={isScrolled}
                     />
-                    <div ref={mainContentRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+                    {/* BUG FIX: Added padding-bottom to the scroll container to prevent the BottomNavBar from overlapping content, especially the MiniPlayer. */}
+                    <div ref={mainContentRef} onScroll={handleScroll} className="flex-1 overflow-y-auto pb-16 md:pb-0">
                         {renderActiveView()}
                     </div>
+                     <BottomNavBar 
+                        activeView={activeView} 
+                        setActiveView={changeView} 
+                        onCreateContent={() => setCreateHubOpen(true)} 
+                        unreadNotificationCount={unreadNotifications.length} 
+                    />
                 </main>
             </div>
             {/* --- Modals --- */}
@@ -661,9 +668,6 @@ const App: React.FC = () => {
             
             {/* --- Global Components --- */}
             {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
-             <div className="fixed bottom-0 left-0 right-0 z-30">
-                 <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
-             </div>
         </UserContext.Provider>
     );
 };
