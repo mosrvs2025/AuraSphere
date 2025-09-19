@@ -1,25 +1,25 @@
-// Implemented the main Header component with navigation controls.
 import React from 'react';
-import { MenuIcon, SearchIcon } from './Icons';
+import AnimatedHamburgerIcon from './AnimatedHamburgerIcon';
+import { SearchIcon } from './Icons';
 
 interface HeaderProps {
+  isSidebarExpanded: boolean;
   onToggleSidebar: () => void;
   onSearchClick: () => void;
-  title?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onToggleSidebar, onSearchClick, title }) => {
+const Header: React.FC<HeaderProps> = ({ isSidebarExpanded, onToggleSidebar, onSearchClick }) => {
   return (
-    <header className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 flex items-center justify-between p-4 h-16">
-      <div className="flex items-center space-x-4">
-        <button onClick={onToggleSidebar} className="text-gray-400 hover:text-white">
-          <MenuIcon />
-        </button>
-        {title && <h1 className="text-xl font-bold">{title}</h1>}
-      </div>
-      <div className="flex items-center space-x-4">
-        <button onClick={onSearchClick} className="text-gray-400 hover:text-white">
-            <SearchIcon />
+    <header className="sticky top-0 bg-gray-900/70 backdrop-blur-sm z-20 md:hidden">
+      <div className="flex items-center justify-between p-2 border-b border-gray-800">
+        <AnimatedHamburgerIcon isOpen={isSidebarExpanded} onClick={onToggleSidebar} />
+        <h1 className="text-xl font-bold text-white">AuraSphere</h1>
+        <button 
+          onClick={onSearchClick}
+          className="p-3 text-gray-300 hover:text-white"
+          aria-label="Search"
+        >
+          <SearchIcon />
         </button>
       </div>
     </header>

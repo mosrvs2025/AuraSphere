@@ -1,339 +1,251 @@
-// Fix: Implemented the main App component, including state management, view routing, and mock data to create a functional application structure and resolve compilation errors.
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import RoomView from './components/RoomView';
 import Header from './components/Header';
+import HomeView from './components/HomeView';
+import RoomView from './components/RoomView';
+import { MyStudioView } from './components/PlaceholderViews';
+import TrendingView from './components/TrendingView';
+import MessagesView from './components/MessagesView';
+import ScheduledView from './components/ScheduledView';
+import UserProfile from './components/UserProfile';
+import NotificationsView from './components/NotificationsView';
+import ConversationView from './components/ConversationView';
 import CreateRoomModal from './components/CreateRoomModal';
 import EditProfileModal from './components/EditProfileModal';
-import UserProfile from './components/UserProfile';
-import MessagesView from './components/MessagesView';
-import ConversationView from './components/ConversationView';
-import ScheduledView from './components/ScheduledView';
-import NotificationsView from './components/NotificationsView';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
-import DiscoverView from './components/SearchViewModal';
-import TrendingView from './components/TrendingView';
-import { MyStudioView } from './components/PlaceholderViews';
-import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition, DiscoverItem } from './types';
+import SearchViewModal from './components/SearchViewModal';
 import { UserContext } from './context/UserContext';
+import { ActiveView, Room, User, ChatMessage, Notification, Conversation, DiscoverItem, ModalPosition } from './types';
 
 // --- MOCK DATA ---
-const allUsersData: User[] = [
-  { id: 'u1', name: 'Alex Reid', avatarUrl: 'https://i.pravatar.cc/150?img=11', bio: 'Building the future of audio.', followers: [], following: [] },
-  { id: 'u2', name: 'Bella Chen', avatarUrl: 'https://i.pravatar.cc/150?img=12', bio: 'Designer & Dreamer.', followers: [], following: [] },
-  { id: 'u3', name: 'Chris Evans', avatarUrl: 'https://i.pravatar.cc/150?img=13', bio: 'Exploring the web3 space.', followers: [], following: [] },
-  { id: 'u4', name: 'Diana Prince', avatarUrl: 'https://i.pravatar.cc/150?img=14', bio: 'Musician and coffee enthusiast.', followers: [], following: [] },
-  { id: 'u5', name: 'Ethan Hunt', avatarUrl: 'https://i.pravatar.cc/150?img=15', bio: 'Just here for the conversations.', followers: [], following: [] },
-];
-
-const initialCurrentUser: User = {
-  id: 'u0',
-  name: 'Jordan Lee',
-  avatarUrl: 'https://i.pravatar.cc/150?img=10',
-  bio: 'Host of the "Future Tech" room & avid learner.',
-  followers: [allUsersData[0], allUsersData[2], allUsersData[3]],
-  following: [allUsersData[1], allUsersData[4]],
+const createMockUsers = (count: number): User[] => {
+  const users: User[] = [];
+  for (let i = 1; i <= count; i++) {
+    users.push({
+      id: `user-${i}`,
+      name: `User ${i}`,
+      avatarUrl: `https://i.pravatar.cc/150?img=${i}`,
+      bio: `This is the bio for user ${i}. I am passionate about technology and live audio.`,
+      followers: [],
+      following: [],
+    });
+  }
+  return users;
 };
 
-// Establish reciprocal relationships for mock data
-allUsersData[0].followers = [initialCurrentUser];
-allUsersData[1].followers = [initialCurrentUser];
-allUsersData[2].followers = [initialCurrentUser];
-allUsersData[3].followers = [initialCurrentUser];
-allUsersData[4].followers = [initialCurrentUser];
-
-
-allUsersData.push(initialCurrentUser);
-
-const initialRooms: Room[] = [
-  {
-    id: 'r1',
-    title: '🚀 Future of Web Development in 2025',
-    hosts: [allUsersData.find(u => u.id === 'u1')!],
-    speakers: [allUsersData.find(u => u.id === 'u2')!],
-    listeners: [allUsersData.find(u => u.id === 'u3')!, allUsersData.find(u => u.id === 'u4')!, initialCurrentUser],
-    messages: [
-        { id: 'm1', user: allUsersData[1], text: 'Great point about WASM!', createdAt: new Date(Date.now() - 60000 * 5) },
-        { id: 'm2', user: allUsersData[3], text: 'What about AI code assistants?', createdAt: new Date(Date.now() - 60000 * 3) },
-        { id: 'm3', user: initialCurrentUser, text: 'I think they are the future!', createdAt: new Date(Date.now() - 60000 * 1) },
-    ],
-    isPrivate: false,
-  },
-  {
-    id: 'r2',
-    title: '🎨 The Art of UI/UX Design',
-    hosts: [allUsersData.find(u => u.id === 'u2')!],
-    speakers: [],
-    listeners: [allUsersData.find(u => u.id === 'u1')!, allUsersData.find(u => u.id === 'u5')!],
-    messages: [],
-    isPrivate: false,
-  },
-   {
-    id: 'r3',
-    title: '🗓️ Weekly Standup & Chill',
-    hosts: [initialCurrentUser],
-    speakers: [],
-    listeners: [],
-    messages: [],
-    isPrivate: true,
-    isScheduled: true,
-    scheduledTime: new Date(Date.now() + 86400000 * 2), // 2 days from now
-  },
-];
-
-const initialConversations: Conversation[] = [
-    {
-        id: 'c1',
-        participants: [initialCurrentUser, allUsersData.find(u=> u.id === 'u2')!],
-        messages: [
-            { id: 'c1m1', user: allUsersData.find(u=> u.id === 'u2')!, text: 'Hey, loved your room yesterday!', createdAt: new Date(Date.now() - 3600000) },
-            { id: 'c1m2', user: initialCurrentUser, text: 'Thanks Bella! Glad you could make it.', createdAt: new Date(Date.now() - 3540000) },
-        ]
-    }
-];
-
-const initialNotifications: Notification[] = [
-    { id: 'n1', text: 'Alex Reid started a new room: "Future of Web..."', createdAt: new Date(Date.now() - 1000 * 60 * 10), isRead: false, type: 'room_start', relatedUser: allUsersData.find(u=> u.id === 'u1'), relatedRoomId: 'r1' },
-    { id: 'n2', text: 'Bella Chen followed you.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true, type: 'follow', relatedUser: allUsersData.find(u=> u.id === 'u2') },
-];
-
-// --- MOCK DATA FOR DISCOVER PAGE ---
-const discoverFeedData: DiscoverItem[] = [
-    { type: 'image_post', id: 'dp1', author: allUsersData[3], imageUrl: 'https://images.unsplash.com/photo-1517423568342-be669f65d36a?q=80&w=800', caption: 'Morning coffee vibes ☕️', likes: 120, comments: 15, createdAt: new Date(Date.now() - 3600000 * 2) },
-    { type: 'live_room', ...initialRooms[0] },
-    { type: 'text_post', id: 'dp2', author: allUsersData[2], content: 'Just had a breakthrough on a new Web3 concept. The decentralization possibilities are endless!', likes: 54, comments: 12, createdAt: new Date(Date.now() - 3600000 * 3) },
-    { type: 'user_profile', ...allUsersData[4] },
-    { type: 'video_post', id: 'dp3', author: allUsersData[0], thumbnailUrl: 'https://images.unsplash.com/photo-1529686342540-1b42b7c4a525?q=80&w=800', videoUrl: '#', caption: 'Unboxing the new dev kit!', likes: 302, comments: 45, createdAt: new Date(Date.now() - 3600000 * 5) },
-    { type: 'live_room', ...initialRooms[1] },
-    { type: 'image_post', id: 'dp4', author: allUsersData[1], imageUrl: 'https://images.unsplash.com/photo-1555099962-4199c345e546?q=80&w=800', caption: 'Finally finished this component design.', likes: 250, comments: 30, createdAt: new Date(Date.now() - 3600000 * 8) },
-    { type: 'text_post', id: 'dp5', author: initialCurrentUser, content: 'Excited to host my weekly standup room later. Hope to see you all there!', likes: 99, comments: 8, createdAt: new Date(Date.now() - 3600000 * 1) },
-    { type: 'user_profile', ...allUsersData[3] },
-];
-
-const trendingFeedData: DiscoverItem[] = [
-    { type: 'video_post', id: 'dp3', author: allUsersData[0], thumbnailUrl: 'https://images.unsplash.com/photo-1529686342540-1b42b7c4a525?q=80&w=800', videoUrl: '#', caption: 'Unboxing the new dev kit!', likes: 302, comments: 45, createdAt: new Date(Date.now() - 3600000 * 5) },
-    { type: 'image_post', id: 'dp4', author: allUsersData[1], imageUrl: 'https://images.unsplash.com/photo-1555099962-4199c345e546?q=80&w=800', caption: 'Finally finished this component design.', likes: 250, comments: 30, createdAt: new Date(Date.now() - 3600000 * 8) },
-    { type: 'live_room', ...initialRooms[0] },
-    { type: 'image_post', id: 'dp1', author: allUsersData[3], imageUrl: 'https://images.unsplash.com/photo-1517423568342-be669f65d36a?q=80&w=800', caption: 'Morning coffee vibes ☕️', likes: 120, comments: 15, createdAt: new Date(Date.now() - 3600000 * 2) },
-];
-
+const mockUsers = createMockUsers(20);
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User>(initialCurrentUser);
-  const [allUsers, setAllUsers] = useState<User[]>(allUsersData);
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  
-  const [activeView, setActiveView] = useState<ActiveView>('home');
-  const [activeRoom, setActiveRoom] = useState<Room | null>(null);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [profileUser, setProfileUser] = useState<User | null>(null);
-  const [userCardModalUser, setUserCardModalUser] = useState<User | null>(null);
-  const [userCardModalPosition, setUserCardModalPosition] = useState<ModalPosition | null>(null);
+    
+    const [users, setUsers] = useState<User[]>(mockUsers);
+    const [currentUser, setCurrentUser] = useState<User>({
+        id: 'user-0',
+        name: 'You',
+        avatarUrl: 'https://i.pravatar.cc/150?img=0',
+        bio: 'This is your bio. Edit it to tell others about yourself!',
+        followers: [users[1], users[2]],
+        following: [users[3], users[4], users[5]],
+    });
 
-  const [isSidebarExpanded, setSidebarExpanded] = useState(true);
-  const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
-  const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
-  const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
-  const [focusSearchOnDiscover, setFocusSearchOnDiscover] = useState(false);
-
-  const handleSetActiveView = (view: ActiveView) => {
-    setActiveView(view);
-    setActiveRoom(null);
-    setActiveConversation(null);
-    setFocusSearchOnDiscover(false); // Reset focus trigger on any navigation
-    if (view !== 'profile') {
-        setProfileUser(null);
-    }
-    // Close sidebar on mobile after navigation
-    if (window.innerWidth < 768) {
-        setSidebarExpanded(false);
-    }
-  };
-  
-  const handleSearchIconClick = () => {
-    handleSetActiveView('home');
-    setFocusSearchOnDiscover(true);
-  };
-
-  const handleEnterRoom = (room: Room) => {
-    setActiveRoom(room);
-  };
-
-  const handleLeaveRoom = () => {
-    setActiveRoom(null);
-  };
-
-  const handleCreateRoom = (title: string, description: string, isPrivate: boolean) => {
-    const newRoom: Room = {
-      id: `r${Date.now()}`,
-      title,
-      description,
-      isPrivate,
-      hosts: [currentUser],
-      speakers: [],
-      listeners: [],
-      messages: [],
-    };
-    setRooms(prev => [newRoom, ...prev]);
-    setCreateRoomModalOpen(false);
-    setActiveRoom(newRoom);
-  };
-
-  const handleViewProfile = (user: User) => {
-    setProfileUser(user);
-    setActiveView('profile');
-    setActiveRoom(null); // Leave room to view profile
-    setUserCardModalUser(null); // Close card modal when viewing full profile
-  };
-
-  const handleEditProfile = (name: string, bio: string) => {
-    setCurrentUser(prev => ({ ...prev, name, bio }));
-    setEditProfileModalOpen(false);
-  };
-  
-  const handleAvatarSelect = (url: string) => {
-    setCurrentUser(prev => ({...prev, avatarUrl: url}));
-    setAvatarCustomizerOpen(false);
-  }
-  
-  const handleConversationSelect = (conversation: Conversation) => {
-    setActiveConversation(conversation);
-    setActiveView('conversation');
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
-      setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, isRead: true} : n));
-      // Potentially navigate based on notification type
-      if (notification.relatedRoomId) {
-          const room = rooms.find(r => r.id === notification.relatedRoomId);
-          if (room) handleEnterRoom(room);
-      } else if (notification.type === 'follow' && notification.relatedUser) {
-          handleViewProfile(notification.relatedUser);
+    const [rooms, setRooms] = useState<Room[]>([
+        {
+            id: 'room-1',
+            title: 'Tech Talk Weekly',
+            description: 'Discussing the latest in tech news and gadgets.',
+            hosts: [users[1], users[2]],
+            speakers: [users[3], users[4]],
+            listeners: [users[5], users[6], users[7]],
+            messages: [],
+            isPrivate: false,
+        },
+        {
+            id: 'room-2',
+            title: 'The Future of AI',
+            description: 'A deep dive into generative AI and its impact.',
+            hosts: [users[8]],
+            speakers: [users[9]],
+            listeners: users.slice(10, 15),
+            messages: [],
+            isPrivate: false,
+        },
+        {
+            id: 'room-3',
+            title: 'Chill Lo-fi Beats',
+            description: '24/7 study and relaxation session.',
+            hosts: [users[15]],
+            speakers: [],
+            listeners: users.slice(16, 20),
+            messages: [],
+            isPrivate: true,
+        },
+        {
+            id: 'room-4',
+            title: 'Upcoming: The Startup Grind',
+            description: 'Interviews with successful startup founders.',
+            hosts: [currentUser],
+            speakers: [],
+            listeners: [],
+            messages: [],
+            isPrivate: false,
+            isScheduled: true,
+            scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        }
+    ]);
+    
+    const [conversations, setConversations] = useState<Conversation[]>([
+      {
+        id: 'convo-1',
+        participants: [currentUser, users[3]],
+        messages: [
+          { id: 'c1m1', user: users[3], text: 'Hey, saw you in the tech talk room, great points!', createdAt: new Date(Date.now() - 60000 * 5) },
+          { id: 'c1m2', user: currentUser, text: 'Thanks! Appreciate it.', createdAt: new Date(Date.now() - 60000 * 4) }
+        ]
       }
-  };
+    ]);
 
-  const handleUserSelect = (user: User, position?: ModalPosition) => {
-    if (user.id !== currentUser.id) {
-        setUserCardModalUser(user);
-        setUserCardModalPosition(position || null);
-    }
-  };
+    const [notifications, setNotifications] = useState<Notification[]>([
+        { id: 'n1', text: `${users[1].name} started a new room: "Tech Talk Weekly"`, createdAt: new Date(), isRead: false, type: 'room_start', relatedRoomId: 'room-1' },
+        { id: 'n2', text: `${users[4].name} followed you.`, createdAt: new Date(Date.now() - 3600000), isRead: true, type: 'follow', relatedUser: users[4] },
+    ]);
+    
+    const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>([
+        { type: 'live_room', ...rooms[0] },
+        { type: 'user_profile', ...users[10] },
+        { type: 'text_post', id: 'tp1', author: users[11], content: 'Just had a great discussion about Web3. The potential is massive!', likes: 12, comments: 4, createdAt: new Date() },
+        { type: 'image_post', id: 'ip1', author: users[12], imageUrl: 'https://picsum.photos/seed/123/600/400', caption: 'Working on a new side project.', likes: 45, comments: 8, createdAt: new Date() }
+    ]);
 
-  const handleFollowUser = (userIdToFollow: string) => {
-    const userToFollow = allUsers.find(u => u.id === userIdToFollow);
-    if (!userToFollow || currentUser.following?.some(u => u.id === userIdToFollow)) return;
+    const [activeView, setActiveView] = useState<ActiveView>('home');
+    const [activeRoom, setActiveRoom] = useState<Room | null>(null);
+    const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+    const [profileToShow, setProfileToShow] = useState<User | null>(null);
+    const [isSidebarExpanded, setSidebarExpanded] = useState(false);
 
-    setCurrentUser(prev => ({...prev, following: [...(prev.following || []), userToFollow]}));
-    setAllUsers(prev => prev.map(u => u.id === userIdToFollow ? {...u, followers: [...(u.followers || []), currentUser]} : u));
-  };
-  
-  const handleUnfollowUser = (userIdToUnfollow: string) => {
-    setCurrentUser(prev => ({...prev, following: (prev.following || []).filter(u => u.id !== userIdToUnfollow)}));
-    setAllUsers(prev => prev.map(u => u.id === userIdToUnfollow ? {...u, followers: (u.followers || []).filter(follower => follower.id !== currentUser.id)} : u));
-  };
+    // Modal States
+    const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+    const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
+    const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
+    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
+    const [userCard, setUserCard] = useState<{ user: User, position: ModalPosition } | null>(null);
 
-  const userContextValue = useMemo(() => ({
-    currentUser,
-    updateCurrentUser: (userData: Partial<User>) => setCurrentUser(prev => ({ ...prev, ...userData })),
-    getUserById: (id: string) => allUsers.find(u => u.id === id),
-    followUser: handleFollowUser,
-    unfollowUser: handleUnfollowUser,
-  }), [currentUser, allUsers]);
+    // --- Context Providers ---
+    const userContextValue = {
+        currentUser,
+        updateCurrentUser: (userData: Partial<User>) => {
+            setCurrentUser(prev => ({...prev, ...userData}));
+        },
+        getUserById: (id: string) => [currentUser, ...users].find(u => u.id === id),
+        followUser: (userId: string) => console.log('Follow user', userId),
+        unfollowUser: (userId: string) => console.log('Unfollow user', userId),
+    };
 
-  const renderActiveView = () => {
-    if (activeRoom) {
-      return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={handleUserSelect} selectedUser={userCardModalUser} />;
-    }
+    // --- Handlers ---
+    const handleEnterRoom = (room: Room) => {
+        setActiveRoom(room);
+    };
 
-    switch (activeView) {
-      case 'home':
-        return <DiscoverView
-                allRooms={rooms}
-                allUsers={allUsers}
-                discoverFeed={discoverFeedData}
-                onEnterRoom={handleEnterRoom}
-                onViewProfile={handleViewProfile}
-                autoFocusSearch={focusSearchOnDiscover}
-            />;
-      case 'profile':
-         // When 'profile' nav is clicked, show current user's profile.
-        const userToShow = profileUser || currentUser;
-        return <UserProfile user={userToShow} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
-      case 'messages':
-        return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleConversationSelect} />;
-      case 'conversation':
-        return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => handleSetActiveView('messages')} /> : <div/>;
-      case 'scheduled':
-        return <ScheduledView rooms={rooms} />;
-      case 'notifications':
-        return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
-      case 'trending':
-        return <TrendingView 
-                 feed={trendingFeedData}
-                 onEnterRoom={handleEnterRoom}
-                 onViewProfile={handleViewProfile}
-               />;
-      case 'my-studio':
-        return <MyStudioView />;
-      default:
-        return <DiscoverView
-                allRooms={rooms}
-                allUsers={allUsers}
-                discoverFeed={discoverFeedData}
-                onEnterRoom={handleEnterRoom}
-                onViewProfile={handleViewProfile}
-                autoFocusSearch={focusSearchOnDiscover}
-            />;
-    }
-  };
+    const handleLeaveRoom = () => {
+        setActiveRoom(null);
+        setActiveView('home');
+    };
+    
+    const handleCreateRoom = (title: string, description: string, isPrivate: boolean) => {
+        const newRoom: Room = {
+            id: `room-${Date.now()}`,
+            title,
+            description,
+            isPrivate,
+            hosts: [currentUser],
+            speakers: [],
+            listeners: [],
+            messages: [],
+        };
+        setRooms(prev => [newRoom, ...prev]);
+        setCreateRoomModalOpen(false);
+        setActiveRoom(newRoom);
+    };
 
-  return (
-    <UserContext.Provider value={userContextValue}>
-      <div className="bg-gray-900 text-white h-screen flex overflow-hidden font-sans">
-        <Sidebar 
-            activeView={activeView}
-            setActiveView={handleSetActiveView}
-            isExpanded={isSidebarExpanded}
-            setExpanded={setSidebarExpanded}
-            onCreateRoom={() => setCreateRoomModalOpen(true)}
-            unreadNotificationCount={notifications.filter(n => !n.isRead).length}
-        />
-        <main className="flex-1 flex flex-col overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={handleSearchIconClick} />
-            <div className="flex-1 overflow-y-auto">
-                {renderActiveView()}
+    const handleSaveProfile = (name: string, bio: string) => {
+        userContextValue.updateCurrentUser({ name, bio });
+        setEditProfileModalOpen(false);
+    };
+    
+    const handleAvatarSelect = (url: string, isGenerated: boolean) => {
+        userContextValue.updateCurrentUser({ avatarUrl: url });
+        setAvatarCustomizerOpen(false);
+    };
+    
+    const handleViewProfile = (user: User) => {
+        setProfileToShow(user);
+        setActiveView('profile');
+        setUserCard(null); // Close card modal when opening full profile
+        setSearchModalOpen(false); // Close search modal if open
+    };
+    
+    useEffect(() => {
+        if (activeView !== 'profile') {
+            setProfileToShow(null);
+        }
+        if (activeView !== 'conversation') {
+            setActiveConversation(null);
+        }
+    }, [activeView]);
+
+    const renderActiveView = () => {
+        if (activeRoom) {
+            return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} />;
+        }
+        
+        switch (activeView) {
+            case 'home':
+                return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+            case 'trending':
+                return <TrendingView items={discoverItems} />;
+            case 'messages':
+                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+            case 'scheduled':
+                return <ScheduledView rooms={rooms} />;
+            case 'profile':
+                return <UserProfile user={profileToShow || currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
+            case 'notifications':
+                return <NotificationsView notifications={notifications} onNotificationClick={(notif) => setNotifications(n => n.map(n => n.id === notif.id ? {...n, isRead: true} : n))} />;
+            case 'my-studio':
+                return <MyStudioView />;
+            case 'conversation':
+                return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+            default:
+                return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        }
+    };
+    
+    return (
+        <UserContext.Provider value={userContextValue}>
+            <div className="bg-gray-900 text-gray-200 font-sans h-screen w-screen overflow-hidden flex">
+                <Sidebar 
+                    activeView={activeView}
+                    setActiveView={setActiveView}
+                    isExpanded={isSidebarExpanded}
+                    setExpanded={setSidebarExpanded}
+                    onCreateRoom={() => setCreateRoomModalOpen(true)}
+                    unreadNotificationCount={notifications.filter(n => !n.isRead).length}
+                />
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchModalOpen(true)} />
+                    <main className="flex-1 overflow-y-auto">
+                        {renderActiveView()}
+                    </main>
+                </div>
+
+                {/* --- Modals --- */}
+                {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
+                {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
+                {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
+                {isSearchModalOpen && <SearchViewModal onClose={() => setSearchModalOpen(false)} allRooms={rooms} allUsers={users} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />}
+                {userCard && <UserCardModal user={userCard.user} onClose={() => setUserCard(null)} onViewProfile={handleViewProfile} position={userCard.position} />}
             </div>
-        </main>
-        
-        {isCreateRoomModalOpen && (
-          <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />
-        )}
-        
-        {isEditProfileModalOpen && (
-          <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfile} />
-        )}
-
-        {isAvatarCustomizerOpen && (
-            <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />
-        )}
-
-        {userCardModalUser && (
-            <UserCardModal
-                user={userCardModalUser}
-                position={userCardModalPosition}
-                onClose={() => {
-                    setUserCardModalUser(null);
-                    setUserCardModalPosition(null);
-                }}
-                onViewProfile={handleViewProfile}
-            />
-        )}
-      </div>
-    </UserContext.Provider>
-  );
+        </UserContext.Provider>
+    );
 };
 
 export default App;
