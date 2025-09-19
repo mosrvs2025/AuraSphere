@@ -55,15 +55,25 @@ const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }
 
 const ImagePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'image_post' }>; onClick: () => void }> = ({ post, onClick }) => (
   <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
-    <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
-    <div className="p-4">
-      <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
+    <div className="p-3 flex items-center">
+      <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
+      <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
     </div>
+    <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+    {post.caption && (
+      <div className="p-4">
+        <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
+      </div>
+    )}
   </div>
 );
 
 const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post' }>; onClick: () => void }> = ({ post, onClick }) => (
   <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
+    <div className="p-3 flex items-center">
+      <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
+      <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
+    </div>
     <div className="relative">
       <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
       <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
@@ -72,9 +82,11 @@ const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post'
         </div>
       </div>
     </div>
-    <div className="p-4">
-      <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
-    </div>
+    {post.caption && (
+        <div className="p-4">
+        <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
+        </div>
+    )}
   </div>
 );
 

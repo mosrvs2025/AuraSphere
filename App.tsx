@@ -335,6 +335,7 @@ const App: React.FC = () => {
             onViewProfile: handleViewProfile,
             onViewMedia: handleViewMedia,
             onViewPost: handleViewPost,
+            onSearchClick: () => setSearchModalOpen(true),
         };
         switch (activeView) {
             case 'room':

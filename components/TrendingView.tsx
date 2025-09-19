@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DiscoverItem, Room, User } from '../types';
 import { DiscoverCard } from './DiscoverCards';
+import { SearchIcon } from './Icons';
 
 interface TrendingViewProps {
   items: DiscoverItem[];
@@ -9,6 +10,7 @@ interface TrendingViewProps {
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onSearchClick?: () => void;
 }
 
 const filters = ['All', 'Trending', 'Live', 'People', 'Images', 'Videos', 'Posts'];
@@ -22,14 +24,13 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
 };
 
 
-const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
+const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, onViewProfile, onViewMedia, onViewPost, onSearchClick }) => {
   const [activeFilter, setActiveFilter] = useState('All');
     
   const filteredItems = items.filter(item => {
       if (activeFilter === 'All' || activeFilter === 'Trending') return true;
-      const type = filterMap[activeFilter];
-      if (type === 'text_post' && item.type === 'text_post') return true;
-      return item.type === type;
+      const typeToFilter = filterMap[activeFilter];
+      return item.type === typeToFilter;
   });
 
   // Simple column-based layout. A real implementation might use a masonry library.
@@ -41,8 +42,20 @@ const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, 
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">{title}</h1>
+             {onSearchClick && (
+                <button
+                    onClick={onSearchClick}
+                    className="flex items-center space-x-2 bg-gray-800 border border-gray-700 rounded-full py-2 px-4 text-sm text-gray-400 hover:text-white hover:border-gray-500 transition"
+                    aria-label="Search"
+                >
+                    <SearchIcon className="h-5 w-5"/>
+                    <span>Search</span>
+                </button>
+            )}
+        </div>
         <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-4">{title}</h1>
             <div className="flex items-center space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
                 {filters.map(filter => (
                     <button
