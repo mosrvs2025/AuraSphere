@@ -68,6 +68,7 @@ const App: React.FC = () => {
             messages: [],
             isPrivate: false,
             featuredUrl: 'https://techcrunch.com',
+            createdAt: new Date(Date.now() - 3600000 * 1),
         },
         {
             id: 'room-2',
@@ -78,6 +79,7 @@ const App: React.FC = () => {
             listeners: users.slice(10, 15),
             messages: [],
             isPrivate: false,
+            createdAt: new Date(Date.now() - 3600000 * 3),
         },
         {
             id: 'room-3',
@@ -88,6 +90,7 @@ const App: React.FC = () => {
             listeners: users.slice(16, 20),
             messages: [],
             isPrivate: true,
+            createdAt: new Date(Date.now() - 3600000 * 6),
         },
         {
             id: 'room-4',
@@ -153,8 +156,10 @@ const App: React.FC = () => {
     // --- In-App Browser State ---
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
 
-    // --- Search State ---
+    // --- Search & Filter State ---
     const [searchQuery, setSearchQuery] = useState('');
+    const [initialHomeFilter, setInitialHomeFilter] = useState<string | null>(null);
+
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -219,6 +224,7 @@ const App: React.FC = () => {
 
     // --- Navigation Handlers ---
     const changeView = (view: ActiveView) => {
+        setInitialHomeFilter(null); // Reset deep link filter on any view change
         setPreviousView(activeView);
         setActiveView(view);
         // Reset specific views when navigating away
@@ -281,6 +287,11 @@ const App: React.FC = () => {
         setActiveView('post_detail');
     };
 
+    const handleNavigateToLive = () => {
+        changeView('home');
+        setInitialHomeFilter('Live');
+    };
+
 
     // --- Modal Handlers ---
     const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string) => {
@@ -294,6 +305,7 @@ const App: React.FC = () => {
             messages: [],
             isPrivate,
             featuredUrl: featuredUrl || undefined,
+            createdAt: new Date(),
         };
         setRooms(prev => [...prev, newRoom]);
         setCreateRoomModalOpen(false);
@@ -449,7 +461,15 @@ const App: React.FC = () => {
 
         switch (activeView) {
             case 'home':
-                return <TrendingView items={publishedDiscoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
+                return <TrendingView 
+                            items={publishedDiscoverItems} 
+                            currentUser={currentUser}
+                            initialFilter={initialHomeFilter}
+                            onEnterRoom={handleEnterRoom} 
+                            onViewProfile={handleViewProfile} 
+                            onViewMedia={handleViewMedia} 
+                            onViewPost={handleViewPost} 
+                        />;
             case 'room':
                 if (activeRoom) return <RoomView 
                                             room={activeRoom} 
@@ -479,7 +499,7 @@ const App: React.FC = () => {
             case 'my-studio':
                 return <MyStudioView />;
             default:
-                return <TrendingView items={publishedDiscoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
+                return <TrendingView items={publishedDiscoverItems} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
         }
     };
     
@@ -503,6 +523,8 @@ const App: React.FC = () => {
                         setSearchQuery={setSearchQuery}
                         unreadNotificationCount={unreadNotificationCount}
                         onNavigateToNotifications={() => changeView('notifications')}
+                        onNavigateToLive={handleNavigateToLive}
+                        hasActiveLiveRooms={rooms.some(r => !r.isScheduled)}
                     />
                 )}
                 <main className="flex-1 overflow-y-auto pb-16">

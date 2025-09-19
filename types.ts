@@ -50,6 +50,7 @@ export interface Room {
   scheduledTime?: Date;
   featuredUrl?: string;
   poll?: Poll;
+  createdAt?: Date;
 }
 
 export interface Conversation {

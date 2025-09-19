@@ -46,6 +46,22 @@
   .hub-option-button {
     animation: hub-pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
   }
+
+  /* New animation for LIVE button */
+  @keyframes pulse-live {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+      opacity: 0.8;
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+  }
+
+  .animate-pulse-live {
+    animation: pulse-live 2s infinite;
+  }
 </style>
 </head>
   <body class="h-full bg-gray-900 text-white">

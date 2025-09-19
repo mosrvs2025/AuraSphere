@@ -8,9 +8,11 @@ interface GlobalHeaderProps {
   setSearchQuery: (query: string) => void;
   unreadNotificationCount: number;
   onNavigateToNotifications: () => void;
+  onNavigateToLive: () => void;
+  hasActiveLiveRooms: boolean;
 }
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications }) => {
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications, onNavigateToLive, hasActiveLiveRooms }) => {
   let title = '';
   let placeholder = '';
 
@@ -26,6 +28,12 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
     case 'scheduled':
       title = 'Content Planner';
       break;
+    case 'notifications':
+      title = 'Notifications';
+      break;
+    case 'my-studio':
+      title = 'My Studio';
+      break;
   }
 
   const showSearch = activeView === 'home' || activeView === 'messages';
@@ -34,7 +42,15 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
     <header className="p-4 md:p-6 flex-shrink-0 border-b border-gray-800 bg-gray-900 z-10">
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">{title}</h1>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={onNavigateToLive} 
+                        className={`text-lg font-extrabold tracking-wider text-red-500 border border-red-500/50 rounded-lg px-3 py-1 transition-colors hover:bg-red-500/20 ${hasActiveLiveRooms ? 'animate-pulse-live' : ''}`}
+                    >
+                        LIVE
+                    </button>
+                    <h1 className="text-3xl font-bold">{title}</h1>
+                </div>
                 <button
                   onClick={onNavigateToNotifications}
                   className="relative p-2 text-gray-400 hover:text-white transition-colors"
