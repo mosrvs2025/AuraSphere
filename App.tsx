@@ -106,19 +106,23 @@ const App: React.FC = () => {
   };
 
   const enterRoom = (room: Room) => {
-    setSelectedRoom(room);
     // Add user to listeners list if not already host/speaker
     const isParticipant = [...room.hosts, ...room.speakers, ...room.listeners].some(u => u.id === currentUser.id);
     if (!isParticipant) {
-      updateRoomState(room.id, { listeners: [...room.listeners, currentUser] });
+      const updatedRoom = { ...room, listeners: [...room.listeners, currentUser] };
+      updateRoomState(room.id, { listeners: updatedRoom.listeners });
+      setSelectedRoom(updatedRoom);
+    } else {
+      setSelectedRoom(room);
     }
   };
 
   const leaveRoom = () => {
     if (selectedRoom) {
-      // Remove user from listeners list
+      // Remove user from listeners and speakers lists
       const updatedListeners = selectedRoom.listeners.filter(u => u.id !== currentUser.id);
-      updateRoomState(selectedRoom.id, { listeners: updatedListeners });
+      const updatedSpeakers = selectedRoom.speakers.filter(u => u.id !== currentUser.id);
+      updateRoomState(selectedRoom.id, { listeners: updatedListeners, speakers: updatedSpeakers });
     }
     setSelectedRoom(null);
   };

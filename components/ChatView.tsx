@@ -11,6 +11,14 @@ interface ChatMessageItemProps {
 }
 
 const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, isCurrentUser, isHost, onPlay, onRemove, isPlaying }) => {
+  if (message.user.id === 'system') {
+    return (
+      <div className="text-center my-2">
+        <p className="text-xs text-indigo-300 bg-indigo-500/10 px-3 py-1 rounded-full inline-block">{message.text}</p>
+      </div>
+    );
+  }
+  
   const alignment = isCurrentUser ? 'items-end' : 'items-start';
   const bubbleColor = isCurrentUser ? 'bg-indigo-600' : 'bg-gray-700';
   const nameOrder = isCurrentUser ? 'flex-row-reverse' : 'flex-row';

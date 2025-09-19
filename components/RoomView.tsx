@@ -61,10 +61,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onToggleScreenShare,
   
   const promoteToSpeaker = (userId: string) => {
     const userToPromote = room.listeners.find(u => u.id === userId);
-    if(userToPromote){
+    if(userToPromote && isHost){
         const updatedListeners = room.listeners.filter(u => u.id !== userId);
         const updatedSpeakers = [...room.speakers, { ...userToPromote, role: UserRole.SPEAKER }];
         onUpdateRoom({ listeners: updatedListeners, speakers: updatedSpeakers });
+        
+        // Add a system message to the chat for feedback
+        const systemMessage: ChatMessage = {
+            id: `sys-msg-${Date.now()}`,
+            user: { id: 'system', name: 'System', avatarUrl: '', role: UserRole.HOST },
+            text: `${userToPromote.name} has been promoted to a speaker.`,
+            createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, systemMessage]);
     }
   };
 
