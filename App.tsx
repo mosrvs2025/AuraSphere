@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
@@ -44,6 +45,20 @@ const createMockUsers = (count: number): User[] => {
 };
 
 const mockUsers = createMockUsers(20);
+
+// --- Additional Mock Content for Profiles ---
+const createMockPosts = (authors: User[]): DiscoverItem[] => {
+  const posts: DiscoverItem[] = [];
+  authors.forEach((author, i) => {
+    posts.push({ type: 'image_post', id: `dp-user-${i}-1`, author, imageUrl: `https://picsum.photos/seed/user${i}a/600/800`, caption: `A beautiful day!`, likes: 12, comments: 2, createdAt: new Date(Date.now() - 3600000 * (i+1)), status: 'published' });
+    posts.push({ type: 'video_post', id: `dp-user-${i}-2`, author, videoUrl: '#', thumbnailUrl: `https://picsum.photos/seed/user${i}b/800/600`, caption: 'Some cool moments.', likes: 30, comments: 5, createdAt: new Date(Date.now() - 3600000 * (i+2)), status: 'published' });
+    posts.push({ type: 'text_post', id: `dp-user-${i}-3`, author, content: `Here's a thought for the day: embrace the journey.`, likes: 5, comments: 1, createdAt: new Date(Date.now() - 3600000 * (i+3)), status: 'published' });
+  });
+  return posts;
+};
+
+const mockUserPosts = createMockPosts(mockUsers.slice(0,10));
+
 
 const App: React.FC = () => {
     
@@ -129,6 +144,7 @@ const App: React.FC = () => {
       { type: 'live_room', ...rooms[1] },
       { type: 'text_post', id: 'dp-2', author: users[9], content: "Just had a breakthrough on a project I've been working on for weeks. The feeling is incredible! Never underestimate the power of persistence. #developer #coding #success", likes: 42, comments: 5, createdAt: new Date(Date.now() - 3600000 * 5), status: 'published' },
       { type: 'video_post', id: 'dp-3', author: users[10], videoUrl: '#', thumbnailUrl: 'https://picsum.photos/seed/discover3/800/600', caption: 'Quick jam session from this afternoon.', likes: 250, comments: 23, createdAt: new Date(Date.now() - 3600000 * 8), status: 'published' },
+      ...mockUserPosts,
     ]);
 
     // --- App State ---
@@ -444,6 +460,8 @@ const App: React.FC = () => {
             return true;
         });
 
+        const liveRooms = rooms.filter(r => !r.isScheduled);
+
         if (searchQuery && (activeView === 'home' || activeView === 'messages')) {
             return <GlobalSearchView 
                         query={searchQuery} 
@@ -464,6 +482,7 @@ const App: React.FC = () => {
                 return <TrendingView 
                             items={publishedDiscoverItems} 
                             currentUser={currentUser}
+                            liveRooms={liveRooms}
                             initialFilter={initialHomeFilter}
                             onEnterRoom={handleEnterRoom} 
                             onViewProfile={handleViewProfile} 
@@ -474,81 +493,4 @@ const App: React.FC = () => {
                 if (activeRoom) return <RoomView 
                                             room={activeRoom} 
                                             currentUser={currentUser} 
-                                            onLeave={handleLeaveRoom} 
-                                            onUserSelect={handleUserSelectForCard}
-                                            selectedUser={selectedUserForCard}
-                                            onOpenLink={(url) => setBrowserUrl(url)}
-                                        />;
-                return null;
-            case 'messages':
-                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={handleSelectConversation} />;
-            case 'conversation':
-                if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={handleBackNavigation} onViewProfile={handleViewProfile} />;
-                return null;
-            case 'scheduled':
-                // The ScheduledView should see ALL items to display what's upcoming
-                return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-            case 'profile':
-                const userToView = activeProfile || currentUser;
-                return <UserProfile user={userToView} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={handleBackNavigation} />;
-            case 'notifications':
-                return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} onBack={handleBackNavigation} />;
-            case 'post_detail':
-                if (activePost) return <PostDetailView post={activePost} onBack={handleBackNavigation} onViewProfile={handleViewProfile} />;
-                return null;
-            case 'my-studio':
-                return <MyStudioView />;
-            default:
-                return <TrendingView items={publishedDiscoverItems} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={handleViewMedia} onViewPost={handleViewPost} />;
-        }
-    };
-    
-    if (activeCreateView && (activeCreateView === 'image' || activeCreateView === 'video') && selectedFile) {
-        return <CreatePostView file={selectedFile} onPost={handlePublishPost} onClose={handleCloseCreateView} />;
-    }
-    if (activeCreateView === 'note') {
-        // FIX: Correctly typed the onPost prop for CreateNoteView by adapting handlePublishPost.
-        return <CreateNoteView onPost={handlePublishPost} onClose={handleCloseCreateView} />;
-    }
-
-    const unreadNotificationCount = notifications.filter(n => !n.isRead).length;
-
-    return (
-        <UserContext.Provider value={userContextValue}>
-            <div className="h-full flex flex-col bg-gray-900 text-white font-sans">
-                {activeView !== 'room' && (
-                    <GlobalHeader 
-                        activeView={activeView}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        unreadNotificationCount={unreadNotificationCount}
-                        onNavigateToNotifications={() => changeView('notifications')}
-                        onNavigateToLive={handleNavigateToLive}
-                        hasActiveLiveRooms={rooms.some(r => !r.isScheduled)}
-                    />
-                )}
-                <main className="flex-1 overflow-y-auto pb-16">
-                    {renderActiveView()}
-                </main>
-
-                <BottomNavBar 
-                    activeView={activeView} 
-                    setActiveView={changeView}
-                    onCreateContent={() => setCreateHubOpen(true)}
-                    unreadNotificationCount={unreadNotificationCount}
-                />
-                
-                {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
-                {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfileSave} />}
-                {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
-                {isUserCardOpen && selectedUserForCard && <UserCardModal user={selectedUserForCard} onClose={handleCloseUserCard} onViewProfile={handleViewProfile} position={userCardPosition} />}
-                {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => setActiveView('room')} />}
-                {activeMediaPost && <MediaViewerModal post={activeMediaPost} onClose={() => setActiveMediaPost(null)} />}
-                {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContentSelect} />}
-                {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
-            </div>
-        </UserContext.Provider>
-    );
-};
-
-export default App;
+                                            onLeave={handleLeaveRoom
