@@ -2,6 +2,7 @@ import React from 'react';
 import { ActiveView, Room, User } from '../types';
 import { SearchIcon, BellIcon } from './Icons';
 
+// FIX: Removed unused onNavigateToLive and hasActiveLiveRooms props.
 interface GlobalHeaderProps {
   activeView: ActiveView;
   curationTab: 'forYou' | 'following';
@@ -10,8 +11,6 @@ interface GlobalHeaderProps {
   setActiveFilter: (filter: string) => void;
   unreadNotificationCount: number;
   onNavigateToNotifications: () => void;
-  onNavigateToLive: () => void;
-  hasActiveLiveRooms: boolean;
   onSearchClick: () => void;
   liveRooms: Room[];
   onEnterRoom: (room: Room) => void;
@@ -60,6 +59,40 @@ const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) 
     );
 };
 
+const CollapsedLiveRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
+    const uniqueHostsInRooms = new Map<string, Room>();
+    liveRooms.forEach(room => {
+        room.hosts.forEach(host => {
+            if (!uniqueHostsInRooms.has(host.id)) {
+                uniqueHostsInRooms.set(host.id, room);
+            }
+        });
+    });
+
+    if (uniqueHostsInRooms.size === 0) {
+        return null;
+    }
+    const hostsToShow = Array.from(uniqueHostsInRooms.entries()).slice(0, 5);
+
+    return (
+        <div className="flex items-center -space-x-2">
+            {hostsToShow.map(([hostId, room]) => {
+                const host = room.hosts.find(h => h.id === hostId);
+                if (!host) return null;
+                return (
+                    <button key={host.id} onClick={() => onEnterRoom(room)} className="focus:outline-none group">
+                        <img 
+                            src={host.avatarUrl} 
+                            alt={host.name} 
+                            className="w-8 h-8 rounded-full border-2 border-gray-900 group-hover:scale-110 transition-transform" 
+                        />
+                    </button>
+                )
+            })}
+        </div>
+    );
+};
+
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({ 
     activeView, 
@@ -74,38 +107,20 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     onEnterRoom,
     scrollTop,
 }) => {
-  const isHome = activeView === 'home';
-  const isScrolled = scrollTop > 10;
-  
   let title = '';
-
-  if (isHome) {
-    if (activeFilter === 'All') {
-      title = curationTab === 'following' ? 'Following' : 'Discover';
-    } else if (activeFilter === 'Live') {
-      title = 'Live Now';
-    } else {
-      title = activeFilter; // People, Images, Videos, Posts
-    }
+  if (activeFilter === 'All') {
+    title = curationTab === 'following' ? 'Following' : 'Discover';
+  } else if (activeFilter === 'Live') {
+    title = 'Live Now';
   } else {
-    switch (activeView) {
-      case 'messages':
-        title = 'Messages';
-        break;
-      case 'scheduled':
-        title = 'Content Planner';
-        break;
-      case 'profile':
-        title = 'Profile';
-        break;
-      case 'notifications':
-        title = 'Notifications';
-        break;
-      case 'my-studio':
-        title = 'My Studio';
-        break;
-    }
+    title = activeFilter;
   }
+
+  // Animation progress calculation
+  const railFadeStart = 20; // Scroll position to start fading the rail
+  const railFadeEnd = 80;   // Scroll position where rail is fully faded
+  const scrollRange = railFadeEnd - railFadeStart;
+  const progress = Math.max(0, Math.min(1, (scrollTop - railFadeStart) / scrollRange));
 
   const TitleBarContent = (
       <div className="flex justify-between items-center">
@@ -136,47 +151,45 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </div>
       </div>
   );
-
-  if (!isHome) {
-      // Non-home pages have a simple, fully sticky header
-      return (
-          <header className={`sticky top-0 z-20 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 transition-shadow ${isScrolled ? 'shadow-lg shadow-black/20' : ''}`}>
-               <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-                  {TitleBarContent}
-               </div>
-          </header>
-      );
-  }
   
   return (
     <header className="bg-gray-900 z-20">
-        {/* Top Section: Title, Search, Bell. Will scroll away */}
+        {/* Part 1: Non-sticky content that scrolls away */}
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:pt-6">
           {TitleBarContent}
         </div>
 
-        {/* Live Rail Section. Will scroll away */}
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
+        <div 
+            className="max-w-6xl mx-auto px-4 md:px-6 transition-opacity duration-200"
+            style={{ opacity: 1 - progress }}
+        >
             <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
         </div>
       
-        {/* Sticky Nav Section */}
-        <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${isScrolled ? 'shadow-lg shadow-black/20' : ''}`}>
+        {/* Part 2: The sticky navigation bar */}
+        <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
             <div className="max-w-6xl mx-auto px-4 md:px-6">
                 {/* Primary Curation Tabs */}
-                <div className="flex justify-center border-b border-gray-800">
-                <button
-                    onClick={() => setCurationTab('forYou')}
-                    className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    For You
-                </button>
-                <button
-                    onClick={() => setCurationTab('following')}
-                    className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                    Following
-                </button>
+                <div className="flex justify-center border-b border-gray-800 relative">
+                    <div 
+                        className="absolute left-0 top-1/2 -translate-y-1/2 transition-opacity duration-200"
+                        style={{ opacity: progress }}
+                        aria-hidden={progress < 1}
+                    >
+                        <CollapsedLiveRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+                    </div>
+                    <button
+                        onClick={() => setCurationTab('forYou')}
+                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        For You
+                    </button>
+                    <button
+                        onClick={() => setCurationTab('following')}
+                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        Following
+                    </button>
                 </div>
                 {/* Secondary Content-Type Filters */}
                 <div className="mt-4 pb-2">

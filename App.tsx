@@ -161,9 +161,6 @@ const App: React.FC = () => {
     
     const handleViewProfile = (user: User) => {
         setViewingProfile(user);
-        if (activeView === 'room') {
-            setActiveView('profile');
-        }
     };
     
     const handleBackFromProfile = () => {
@@ -198,119 +195,132 @@ const App: React.FC = () => {
         setCurrentUser(prev => ({...prev, name, bio}));
         setEditProfileModalOpen(false);
     };
+    
+    const handleNavigate = (view: ActiveView) => {
+        // Reset all transient sub-views to prevent getting "stuck"
+        setViewingProfile(null);
+        setActiveConversation(null);
+        setViewingPost(null);
+        setCreatePostFile(null);
+        setCreateNote(false);
+        setBrowserUrl(null);
+        setViewingMedia(null);
+
+        // Also reset scroll position for main views
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.scrollTop = 0;
+        }
+        setMainScrollTop(0);
+        
+        setActiveView(view);
+    };
+    
+    const handleScroll = (event: React.UIEvent<HTMLElement>) => {
+        setMainScrollTop(event.currentTarget.scrollTop);
+    };
 
     const renderActiveView = () => {
+      // Prioritize modal-like views
       if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
       if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} />;
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={() => {}} />;
       if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={() => {}} />;
 
+      // Render main page views
       switch (activeView) {
         case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
         case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
-        case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => setActiveView('home')} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+        case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
         case 'my-studio': return <MyStudioView />;
-        case 'room': // Handled separately below, but as a fallback, show home
-        default: return <HomeView rooms={rooms} onEnterRoom={handleEnterRoom} />;
+        case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        default: return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
       }
     };
     
     const handleCreateContent = (option: 'live' | 'video' | 'image' | 'note') => {
         setCreateHubOpen(false);
-        switch(option) {
-            case 'live':
-                setCreateRoomModalOpen(true);
-                break;
-            case 'video':
-                // In a real app, this would open a file picker
-                setCreatePostFile({ url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', type: 'video' });
-                break;
-            case 'image':
-                setCreatePostFile({ url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', type: 'image' });
-                break;
-            case 'note':
-                setCreateNote(true);
-                break;
+        if (option === 'live') {
+            setCreateRoomModalOpen(true);
+        } else if (option === 'image' || option === 'video') {
+            // Mock file selection
+            const mockFileUrl = option === 'image' 
+                ? 'https://images.unsplash.com/photo-1542314831-068cd1dbb563' 
+                : 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
+            setCreatePostFile({ url: mockFileUrl, type: option });
+        } else if (option === 'note') {
+            setCreateNote(true);
         }
-    }
-
-
+    };
+    
+    // Determine if a secondary view is active, which should hide the main nav elements.
+    const isSubViewActive = !!(viewingProfile || activeConversation || viewingPost || createPostFile || createNote || viewingMedia || browserUrl || activeRoom);
+    
+    // Define main views that show the global header.
+    const mainViews: ActiveView[] = ['home'];
+    const showGlobalHeader = mainViews.includes(activeView) && !isSubViewActive;
+    
     return (
         <UserContext.Provider value={userContextValue}>
-            <div className="h-screen w-screen bg-gray-900 text-white flex overflow-hidden">
+            <div className="h-full flex flex-col lg:flex-row bg-gray-900">
                 <Sidebar 
                     activeView={activeView} 
-                    setActiveView={setActiveView}
-                    isExpanded={isSidebarExpanded}
-                    setExpanded={setSidebarExpanded}
+                    setActiveView={handleNavigate}
+                    isExpanded={isSidebarExpanded} 
+                    setExpanded={setSidebarExpanded} 
                     onCreateContent={() => setCreateHubOpen(true)}
-                    unreadNotificationCount={3}
+                    unreadNotificationCount={12}
                 />
                 
-                <div className="flex flex-col flex-1 h-full">
-                    <main className="flex-1 overflow-y-auto overflow-x-hidden" onScroll={(e) => setMainScrollTop(e.currentTarget.scrollTop)}>
-                      <GlobalHeader
-                          activeView={activeView}
-                          curationTab={curationTab}
-                          setCurationTab={setCurationTab}
-                          activeFilter={activeFilter}
-                          setActiveFilter={setActiveFilter}
-                          unreadNotificationCount={3}
-                          onNavigateToNotifications={() => setActiveView('notifications')}
-                          onNavigateToLive={() => {}}
-                          hasActiveLiveRooms={true}
-                          onSearchClick={() => setSearchModalOpen(true)}
-                          liveRooms={rooms.filter(r => !r.isScheduled)}
-                          onEnterRoom={handleEnterRoom}
-                          scrollTop={mainScrollTop}
-                      />
-                      {activeView === 'room' && activeRoom ? (
-                        <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile}/>
-                      ) : (
-                        renderActiveView()
-                      )}
+                <div className="flex-1 flex flex-col min-w-0 h-full"> {/* min-w-0 is important for flex truncation */}
+                    <main id="main-content" onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide">
+                         {showGlobalHeader && (
+                            <GlobalHeader 
+                                activeView={activeView}
+                                curationTab={curationTab}
+                                setCurationTab={setCurationTab}
+                                activeFilter={activeFilter}
+                                setActiveFilter={setActiveFilter}
+                                unreadNotificationCount={12}
+                                onNavigateToNotifications={() => handleNavigate('notifications')}
+                                onSearchClick={() => setSearchModalOpen(true)}
+                                liveRooms={rooms.filter(r => !r.isScheduled)}
+                                onEnterRoom={handleEnterRoom}
+                                scrollTop={mainScrollTop}
+                            />
+                        )}
+                        {renderActiveView()}
                     </main>
                     
-                    {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onExpand={() => setActiveView('room')} onLeave={handleLeaveRoom} />}
-
-                    {/* Mobile Bottom Nav */}
-                    <BottomNavBar activeView={activeView} setActiveView={setActiveView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={3} />
+                    {!isSubViewActive && (
+                      <BottomNavBar 
+                          activeView={activeView} 
+                          setActiveView={handleNavigate}
+                          onCreateContent={() => setCreateHubOpen(true)} 
+                          unreadNotificationCount={12}
+                      />
+                    )}
                 </div>
 
-                {/* Modals and Overlays */}
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
-                {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
-                {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => userContextValue.updateCurrentUser({avatarUrl: url})} />}
+                {isEditProfileModalOpen && viewingProfile && <EditProfileModal user={viewingProfile} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
+                {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => setCurrentUser(p => ({...p, avatarUrl: url}))} />}
+                {isSearchModalOpen && <SearchViewModal onClose={() => setSearchModalOpen(false)} allRooms={rooms} allUsers={allUsers} discoverItems={discoverItems} currentUser={currentUser} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>}
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
                 {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContent} />}
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
-                {isSearchModalOpen && <SearchViewModal
-                    onClose={() => setSearchModalOpen(false)}
-                    allRooms={rooms}
-                    allUsers={allUsers}
-                    discoverItems={discoverItems}
-                    currentUser={currentUser}
-                    onEnterRoom={(room) => {
-                        handleEnterRoom(room);
-                        setSearchModalOpen(false);
-                    }}
-                    onViewProfile={(user) => {
-                        handleViewProfile(user);
-                        setSearchModalOpen(false);
-                    }}
-                    onViewMedia={(post) => {
-                        setViewingMedia(post);
-                        setSearchModalOpen(false);
-                    }}
-                    onViewPost={(post) => {
-                        setViewingPost(post);
-                        setSearchModalOpen(false);
-                    }}
-                />}
+
             </div>
+            {activeRoom && !viewingProfile && !activeConversation && activeView !== 'room' && (
+                <MiniPlayer 
+                    room={activeRoom}
+                    onExpand={() => setActiveView('room')}
+                    onLeave={handleLeaveRoom}
+                />
+            )}
         </UserContext.Provider>
     );
 };

@@ -33,26 +33,30 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, 
           const isCreate = item.id === 'create';
           const isActive = activeView === item.id;
 
+          if (isCreate) {
+            return (
+              <div key={item.id} className="flex-1 w-0 relative">
+                <button
+                  onClick={() => handleNavClick(item.id)}
+                  className="absolute left-1/2 -translate-x-1/2 top-[-2rem] w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30"
+                  aria-label={item.label}
+                >
+                  {item.icon}
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div key={item.id} className="flex-1 w-0 flex justify-center items-center">
-              {isCreate ? (
-                <button
-                  onClick={() => handleNavClick(item.id)}
-                  className="w-16 h-16 -mt-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30"
-                  aria-label={item.label}
-                >
-                  {item.icon}
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleNavClick(item.id)}
-                  className={`w-full h-full flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? 'text-indigo-400' : 'text-gray-400 hover:text-white'}`}
-                  aria-label={item.label}
-                >
-                  {item.icon}
-                  <span className="text-xs font-medium">{item.label}</span>
-                </button>
-              )}
+              <button
+                onClick={() => handleNavClick(item.id)}
+                className={`w-full h-full flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? 'text-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                aria-label={item.label}
+              >
+                {item.icon}
+                <span className="text-xs font-medium">{item.label}</span>
+              </button>
             </div>
           );
         })}
