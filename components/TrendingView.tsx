@@ -6,6 +6,10 @@ interface TrendingViewProps {
   items: DiscoverItem[];
   currentUser: User;
   initialFilter?: string | null;
+  curationTab?: 'forYou' | 'following';
+  setCurationTab?: (tab: 'forYou' | 'following') => void;
+  activeFilter?: string;
+  setActiveFilter?: (filter: string) => void;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
@@ -22,15 +26,24 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'Posts': 'text_post',
 };
 
-const TrendingView: React.FC<TrendingViewProps> = ({ items, currentUser, initialFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
-  const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
-  const [activeFilter, setActiveFilter] = useState(initialFilter || 'All');
+const TrendingView: React.FC<TrendingViewProps> = (props) => {
+  const { items, currentUser, initialFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
+
+  // Component can be controlled or uncontrolled
+  const [internalCurationTab, setInternalCurationTab] = useState<'forYou' | 'following'>('forYou');
+  const [internalActiveFilter, setInternalActiveFilter] = useState(initialFilter || 'All');
+  
+  const curationTab = props.curationTab !== undefined ? props.curationTab : internalCurationTab;
+  const setCurationTab = props.setCurationTab || setInternalCurationTab;
+  
+  const activeFilter = props.activeFilter !== undefined ? props.activeFilter : internalActiveFilter;
+  const setActiveFilter = props.setActiveFilter || setInternalActiveFilter;
 
   useEffect(() => {
     if (initialFilter) {
       setActiveFilter(initialFilter);
     }
-  }, [initialFilter]);
+  }, [initialFilter, setActiveFilter]);
     
   const displayedItems = useMemo(() => {
     let sourceItems: DiscoverItem[] = [...items]; // Create a mutable copy

@@ -22,8 +22,7 @@ import CreateNoteView from './components/CreateNoteView';
 import BottomNavBar from './components/BottomNavBar';
 import InAppBrowser from './components/InAppBrowser';
 import GlobalHeader from './components/GlobalHeader';
-import GlobalSearchView from './components/GlobalSearchView';
-import Sidebar from './components/Sidebar';
+import SearchViewModal from './components/SearchViewModal';
 
 
 // --- MOCK DATA ---
@@ -164,9 +163,9 @@ const App: React.FC = () => {
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
     const [isUserCardOpen, setUserCardOpen] = useState(false);
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
+    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [selectedUserForCard, setSelectedUserForCard] = useState<User | null>(null);
     const [userCardPosition, setUserCardPosition] = useState<ModalPosition | null>(null);
-    const [isSidebarExpanded, setSidebarExpanded] = useState(true);
 
     // --- Create Flow State ---
     const [activeCreateView, setActiveCreateView] = useState<'image' | 'video' | 'note' | null>(null);
@@ -175,9 +174,9 @@ const App: React.FC = () => {
     // --- In-App Browser State ---
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
 
-    // --- Search & Filter State ---
-    const [searchQuery, setSearchQuery] = useState('');
-    const [initialHomeFilter, setInitialHomeFilter] = useState<string | null>(null);
+    // --- Content Filter State (lifted from TrendingView) ---
+    const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
+    const [activeFilter, setActiveFilter] = useState('All');
 
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -243,9 +242,12 @@ const App: React.FC = () => {
 
     // --- Navigation Handlers ---
     const changeView = (view: ActiveView) => {
-        setInitialHomeFilter(null); // Reset deep link filter on any view change
         setPreviousView(activeView);
         setActiveView(view);
+        
+        // Reset filters when changing main views
+        setActiveFilter('All');
+        setCurationTab('forYou');
 
         // Special handling for the main profile tab navigation
         if (view === 'profile') {
@@ -324,7 +326,7 @@ const App: React.FC = () => {
 
     const handleNavigateToLive = () => {
         changeView('home');
-        setInitialHomeFilter('Live');
+        setActiveFilter('Live');
     };
 
 
@@ -510,27 +512,15 @@ const App: React.FC = () => {
             return true;
         });
 
-        if (searchQuery && (activeView === 'home' || activeView === 'messages')) {
-            return <GlobalSearchView 
-                        query={searchQuery} 
-                        activeView={activeView}
-                        discoverItems={publishedDiscoverItems}
-                        conversations={conversations}
-                        currentUser={currentUser}
-                        onEnterRoom={handleEnterRoom}
-                        onViewProfile={handleViewProfile}
-                        onViewMedia={handleViewMedia}
-                        onViewPost={handleViewPost}
-                        onConversationSelect={handleSelectConversation}
-                    />;
-        }
-
         switch (activeView) {
             case 'home':
                 return <TrendingView 
                             items={publishedDiscoverItems} 
                             currentUser={currentUser}
-                            initialFilter={initialHomeFilter}
+                            curationTab={curationTab}
+                            setCurationTab={setCurationTab}
+                            activeFilter={activeFilter}
+                            setActiveFilter={setActiveFilter}
                             onEnterRoom={handleEnterRoom} 
                             onViewProfile={handleViewProfile} 
                             onViewMedia={handleViewMedia} 
@@ -604,6 +594,8 @@ const App: React.FC = () => {
 
     const unreadNotifications = notifications.filter(n => !n.isRead);
     const liveRooms = rooms.filter(r => !r.isScheduled);
+    const publishedDiscoverItems = discoverItems.filter(item => 'status' in item ? item.status === 'published' : true);
+
 
     if (renderCreationView()) {
         return (
@@ -617,29 +609,20 @@ const App: React.FC = () => {
 
     return (
         <UserContext.Provider value={userContextValue}>
-            <div className="h-full flex flex-col lg:flex-row bg-gray-900 text-white font-sans">
-                <Sidebar
-                    activeView={activeView}
-                    setActiveView={changeView}
-                    isExpanded={isSidebarExpanded}
-                    setExpanded={setSidebarExpanded}
-                    onCreateContent={() => setCreateHubOpen(true)}
-                    unreadNotificationCount={unreadNotifications.length}
-                />
+            <div className="h-full flex flex-col md:flex-row bg-gray-900 text-white font-sans">
                 {/* Main Content Area */}
                 <main className="flex-1 flex flex-col overflow-hidden relative">
                      <GlobalHeader
                         activeView={activeView}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
+                        curationTab={curationTab}
+                        activeFilter={activeFilter}
                         unreadNotificationCount={unreadNotifications.length}
                         onNavigateToNotifications={() => changeView('notifications')}
                         onNavigateToLive={handleNavigateToLive}
                         hasActiveLiveRooms={liveRooms.length > 0}
+                        onSearchClick={() => setSearchModalOpen(true)}
                         liveRooms={liveRooms}
                         onEnterRoom={handleEnterRoom}
-                        isSidebarExpanded={isSidebarExpanded}
-                        onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)}
                     />
                     <div className="flex-1 overflow-y-auto">
                         {renderActiveView()}
@@ -647,6 +630,17 @@ const App: React.FC = () => {
                 </main>
             </div>
             {/* --- Modals --- */}
+            {isSearchModalOpen && <SearchViewModal 
+                onClose={() => setSearchModalOpen(false)}
+                allRooms={rooms.filter(r => !r.isScheduled)}
+                allUsers={users}
+                discoverItems={publishedDiscoverItems}
+                currentUser={currentUser}
+                onEnterRoom={(room) => { handleEnterRoom(room); setSearchModalOpen(false); }}
+                onViewProfile={(user) => { handleViewProfile(user); setSearchModalOpen(false); }}
+                onViewMedia={(post) => { handleViewMedia(post); setSearchModalOpen(false); }}
+                onViewPost={(post) => { handleViewPost(post); setSearchModalOpen(false); }}
+            />}
             {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
             {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleEditProfileSave} />}
             {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => handleAvatarSelect(url)} />}
@@ -657,7 +651,7 @@ const App: React.FC = () => {
             
             {/* --- Global Components --- */}
             {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onLeave={handleLeaveRoom} onMaximize={() => changeView('room')} />}
-            <div className="lg:hidden">
+            <div className="md:hidden">
               <BottomNavBar activeView={activeView} setActiveView={changeView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={unreadNotifications.length} />
             </div>
         </UserContext.Provider>

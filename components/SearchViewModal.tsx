@@ -60,9 +60,6 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
             onViewProfile={onViewProfile}
           />
         ) : (
-          // FIX: Removed the unsupported 'title' prop from TrendingView.
-          // FIX: Added the required 'currentUser' prop to TrendingView to resolve a type error.
-          // FIX: Removed the unsupported 'liveRooms' prop, as TrendingView does not accept it.
           <TrendingView
             items={discoverItems}
             currentUser={currentUser}
