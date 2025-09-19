@@ -265,6 +265,7 @@ const App: React.FC = () => {
             onViewProfile={handleViewProfile}
             onViewMedia={setViewingMedia}
             onViewPost={setViewingPost}
+            onClose={() => handleNavigate('home')}
         />;
         default: return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
       }

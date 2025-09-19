@@ -153,8 +153,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   );
   
   return (
-    <header className="bg-gray-900 z-20">
-        {/* Part 1: Non-sticky content that scrolls away */}
+    <>
+      {/* Part 1: Non-sticky content that scrolls away */}
+      <div className="bg-gray-900 z-20">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:pt-6">
           {TitleBarContent}
         </div>
@@ -165,53 +166,54 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
         >
             <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
         </div>
+      </div>
       
-        {/* Part 2: The sticky navigation bar */}
-        <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
-            <div className="max-w-6xl mx-auto px-4 md:px-6">
-                {/* Primary Curation Tabs */}
-                <div className="flex justify-center border-b border-gray-800 relative">
-                    <div 
-                        className="absolute left-0 top-1/2 -translate-y-1/2 transition-opacity duration-200"
-                        style={{ opacity: progress }}
-                        aria-hidden={progress < 1}
-                    >
-                        <CollapsedLiveRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-                    </div>
-                    <button
-                        onClick={() => setCurationTab('forYou')}
-                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                        For You
-                    </button>
-                    <button
-                        onClick={() => setCurationTab('following')}
-                        className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                        Following
-                    </button>
-                </div>
-                {/* Secondary Content-Type Filters */}
-                <div className="mt-4 pb-2">
-                <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                    {contentFilters.map(filter => (
-                    <button
-                        key={filter}
-                        onClick={() => setActiveFilter(filter)}
-                        className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                            activeFilter === filter
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                        }`}
-                    >
-                        {filter}
-                    </button>
-                    ))}
-                </div>
-                </div>
-            </div>
-        </div>
-    </header>
+      {/* Part 2: The sticky navigation bar */}
+      <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
+          <div className="max-w-6xl mx-auto px-4 md:px-6">
+              {/* Primary Curation Tabs */}
+              <div className="flex justify-center border-b border-gray-800 relative">
+                  <div 
+                      className="absolute left-0 top-1/2 -translate-y-1/2 transition-opacity duration-200"
+                      style={{ opacity: progress }}
+                      aria-hidden={progress < 1}
+                  >
+                      <CollapsedLiveRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
+                  </div>
+                  <button
+                      onClick={() => setCurationTab('forYou')}
+                      className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                  >
+                      For You
+                  </button>
+                  <button
+                      onClick={() => setCurationTab('following')}
+                      className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
+                  >
+                      Following
+                  </button>
+              </div>
+              {/* Secondary Content-Type Filters */}
+              <div className="mt-4 pb-2">
+              <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
+                  {contentFilters.map(filter => (
+                  <button
+                      key={filter}
+                      onClick={() => setActiveFilter(filter)}
+                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
+                          activeFilter === filter
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                  >
+                      {filter}
+                  </button>
+                  ))}
+              </div>
+              </div>
+          </div>
+      </div>
+    </>
   );
 };
 

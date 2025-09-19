@@ -18,6 +18,7 @@ interface GlobalSearchViewProps {
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onClose: () => void;
 }
 
 const RecentSearches: React.FC<{
@@ -57,7 +58,7 @@ const RecentSearches: React.FC<{
     );
 };
 
-const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({ query: submittedQuery, onSearch, discoverItems, ...rest }) => {
+const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({ query: submittedQuery, onSearch, discoverItems, onClose, ...rest }) => {
   const [localQuery, setLocalQuery] = useState(submittedQuery);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -118,6 +119,9 @@ const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({ query: submittedQue
               <SearchIcon className="w-6 h-6" />
             </div>
           </div>
+          <button type="button" onClick={onClose} className="text-gray-300 hover:text-white font-semibold px-4 py-2">
+            Cancel
+          </button>
         </form>
       </div>
 
