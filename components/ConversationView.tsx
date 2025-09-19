@@ -5,9 +5,10 @@ interface ConversationViewProps {
   conversation: Conversation;
   currentUser: User;
   onBack: () => void;
+  onViewProfile: (user: User) => void;
 }
 
-const ConversationView: React.FC<ConversationViewProps> = ({ conversation, currentUser, onBack }) => {
+const ConversationView: React.FC<ConversationViewProps> = ({ conversation, currentUser, onBack, onViewProfile }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(conversation.messages);
   const [text, setText] = useState('');
   const otherParticipant = conversation.participants.find(p => p.id !== currentUser.id);
@@ -45,10 +46,10 @@ const ConversationView: React.FC<ConversationViewProps> = ({ conversation, curre
     <div className="h-full flex flex-col max-w-2xl mx-auto animate-fade-in">
       <header className="flex items-center p-4 border-b border-gray-800 sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10">
         <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">&larr; Back</button>
-        <div className="flex items-center mx-auto">
+        <button onClick={() => onViewProfile(otherParticipant)} className="flex items-center mx-auto group cursor-pointer" aria-label={`View profile of ${otherParticipant.name}`}>
             <img src={otherParticipant.avatarUrl} alt={otherParticipant.name} className="w-8 h-8 rounded-full mr-3" />
-            <h1 className="text-lg font-bold text-center truncate">{otherParticipant.name}</h1>
-        </div>
+            <h1 className="text-lg font-bold text-center truncate group-hover:text-indigo-400 transition-colors">{otherParticipant.name}</h1>
+        </button>
         <div className="w-16"></div>
       </header>
 

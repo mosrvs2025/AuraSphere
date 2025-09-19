@@ -1,12 +1,12 @@
 // Implemented RoomView, the main interface for participating in a live audio room.
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Room, User, ChatMessage, ModalPosition } from '../types';
 import ChatView from './ChatView';
 import { RoomActionsContext } from '../context/RoomActionsContext';
-import { generateIcebreakers } from '../services/geminiService';
-import { MicIcon, SparklesIcon } from './Icons';
+import { SparklesIcon } from './Icons';
 import DynamicInput from './DynamicInput';
 import AiAssistantPanel from './AiAssistantPanel';
+import HostControls from './HostControls';
 
 
 interface RoomViewProps {
@@ -61,7 +61,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [animatedReaction, setAnimatedReaction] = useState<{ messageId: string, emoji: string } | null>(null);
 
     const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
-    const [videoInput, setVideoInput] = useState('');
+    const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         if (animatedReaction) {
@@ -78,7 +78,22 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     };
     
     const handlePlayAudioToggle = (messageId: string) => {
-        setNowPlayingAudioNoteId(prevId => prevId === messageId ? null : messageId);
+        if (!audioPlayerRef.current) return;
+        
+        if (nowPlayingAudioNoteId === messageId) {
+            audioPlayerRef.current.pause();
+        } else {
+            const messageToPlay = messages.find(m => m.id === messageId);
+            if (messageToPlay?.voiceMemo?.url) {
+                audioPlayerRef.current.src = messageToPlay.voiceMemo.url;
+                audioPlayerRef.current.play().catch(console.error);
+                setNowPlayingAudioNoteId(messageId);
+            }
+        }
+    };
+    
+    const handleAudioEnded = () => {
+        setNowPlayingAudioNoteId(null);
     };
 
     const handleToggleReaction = (messageId: string, emoji: string) => {
@@ -134,18 +149,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
         };
         setMessages(prev => [...prev, newMessage]);
     };
-    
-    const handleShareVideo = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (videoInput.trim()) {
-            handleUpdateRoom({ videoUrl: videoInput.trim() });
-            setVideoInput('');
-        }
-    };
-
-    const handleStopVideo = () => {
-        handleUpdateRoom({ videoUrl: undefined });
-    };
 
     const onToggleScreenShare = async () => {
       setIsSharingScreen(!isSharingScreen);
@@ -162,6 +165,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
 
     return (
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
+      <audio ref={audioPlayerRef} onEnded={handleAudioEnded} onPause={handleAudioEnded}></audio>
       <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
         {/* Main Panel (Left side on desktop, full screen on mobile) */}
         <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden relative">
@@ -182,4 +186,63 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
                 {hasMedia ? (
                     <div className="w-full h-full bg-black rounded-lg flex items-center justify-center text-gray-400 min-h-[200px]">
-                        {isSharingScreen ? "Screen share is active" :
+                        {isSharingScreen ? "Screen share is active" : (currentRoom.videoUrl && <video src={currentRoom.videoUrl} controls autoPlay className="w-full h-full rounded-lg"></video>)}
+                    </div>
+                ) : (
+                    <ParticipantsList room={currentRoom} selectedUser={selectedUser} onAvatarClick={handleAvatarClick} />
+                )}
+            </div>
+
+            {/* Side Participants List when Media is showing */}
+            {hasMedia && (
+                <div className="flex-shrink-0 md:w-1/3 md:max-w-xs overflow-y-auto p-4 md:p-6 md:border-l md:border-gray-800">
+                     <ParticipantsList room={currentRoom} selectedUser={selectedUser} onAvatarClick={handleAvatarClick} />
+                </div>
+            )}
+          </div>
+          
+          {/* Footer Controls */}
+          <footer className="flex-shrink-0">
+             {isHost && (
+                <div className="p-4 border-t border-gray-800">
+                    <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} />
+                </div>
+             )}
+             <div className="p-4 md:p-6 border-t border-gray-800 flex items-center space-x-4">
+                <button className="p-3 bg-gray-700 rounded-full hover:bg-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                </button>
+                
+                <DynamicInput 
+                    onSubmitMessage={handleSendTextMessage}
+                    onSubmitAudioNote={handleSendAudioNote}
+                    onSubmitVideoNote={handleSendVideoNote}
+                />
+                
+                <button onClick={() => setIsAiPanelOpen(!isAiPanelOpen)} className={`p-3 rounded-full transition-colors duration-300 ${isAiPanelOpen ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                    <SparklesIcon className="h-6 w-6" />
+                </button>
+            </div>
+          </footer>
+          {isAiPanelOpen && <AiAssistantPanel room={currentRoom} messages={messages} onClose={() => setIsAiPanelOpen(false)} />}
+        </div>
+        
+        {/* Chat Panel */}
+        <div className={`flex-shrink-0 md:w-1/3 md:max-w-sm lg:max-w-md xl:max-w-lg transition-all duration-300 ease-in-out ${isChatCollapsed ? 'md:w-0' : ''}`}>
+          <ChatView 
+            messages={messages} 
+            currentUser={currentUser}
+            onToggleReaction={handleToggleReaction}
+            nowPlayingAudioNoteId={nowPlayingAudioNoteId}
+            onPlayAudioNote={handlePlayAudioToggle}
+            isCollapsed={isChatCollapsed}
+            onToggleCollapse={() => setChatCollapsed(!isChatCollapsed)}
+            animatedReaction={animatedReaction}
+          />
+        </div>
+      </div>
+    </RoomActionsContext.Provider>
+    );
+};
+
+export default RoomView;

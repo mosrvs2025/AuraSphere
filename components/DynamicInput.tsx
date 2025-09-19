@@ -4,7 +4,7 @@ import VideoRecorderModal from './VideoRecorderModal';
 
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;
-    onSubmitAudioNote: (duration: number) => void;
+    onSubmitAudioNote: (url: string, duration: number) => void;
     onSubmitVideoNote: () => void;
 }
 
@@ -20,6 +20,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     const [countdown, setCountdown] = useState(RECORDING_DURATION);
     const [isAudioPreviewPlaying, setIsAudioPreviewPlaying] = useState(false);
     const [isVideoRecorderOpen, setVideoRecorderOpen] = useState(false);
+    const [audioPreview, setAudioPreview] = useState<{ url: string; blob: Blob } | null>(null);
 
     // Audio visualization state
     const [dataArray, setDataArray] = useState<Uint8Array>(new Uint8Array(0));
@@ -28,28 +29,35 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     const countdownInterval = useRef<number | null>(null);
     const longPressTimer = useRef<number | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameIdRef = useRef<number | null>(null);
+    const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
 
-    // --- Audio Cleanup ---
-    const stopAndCleanupAudio = () => {
+    // --- Audio Context Cleanup ---
+    const cleanupAudioContext = () => {
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
             animationFrameIdRef.current = null;
         }
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-            mediaStreamRef.current = null;
-        }
         if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            audioContextRef.current.close();
+            audioContextRef.current.close().catch(console.error);
             audioContextRef.current = null;
         }
         analyserRef.current = null;
         setDataArray(new Uint8Array(0));
     };
+
+    // --- Stop Media Stream ---
+    const stopMediaStream = () => {
+         if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+    }
     
     // --- Countdown Timer Logic ---
     useEffect(() => {
@@ -69,7 +77,11 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     }, [mode]);
 
     const finishRecording = () => {
-        stopAndCleanupAudio();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+        cleanupAudioContext();
+        stopMediaStream();
         setMode('preview');
         setIsAudioPreviewPlaying(false);
     };
@@ -85,11 +97,32 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     const visualize = () => {
         if (!analyserRef.current) return;
         
-        const newArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const newArray = new Uint8Array(bufferLength);
         analyserRef.current.getByteFrequencyData(newArray);
         setDataArray(newArray);
 
         animationFrameIdRef.current = requestAnimationFrame(visualize);
+    };
+
+    const startPlaybackVisualization = () => {
+        if (!audioPreviewRef.current || (audioContextRef.current && audioContextRef.current.state !== 'closed')) return;
+        
+        try {
+            const context = new (window.AudioContext)();
+            const source = context.createMediaElementSource(audioPreviewRef.current);
+            const analyserNode = context.createAnalyser();
+            analyserNode.fftSize = 128;
+            source.connect(analyserNode);
+            analyserNode.connect(context.destination);
+
+            audioContextRef.current = context;
+            analyserRef.current = analyserNode;
+
+            visualize();
+        } catch (error) {
+            console.error("Error setting up playback visualization:", error);
+        }
     };
 
     // --- Handlers ---
@@ -107,21 +140,35 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaStreamRef.current = stream;
 
+                // Setup visualizer
                 const context = new (window.AudioContext)();
                 audioContextRef.current = context;
-                
                 const source = context.createMediaStreamSource(stream);
                 const analyserNode = context.createAnalyser();
-                analyserNode.fftSize = 128; // smaller for performance, 64 bins
+                analyserNode.fftSize = 128;
                 source.connect(analyserNode);
                 analyserRef.current = analyserNode;
+
+                // Setup recorder
+                audioChunksRef.current = [];
+                mediaRecorderRef.current = new MediaRecorder(stream);
+                mediaRecorderRef.current.ondataavailable = event => {
+                    audioChunksRef.current.push(event.data);
+                };
+                mediaRecorderRef.current.onstop = () => {
+                    const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    setAudioPreview({ url: audioUrl, blob: audioBlob });
+                    audioChunksRef.current = [];
+                };
+                mediaRecorderRef.current.start();
                 
-                setDataArray(new Uint8Array(analyserNode.frequencyBinCount));
                 setMode('recording');
                 visualize();
+
             } catch (err) {
                 console.error("Mic access denied:", err);
-                // In a real app, you'd show user feedback for permissions denial
             }
         } else {
             setVideoRecorderOpen(true);
@@ -130,19 +177,31 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     };
 
     const cancelRecording = () => {
-        stopAndCleanupAudio();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+        cleanupAudioContext();
+        stopMediaStream();
         setMode('idle');
     };
 
     const deletePreview = () => {
+        if (audioPreview) {
+            URL.revokeObjectURL(audioPreview.url);
+        }
+        setAudioPreview(null);
+        cleanupAudioContext();
         setMode('idle');
         setIsAudioPreviewPlaying(false);
-        // Cleanup already happened on finishRecording
     };
     
     const sendPreview = () => {
-        const recordedDuration = RECORDING_DURATION - countdown;
-        onSubmitAudioNote(recordedDuration > 0 ? recordedDuration : 1);
+        if (audioPreview) {
+            const recordedDuration = RECORDING_DURATION - countdown;
+            onSubmitAudioNote(audioPreview.url, recordedDuration > 0 ? recordedDuration : 1);
+            setAudioPreview(null); // URL is now owned by parent
+        }
+        cleanupAudioContext();
         setMode('idle');
         setIsAudioPreviewPlaying(false);
     };
@@ -154,11 +213,11 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                 setModeSelectorOpen(true);
             }
             longPressTimer.current = null;
-        }, 500); // Long press duration
+        }, 500);
     };
 
     const handleActionRelease = () => {
-        if (longPressTimer.current) { // It was a short press
+        if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
             if (mode === 'idle') {
@@ -172,8 +231,26 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         setModeSelectorOpen(false);
     };
 
+    const toggleAudioPreview = () => {
+        if (audioPreviewRef.current) {
+            if (isAudioPreviewPlaying) {
+                audioPreviewRef.current.pause();
+            } else {
+                audioPreviewRef.current.play();
+            }
+        }
+    };
+
     return (
         <>
+            {audioPreview?.url && <audio 
+                ref={audioPreviewRef} 
+                src={audioPreview.url} 
+                onPlay={() => { setIsAudioPreviewPlaying(true); startPlaybackVisualization(); }}
+                onPause={() => { setIsAudioPreviewPlaying(false); cleanupAudioContext(); }}
+                onEnded={() => { setIsAudioPreviewPlaying(false); cleanupAudioContext(); }}
+                preload="auto"
+            />}
             <div className="flex-1 flex items-center bg-gray-800 rounded-full relative transition-all duration-300">
                 {mode === 'idle' && (
                     <form onSubmit={handleFormSubmit} className="w-full flex items-center">
@@ -253,13 +330,22 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                              <TrashIcon className="h-6 w-6" />
                          </button>
                          <div className="flex items-center flex-1 mx-2">
-                            <button onClick={() => setIsAudioPreviewPlaying(!isAudioPreviewPlaying)} className="p-2 text-white">
+                            <button onClick={toggleAudioPreview} className="p-2 text-white">
                                 {isAudioPreviewPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
                             </button>
-                            <div className="flex-1 h-8 flex items-center space-x-1 px-2">
-                                {[0.4, 0.6, 0.9, 0.7, 0.8, 0.5, 0.9, 0.4, 0.6, 0.9, 0.7, 0.8, 0.5, 0.9, 0.4].map((h, i) => (
-                                    <div key={i} style={{ height: `${h * 60}%` }} className="w-1 bg-gray-500 rounded-full"></div>
-                                ))}
+                             <div className="flex-1 h-8 flex items-center space-x-0.5 px-2">
+                                {Array.from({ length: 24 }).map((_, i) => {
+                                        const sampleIndex = Math.floor(i * (dataArray.length / 24));
+                                        const value = dataArray[sampleIndex] || 0;
+                                        const heightPercent = Math.max(5, (value / 255) * 100); 
+                                        return (
+                                            <div 
+                                                key={i} 
+                                                className="w-0.5 bg-gray-500 rounded-full" 
+                                                style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}
+                                            />
+                                        );
+                                })}
                             </div>
                              <span className="text-sm font-mono text-gray-400">0:{(RECORDING_DURATION - countdown).toString().padStart(2, '0')}</span>
                          </div>
