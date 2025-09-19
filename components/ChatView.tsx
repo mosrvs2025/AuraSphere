@@ -1,6 +1,7 @@
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, User } from '../types';
+import { ChevronDownIcon } from './Icons';
 
 // --- Sub-component for Audio Notes ---
 
@@ -96,23 +97,32 @@ interface ChatViewProps {
   onToggleReaction: (messageId: string, emoji: string) => void;
   nowPlayingAudioNoteId: string | null;
   onPlayAudioNote: (messageId: string) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, nowPlayingAudioNoteId, onPlayAudioNote }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, nowPlayingAudioNoteId, onPlayAudioNote, isCollapsed, onToggleCollapse }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(scrollToBottom, [messages]);
+  useEffect(() => {
+    if (!isCollapsed) {
+      scrollToBottom();
+    }
+  }, [messages, isCollapsed]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-800/50">
+    <div className="h-full flex flex-col bg-gray-800/50 overflow-hidden">
       <header className="p-4 border-b border-gray-700/50 flex-shrink-0">
-        <h3 className="font-bold text-center">Room Chat</h3>
+         <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold">
+            <span>Room Chat</span>
+            <ChevronDownIcon className={`transform transition-transform duration-300 ${!isCollapsed ? 'rotate-180' : ''}`} />
+        </button>
       </header>
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-full opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => (
           <div key={msg.id} className="flex items-start space-x-3">
             <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-8 h-8 rounded-full flex-shrink-0" />

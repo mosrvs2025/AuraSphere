@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { Room, User, ChatMessage, ModalPosition } from '../types';
 import ChatView from './ChatView';
-import HostControls from './HostControls';
-import ListenerControls from './ListenerControls';
 import { RoomActionsContext } from '../context/RoomActionsContext';
+import { generateIcebreakers } from '../services/geminiService';
+import { MicIcon, SendIcon } from './Icons';
+
 
 interface RoomViewProps {
   room: Room;
@@ -14,7 +15,7 @@ interface RoomViewProps {
 }
 
 const UserAvatar: React.FC<{ user: User, size?: 'large' | 'small', onClick: (e: React.MouseEvent<HTMLButtonElement>) => void }> = ({ user, size = 'large', onClick }) => (
-    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-full">
+    <button onClick={onClick} className="flex flex-col items-center space-y-1 text-center focus:outline-none focus:ring-4 focus:ring-indigo-500/30 rounded-full">
         <img 
             src={user.avatarUrl} 
             alt={user.name} 
@@ -30,6 +31,15 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
     const [currentRoom, setCurrentRoom] = useState<Room>(room);
+    const [isChatCollapsed, setChatCollapsed] = useState(false);
+
+    // State for controls, moved up from sub-components
+    const [messageText, setMessageText] = useState('');
+    const [isMuted, setIsMuted] = useState(true);
+    const [icebreakers, setIcebreakers] = useState<string[]>([]);
+    const [isLoadingIcebreakers, setIsLoadingIcebreakers] = useState(false);
+    const [videoInput, setVideoInput] = useState('');
+
 
     const isHost = currentRoom.hosts.some(h => h.id === currentUser.id);
 
@@ -38,9 +48,41 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     };
 
     const handleToggleReaction = (messageId: string, emoji: string) => {
-      // In a real app, this would be a backend call.
-      // This is a placeholder function to satisfy prop requirements.
       console.log(`Toggled reaction ${emoji} for message ${messageId}`);
+    };
+    
+    const handleSendMessage = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!messageText.trim()) return;
+        const newMessage: ChatMessage = {
+            id: `m-${Date.now()}`,
+            user: currentUser,
+            text: messageText,
+            createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, newMessage]);
+        setMessageText('');
+    };
+    
+    // Host Control Handlers
+    const handleSuggestIcebreakers = async () => {
+        setIsLoadingIcebreakers(true);
+        setIcebreakers([]);
+        const suggestions = await generateIcebreakers(currentRoom.title);
+        setIcebreakers(suggestions);
+        setIsLoadingIcebreakers(false);
+    };
+
+    const handleShareVideo = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (videoInput.trim()) {
+            handleUpdateRoom({ videoUrl: videoInput.trim() });
+            setVideoInput('');
+        }
+    };
+
+    const handleStopVideo = () => {
+        handleUpdateRoom({ videoUrl: undefined });
     };
 
     const onToggleScreenShare = async () => {
@@ -88,7 +130,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           ) : null}
 
           {/* Participants */}
-          <div className="flex-1 overflow-y-auto space-y-6">
+          <div className="flex-1 overflow-y-auto space-y-6 pb-4">
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -109,9 +151,57 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
               </div>
           </div>
           
-          {/* Controls */}
-          <footer className="mt-auto pt-4">
-              {isHost ? <HostControls videoUrl={currentRoom.videoUrl} onUpdateRoom={handleUpdateRoom} /> : <ListenerControls />}
+          {/* UNIFIED CONTROLS FOOTER */}
+          <footer className="mt-auto pt-4 border-t border-gray-800">
+             {isHost ? (
+                // Host Controls
+                <div className="relative space-y-4">
+                    <div className="flex items-center justify-center space-x-2">
+                        <button onClick={onToggleScreenShare} className={`flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition ${isSharingScreen ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-200'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            <span>{isSharingScreen ? 'Stop' : 'Screen'}</span>
+                        </button>
+                        {currentRoom.videoUrl ? (
+                            <button onClick={handleStopVideo} className="flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition bg-red-600 hover:bg-red-500 text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H5z" /></svg>
+                                <span>Stop Video</span>
+                            </button>
+                        ) : (
+                            <form onSubmit={handleShareVideo} className="flex items-center bg-gray-800 rounded-full">
+                                <input type="text" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} placeholder="YouTube URL..." className="bg-transparent pl-4 p-2 text-sm w-32 focus:outline-none" />
+                                <button type="submit" className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition">Share Video</button>
+                            </form>
+                        )}
+                        <button onClick={handleSuggestIcebreakers} disabled={isLoadingIcebreakers} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full disabled:bg-indigo-800 disabled:cursor-not-allowed text-sm transition">
+                            {isLoadingIcebreakers ? '...' : '✨ Suggest'}
+                        </button>
+                    </div>
+                     {icebreakers.length > 0 && (
+                        <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
+                            <h5 className="font-bold text-indigo-400 mb-2">Icebreaker Ideas:</h5>
+                            <ul className="list-disc list-inside text-sm space-y-1">
+                                {icebreakers.map((q, i) => <li key={i}>{q}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                // Listener Controls
+                <div className="flex items-center justify-between space-x-4">
+                    <button onClick={() => setIsMuted(!isMuted)} className={`p-3 rounded-full transition ${isMuted ? 'bg-gray-700 text-gray-300' : 'bg-green-500 text-white'}`}>
+                        <MicIcon />
+                    </button>
+                    <form onSubmit={handleSendMessage} className="flex-1 flex items-center bg-gray-800 rounded-full">
+                        <input type="text" value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Send a message..." className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none" />
+                        <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300 disabled:text-gray-600" disabled={!messageText.trim()} aria-label="Send message">
+                            <SendIcon />
+                        </button>
+                    </form>
+                    <button className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition">
+                        Raise Hand
+                    </button>
+                </div>
+            )}
           </footer>
         </div>
 
@@ -123,6 +213,8 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
             onToggleReaction={handleToggleReaction}
             nowPlayingAudioNoteId={nowPlayingAudioNoteId}
             onPlayAudioNote={setNowPlayingAudioNoteId}
+            isCollapsed={isChatCollapsed}
+            onToggleCollapse={() => setChatCollapsed(!isChatCollapsed)}
           />
         </div>
       </div>

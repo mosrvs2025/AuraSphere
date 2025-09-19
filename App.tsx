@@ -13,6 +13,7 @@ import ScheduledView from './components/ScheduledView';
 import NotificationsView from './components/NotificationsView';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
+import SearchViewModal from './components/SearchViewModal';
 import { MyStudioView, TrendingView } from './components/PlaceholderViews';
 import { User, Room, ChatMessage, Conversation, Notification, ActiveView, ModalPosition } from './types';
 import { UserContext } from './context/UserContext';
@@ -115,6 +116,7 @@ const App: React.FC = () => {
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
+  const [isSearchModalOpen, setSearchModalOpen] = useState(false);
 
   const handleSetActiveView = (view: ActiveView) => {
     setActiveView(view);
@@ -153,6 +155,7 @@ const App: React.FC = () => {
   const handleViewProfile = (user: User) => {
     setProfileUser(user);
     setActiveView('profile');
+    setActiveRoom(null); // Leave room to view profile
     setUserCardModalUser(null); // Close card modal when viewing full profile
   };
 
@@ -251,7 +254,7 @@ const App: React.FC = () => {
             unreadNotificationCount={notifications.filter(n => !n.isRead).length}
         />
         <main className="flex-1 flex flex-col overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
+            <Header onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} onSearchClick={() => setSearchModalOpen(true)} />
             <div className="flex-1 overflow-y-auto">
                 {renderActiveView()}
             </div>
@@ -278,6 +281,21 @@ const App: React.FC = () => {
                     setUserCardModalPosition(null);
                 }}
                 onViewProfile={handleViewProfile}
+            />
+        )}
+        {isSearchModalOpen && (
+            <SearchViewModal
+                allRooms={rooms}
+                allUsers={allUsers}
+                onClose={() => setSearchModalOpen(false)}
+                onEnterRoom={(room) => {
+                    handleEnterRoom(room);
+                    setSearchModalOpen(false);
+                }}
+                onViewProfile={(user) => {
+                    handleViewProfile(user);
+                    setSearchModalOpen(false);
+                }}
             />
         )}
       </div>
