@@ -38,5 +38,3 @@ export const MyStudioView: React.FC = () => (
 
 
 export const TrendingView = () => <PlaceholderView title="Trending" description="Discover the most popular rooms and topics right now." />;
-export const ScheduledView = () => <PlaceholderView title="Scheduled" description="Upcoming rooms you've scheduled or bookmarked." />;
-export const NotificationsView = () => <PlaceholderView title="Notifications" description="Stay up to date with your activity." />;

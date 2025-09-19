@@ -17,25 +17,25 @@ const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom, currentUser }) 
   };
 
   const filteredRooms = useMemo(() => {
-    const publicRooms = rooms.filter(room => !room.isPrivate);
+    // Ensure we only show non-private, non-scheduled rooms
+    const availableRooms = rooms.filter(room => !room.isPrivate && !room.isScheduled);
     
     switch (activeTab) {
       case 'Newest':
-        return [...publicRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return [...availableRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       
       case 'Trending':
-        return [...publicRooms].sort((a, b) => getParticipantCount(b) - getParticipantCount(a));
+        return [...availableRooms].sort((a, b) => getParticipantCount(b) - getParticipantCount(a));
         
       case 'Following':
         const followingIds = currentUser.following || [];
-        return publicRooms.filter(room => 
+        return availableRooms.filter(room => 
           room.hosts.some(host => followingIds.includes(host.id))
         );
 
       case 'For You':
       default:
-         // For now, "For You" defaults to the "Newest" feed
-        return [...publicRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return [...availableRooms].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
   }, [rooms, activeTab, currentUser]);
 

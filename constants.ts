@@ -1,4 +1,4 @@
-import { User, Room, UserRole, Conversation, ChatMessage } from './types';
+import { User, Room, UserRole, Conversation, ChatMessage, Notification } from './types';
 
 export const PREDEFINED_AVATARS: string[] = [
   'https://picsum.photos/seed/avatar1/100/100',
@@ -51,6 +51,7 @@ export const MOCK_ROOMS: Room[] = [
     speakers: [users[2], users[3]],
     listeners: users.slice(4),
     createdAt: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
+    moderationQueue: [],
   },
   {
     id: 'room-2',
@@ -70,6 +71,17 @@ export const MOCK_ROOMS: Room[] = [
     listeners: users.filter(u => ![users[4], users[6]].includes(u)),
     createdAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
   },
+  {
+    id: 'room-4',
+    title: 'Weekly Standup & Team Sync',
+    tags: ['Work', 'Productivity'],
+    hosts: [users[0]],
+    speakers: [],
+    listeners: [],
+    createdAt: new Date(),
+    isScheduled: true,
+    scheduledTime: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2), // 2 days from now
+  }
 ];
 
 const createMockMessage = (user: User, text: string, minutesAgo: number): ChatMessage => ({
@@ -95,4 +107,11 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     participants: [MOCK_USER_HOST, MOCK_USER_LISTENER], // Alex and Sam
     lastMessage: createMockMessage(MOCK_USER_LISTENER, "Hey, loved the talk! Had a quick question.", 120),
   }
+];
+
+export const MOCK_NOTIFICATIONS: Notification[] = [
+    { id: 'notif-1', text: 'Brenda started following you.', createdAt: new Date(Date.now() - 1000 * 60 * 5), isRead: false },
+    { id: 'notif-2', text: 'You were invited to "Weekly Standup & Team Sync".', createdAt: new Date(Date.now() - 1000 * 60 * 60), isRead: false },
+    { id: 'notif-3', text: 'Your room "Startup Pitch Practice & Feedback" is trending!', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), isRead: true },
+    { id: 'notif-4', text: 'Charlie mentioned you in a chat.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
 ];

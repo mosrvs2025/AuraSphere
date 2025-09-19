@@ -1,17 +1,19 @@
-import React, { useState, useMemo } from 'react';
-import { Room, User, UserRole } from './types';
-import { MOCK_ROOMS, MOCK_USER_HOST, MOCK_USER_LISTENER, users as MOCK_USERS, MOCK_CONVERSATIONS } from './constants';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Room, User, ChatMessage, Notification } from './types';
+import { MOCK_ROOMS, MOCK_USER_HOST, users as MOCK_USERS, MOCK_CONVERSATIONS, MOCK_NOTIFICATIONS } from './constants';
 import RoomView from './components/RoomView';
 import { UserContext } from './context/UserContext';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
-import { TrendingView, ScheduledView, NotificationsView, MyStudioView } from './components/PlaceholderViews';
+import { TrendingView, MyStudioView } from './components/PlaceholderViews';
 import { MenuIcon } from './components/Icons';
 import CreateRoomModal from './components/CreateRoomModal';
 import ProfileView from './components/ProfileView';
 import MessagesView from './components/MessagesView';
+import EditProfileModal from './components/EditProfileModal';
+import NotificationsView from './components/NotificationsView';
+import ScheduledView from './components/ScheduledView';
 
-// Create a unified list of users for state management, ensuring no duplicates
 const allMockUsers = [...new Map(MOCK_USERS.map(item => [item.id, item])).values()];
 
 type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio';
@@ -20,53 +22,54 @@ const App: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [users, setUsers] = useState<User[]>(allMockUsers);
   const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+  const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
 
-  // Set a single, consistent user for the app experience.
   const currentUser = useMemo(() => {
     return users.find(u => u.id === MOCK_USER_HOST.id) || MOCK_USER_HOST;
   }, [users]);
+  
+  const unreadNotificationCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
+
+  const updateUser = useCallback((updatedUser: User) => {
+    setUsers(currentUsers => currentUsers.map(user => user.id === updatedUser.id ? updatedUser : user));
+  }, []);
 
   const updateUserAvatar = (newAvatarUrl: string, isGenerated: boolean = false) => {
-    const userId = currentUser.id;
-    
-    setUsers(currentUsers => currentUsers.map(user => 
-      user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user
-    ));
-
-    const updatedRooms = rooms.map(room => ({
-      ...room,
-      hosts: room.hosts.map(user => user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user),
-      speakers: room.speakers.map(user => user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user),
-      listeners: room.listeners.map(user => user.id === userId ? { ...user, avatarUrl: newAvatarUrl, isGenerated } : user),
-    }));
-    setRooms(updatedRooms);
-    
-    if (selectedRoom) {
-      const updatedSelectedRoom = updatedRooms.find(r => r.id === selectedRoom.id) || null;
-      setSelectedRoom(updatedSelectedRoom);
-    }
+    updateUser({ ...currentUser, avatarUrl: newAvatarUrl, isGenerated });
   };
 
-  const stopScreenShare = (roomId: string) => {
-    setRooms(prevRooms => {
-      const room = prevRooms.find(r => r.id === roomId);
-      if (room?.screenShareStream) {
-        room.screenShareStream.getTracks().forEach(track => track.stop());
-      }
-      return prevRooms.map(r => 
-        r.id === roomId ? { ...r, screenShareStream: undefined } : r
-      );
-    });
+  const handleUpdateProfile = (name: string, bio: string) => {
+     updateUser({ ...currentUser, name, bio });
+     setEditProfileModalOpen(false);
+  }
 
+  const updateRoomState = useCallback((roomId: string, updatedRoomData: Partial<Room>) => {
+    const updatedRooms = rooms.map(r => r.id === roomId ? { ...r, ...updatedRoomData } : r);
+    setRooms(updatedRooms);
     if (selectedRoom?.id === roomId) {
-      setSelectedRoom(prev => prev ? { ...prev, screenShareStream: undefined } : null);
+        setSelectedRoom(prev => prev ? { ...prev, ...updatedRoomData } : null);
     }
+  }, [rooms, selectedRoom]);
+
+  const stopScreenShare = (roomId: string) => {
+    const room = rooms.find(r => r.id === roomId);
+    if (room?.screenShareStream) {
+        room.screenShareStream.getTracks().forEach(track => track.stop());
+    }
+    updateRoomState(roomId, { screenShareStream: undefined });
   };
   
   const toggleScreenShare = async (roomId: string) => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert("Screen sharing is not supported by your browser or you are not in a secure (HTTPS) context.");
+        console.error("Screen share error: getDisplayMedia not available.");
+        return;
+    }
+    
     const roomToUpdate = rooms.find(r => r.id === roomId);
     if (!roomToUpdate) return;
 
@@ -76,20 +79,10 @@ const App: React.FC = () => {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: "always" } as any,
-        audio: false,
-      });
-
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" } as any, audio: false });
       const track = stream.getVideoTracks()[0];
       track.onended = () => stopScreenShare(roomId);
-
-      const updatedRooms = rooms.map(r => r.id === roomId ? { ...r, screenShareStream: stream } : r);
-      setRooms(updatedRooms);
-      
-      if (selectedRoom?.id === roomId) {
-        setSelectedRoom(prev => prev ? {...prev, screenShareStream: stream} : null);
-      }
+      updateRoomState(roomId, { screenShareStream: stream });
     } catch (err) {
       console.error("Screen share error:", err);
     }
@@ -101,7 +94,7 @@ const App: React.FC = () => {
       title,
       tags: description.split(' ').filter(tag => tag.startsWith('#')).map(tag => tag.substring(1)),
       hosts: [currentUser],
-      speakers: [],
+      speakers: [currentUser],
       listeners: [],
       createdAt: new Date(),
       isPrivate,
@@ -109,37 +102,64 @@ const App: React.FC = () => {
     
     setRooms(prevRooms => [newRoom, ...prevRooms]);
     setCreateRoomModalOpen(false);
-    setSelectedRoom(newRoom); // Automatically enter the new room
+    setSelectedRoom(newRoom);
   };
 
-
   const enterRoom = (room: Room) => {
-    const roomFromState = rooms.find(r => r.id === room.id);
-    setSelectedRoom(roomFromState || room);
+    setSelectedRoom(room);
+    // Add user to listeners list if not already host/speaker
+    const isParticipant = [...room.hosts, ...room.speakers, ...room.listeners].some(u => u.id === currentUser.id);
+    if (!isParticipant) {
+      updateRoomState(room.id, { listeners: [...room.listeners, currentUser] });
+    }
   };
 
   const leaveRoom = () => {
+    if (selectedRoom) {
+      // Remove user from listeners list
+      const updatedListeners = selectedRoom.listeners.filter(u => u.id !== currentUser.id);
+      updateRoomState(selectedRoom.id, { listeners: updatedListeners });
+    }
     setSelectedRoom(null);
+  };
+  
+  const handleNewMessage = (roomId: string, message: ChatMessage) => {
+     const room = rooms.find(r => r.id === roomId);
+     if(!room) return;
+
+     const isHost = room.hosts.some(h => h.id === message.user.id);
+
+     if(message.voiceMemo && !isHost) {
+        // Add to moderation queue
+        const queue = room.moderationQueue || [];
+        updateRoomState(roomId, { moderationQueue: [...queue, message] });
+     } else {
+        // Add directly to chat (or this would be broadcast via websocket)
+         const roomInState = rooms.find(r => r.id === roomId);
+         // This is a placeholder for what would be a websocket broadcast
+         // In this simulation, we don't need to add it to a central state
+         // as RoomView will manage its own messages state.
+     }
   };
 
   const renderActiveView = () => {
     switch (activeView) {
       case 'home':
-        return <HomeView rooms={rooms} onEnterRoom={enterRoom} currentUser={currentUser} />;
+        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={enterRoom} currentUser={currentUser} />;
       case 'trending':
         return <TrendingView />;
       case 'messages':
         return <MessagesView conversations={MOCK_CONVERSATIONS} currentUser={currentUser} />;
       case 'scheduled':
-        return <ScheduledView />;
+        return <ScheduledView rooms={rooms.filter(r => r.isScheduled)} />;
       case 'profile':
-        return <ProfileView user={currentUser} allRooms={rooms} />;
+        return <ProfileView user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
        case 'my-studio':
         return <MyStudioView />;
       case 'notifications':
-        return <NotificationsView />;
+        return <NotificationsView notifications={notifications} setNotifications={setNotifications} />;
       default:
-        return <HomeView rooms={rooms} onEnterRoom={enterRoom} currentUser={currentUser} />;
+        return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={enterRoom} currentUser={currentUser} />;
     }
   };
 
@@ -150,20 +170,20 @@ const App: React.FC = () => {
           activeView={activeView}
           setActiveView={(view) => {
             setActiveView(view);
-            setSidebarOpen(false); // Close sidebar on selection (mobile)
+            setSidebarOpen(false);
           }}
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
           onCreateRoom={() => setCreateRoomModalOpen(true)}
+          unreadNotificationCount={unreadNotificationCount}
         />
         <main className="flex-1 flex flex-col overflow-y-auto">
-           {/* Mobile Header */}
           <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-800 sticky top-0 bg-gray-900/80 backdrop-blur-sm z-10">
             <button onClick={() => setSidebarOpen(true)} className="text-gray-300 hover:text-white">
               <MenuIcon />
             </button>
             <h1 className="text-xl font-bold text-white tracking-tight">AuraSphere</h1>
-            <div className="w-6 h-6"> {/* Spacer */}
+            <div className="w-6 h-6">
                <img src={currentUser.avatarUrl} alt="Current user" className="w-8 h-8 rounded-full"/>
             </div>
           </div>
@@ -174,7 +194,9 @@ const App: React.FC = () => {
                 <RoomView 
                   room={selectedRoom} 
                   onLeave={leaveRoom} 
-                  onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)} 
+                  onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)}
+                  onNewMessage={(message) => handleNewMessage(selectedRoom.id, message)}
+                  onUpdateRoom={(data) => updateRoomState(selectedRoom.id, data)}
                 />
               </div>
             ) : (
@@ -183,12 +205,8 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        {isCreateRoomModalOpen && (
-          <CreateRoomModal 
-            onClose={() => setCreateRoomModalOpen(false)}
-            onCreate={handleCreateRoom}
-          />
-        )}
+        {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
+        {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleUpdateProfile} />}
       </div>
     </UserContext.Provider>
   );

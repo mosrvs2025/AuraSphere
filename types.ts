@@ -26,6 +26,10 @@ export interface Room {
   screenShareStream?: MediaStream;
   createdAt: Date;
   isPrivate?: boolean;
+  moderationQueue?: ChatMessage[];
+  videoUrl?: string;
+  isScheduled?: boolean;
+  scheduledTime?: Date;
 }
 
 export interface ChatMessage {
@@ -43,4 +47,11 @@ export interface Conversation {
   id: string;
   participants: User[];
   lastMessage: ChatMessage;
+}
+
+export interface Notification {
+    id: string;
+    text: string;
+    createdAt: Date;
+    isRead: boolean;
 }

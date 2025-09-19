@@ -10,9 +10,10 @@ interface SidebarProps {
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
   onCreateRoom: () => void;
+  unreadNotificationCount: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarOpen, setSidebarOpen, onCreateRoom }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarOpen, setSidebarOpen, onCreateRoom, unreadNotificationCount }) => {
   const { currentUser } = useContext(UserContext);
 
   const navItems = [
@@ -26,7 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarO
 
   return (
     <>
-      {/* Overlay for mobile */}
       <div 
         className={`fixed inset-0 bg-black/60 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
         onClick={() => setSidebarOpen(false)}
@@ -67,12 +67,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isSidebarO
         <div className="p-4 border-t border-gray-800 space-y-4">
             <button
                 onClick={() => setActiveView('notifications')}
-                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition ${activeView === 'notifications' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                className={`w-full flex items-center space-x-3 p-3 rounded-lg transition relative ${activeView === 'notifications' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
             >
                 <BellIcon />
                 <span className="font-semibold">Notifications</span>
-                 {/* Notification dot */}
-                <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
+                 {unreadNotificationCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-gray-900"></span>}
             </button>
             <button 
               onClick={() => setActiveView('profile')}

@@ -6,9 +6,11 @@ import AvatarCustomizer from './AvatarCustomizer';
 interface UserProfileProps {
   user: User;
   isSpeaking?: boolean;
+  showPromoteButton?: boolean;
+  onPromote?: (userId: string) => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, isSpeaking }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, isSpeaking, showPromoteButton, onPromote }) => {
   const { currentUser, updateUserAvatar } = useContext(UserContext);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -24,7 +26,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, isSpeaking }) => {
 
   return (
     <>
-      <div className="flex flex-col items-center text-center">
+      <div className="flex flex-col items-center text-center relative group">
         {isCurrentUser ? (
           <button onClick={() => setIsModalOpen(true)} className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500">
             <img src={user.avatarUrl} alt={user.name} className={avatarClasses} />
@@ -33,6 +35,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, isSpeaking }) => {
           <img src={user.avatarUrl} alt={user.name} className={avatarClasses} />
         )}
         <p className="text-xs font-medium text-gray-300 truncate w-full">{user.name}</p>
+        
+        {showPromoteButton && onPromote && (
+            <button onClick={() => onPromote(user.id)} className="absolute top-0 -right-1 bg-indigo-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Promote to speaker">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+            </button>
+        )}
       </div>
 
       {isModalOpen && (
