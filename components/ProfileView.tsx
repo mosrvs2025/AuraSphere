@@ -6,10 +6,12 @@ interface ProfileViewProps {
   user: User;
   allRooms: Room[];
   onEditProfile: () => void;
+  currentUser: User;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile, currentUser }) => {
   const userHostedRooms = allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled);
+  const isOwnProfile = user.id === currentUser.id;
 
   return (
     <div className="p-4 md:p-8 animate-fade-in">
@@ -28,12 +30,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
               <div><span className="font-bold text-white">{user.following?.length ?? 0}</span> Following</div>
             </div>
             <p className="text-gray-300 mt-4 max-w-lg">{user.bio || 'No bio provided.'}</p>
-            <button 
-              onClick={onEditProfile}
-              className="mt-6 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition"
-            >
-              Edit Profile
-            </button>
+            {isOwnProfile && (
+                <button 
+                  onClick={onEditProfile}
+                  className="mt-6 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition"
+                >
+                  Edit Profile
+                </button>
+            )}
           </div>
         </div>
 

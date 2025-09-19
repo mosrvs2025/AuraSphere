@@ -1,23 +1,10 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { GenerateContentResponse } from "@google/genai";
+// Fix: Combined imports and updated API key handling to align with guidelines.
+// The API key is assumed to be present in `process.env.API_KEY` and should not be checked at runtime.
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  console.warn("API_KEY not found in environment variables. Gemini features will be disabled.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateIcebreakers = async (topic: string): Promise<string[]> => {
-  if (!API_KEY) {
-    return Promise.resolve([
-      "API Key not configured. Please set up your API_KEY.",
-      "What is your favorite color?",
-      "If you could have any superpower, what would it be?",
-    ]);
-  }
-
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -50,10 +37,6 @@ export const generateIcebreakers = async (topic: string): Promise<string[]> => {
 
 
 export const generateAvatarImage = async (): Promise<string | null> => {
-  if (!API_KEY) {
-    console.warn("API_KEY not found. Image generation is disabled.");
-    return null;
-  }
   try {
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',

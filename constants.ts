@@ -95,23 +95,33 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
   {
     id: 'conv-1',
     participants: [MOCK_USER_HOST, users[1]], // Alex and Brenda
-    lastMessage: createMockMessage(users[1], "Great session today! We should do another one next week.", 5),
+    messages: [
+        createMockMessage(MOCK_USER_HOST, "Hey, getting ready for the pitch practice later?", 10),
+        createMockMessage(users[1], "Yep! Just reviewing my notes. A bit nervous.", 8),
+        createMockMessage(MOCK_USER_HOST, "You'll do great. We've got a good panel.", 7),
+        createMockMessage(users[1], "Great session today! We should do another one next week.", 5),
+    ],
   },
   {
     id: 'conv-2',
     participants: [MOCK_USER_HOST, users[3]], // Alex and Dana
-    lastMessage: createMockMessage(MOCK_USER_HOST, "Thanks for the feedback on the audio setup.", 30),
+    messages: [
+        createMockMessage(users[3], "The lo-fi room was so chill last night.", 45),
+        createMockMessage(MOCK_USER_HOST, "Thanks for the feedback on the audio setup.", 30),
+    ],
   },
   {
     id: 'conv-3',
     participants: [MOCK_USER_HOST, MOCK_USER_LISTENER], // Alex and Sam
-    lastMessage: createMockMessage(MOCK_USER_LISTENER, "Hey, loved the talk! Had a quick question.", 120),
+    messages: [
+        createMockMessage(MOCK_USER_LISTENER, "Hey, loved the talk! Had a quick question.", 120),
+    ],
   }
 ];
 
 export const MOCK_NOTIFICATIONS: Notification[] = [
-    { id: 'notif-1', text: 'Brenda started following you.', createdAt: new Date(Date.now() - 1000 * 60 * 5), isRead: false },
-    { id: 'notif-2', text: 'You were invited to "Weekly Standup & Team Sync".', createdAt: new Date(Date.now() - 1000 * 60 * 60), isRead: false },
-    { id: 'notif-3', text: 'Your room "Startup Pitch Practice & Feedback" is trending!', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), isRead: true },
-    { id: 'notif-4', text: 'Charlie mentioned you in a chat.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
+    { id: 'notif-1', type: 'follow', text: 'Brenda started following you.', relatedEntity: { type: 'user', id: 'user-2'}, createdAt: new Date(Date.now() - 1000 * 60 * 5), isRead: false },
+    { id: 'notif-2', type: 'invite', text: 'You were invited to "Weekly Standup & Team Sync".', relatedEntity: { type: 'room', id: 'room-4'}, createdAt: new Date(Date.now() - 1000 * 60 * 60), isRead: false },
+    { id: 'notif-3', type: 'trending', text: 'Your room "Startup Pitch Practice & Feedback" is trending!', relatedEntity: { type: 'room', id: 'room-1'}, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), isRead: true },
+    { id: 'notif-4', type: 'mention', text: 'Charlie mentioned you in a chat.', relatedEntity: { type: 'user', id: 'user-3'}, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
 ];

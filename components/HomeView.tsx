@@ -41,8 +41,14 @@ const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom, currentUser }) 
 
   return (
     <div className="animate-fade-in">
-      <header className="p-4 md:p-6">
+      <header className="p-4 md:p-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white tracking-tight hidden md:block">Home</h1>
+        <div className="flex-grow md:hidden"></div> {/* Spacer for mobile */}
+        <button className="text-gray-400 hover:text-white transition">
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
       </header>
       <div className="border-b border-gray-800 px-4 md:px-6">
         <nav className="flex space-x-1 md:space-x-4">

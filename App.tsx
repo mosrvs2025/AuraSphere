@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Room, User, ChatMessage, Notification } from './types';
+import { Room, User, ChatMessage, Notification, Conversation } from './types';
 import { MOCK_ROOMS, MOCK_USER_HOST, users as MOCK_USERS, MOCK_CONVERSATIONS, MOCK_NOTIFICATIONS } from './constants';
 import RoomView from './components/RoomView';
 import { UserContext } from './context/UserContext';
@@ -13,6 +13,7 @@ import MessagesView from './components/MessagesView';
 import EditProfileModal from './components/EditProfileModal';
 import NotificationsView from './components/NotificationsView';
 import ScheduledView from './components/ScheduledView';
+import ConversationView from './components/ConversationView';
 
 const allMockUsers = [...new Map(MOCK_USERS.map(item => [item.id, item])).values()];
 
@@ -27,6 +28,8 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
   const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   const currentUser = useMemo(() => {
     return users.find(u => u.id === MOCK_USER_HOST.id) || MOCK_USER_HOST;
@@ -106,7 +109,6 @@ const App: React.FC = () => {
   };
 
   const enterRoom = (room: Room) => {
-    // Add user to listeners list if not already host/speaker
     const isParticipant = [...room.hosts, ...room.speakers, ...room.listeners].some(u => u.id === currentUser.id);
     if (!isParticipant) {
       const updatedRoom = { ...room, listeners: [...room.listeners, currentUser] };
@@ -119,7 +121,6 @@ const App: React.FC = () => {
 
   const leaveRoom = () => {
     if (selectedRoom) {
-      // Remove user from listeners and speakers lists
       const updatedListeners = selectedRoom.listeners.filter(u => u.id !== currentUser.id);
       const updatedSpeakers = selectedRoom.speakers.filter(u => u.id !== currentUser.id);
       updateRoomState(selectedRoom.id, { listeners: updatedListeners, speakers: updatedSpeakers });
@@ -134,37 +135,83 @@ const App: React.FC = () => {
      const isHost = room.hosts.some(h => h.id === message.user.id);
 
      if(message.voiceMemo && !isHost) {
-        // Add to moderation queue
         const queue = room.moderationQueue || [];
         updateRoomState(roomId, { moderationQueue: [...queue, message] });
-     } else {
-        // Add directly to chat (or this would be broadcast via websocket)
-         const roomInState = rooms.find(r => r.id === roomId);
-         // This is a placeholder for what would be a websocket broadcast
-         // In this simulation, we don't need to add it to a central state
-         // as RoomView will manage its own messages state.
      }
   };
+  
+  const handleNotificationClick = (notification: Notification) => {
+      setNotifications(prev => prev.map(n => n.id === notification.id ? {...n, isRead: true} : n));
+      const { type, relatedEntity } = notification;
+      if (relatedEntity.type === 'user') {
+          setSelectedProfileId(relatedEntity.id);
+          setActiveView('profile');
+      } else if (relatedEntity.type === 'room') {
+          const room = rooms.find(r => r.id === relatedEntity.id);
+          if (room) {
+              if (room.isScheduled) {
+                  setActiveView('scheduled');
+              } else {
+                  enterRoom(room);
+              }
+          }
+      }
+  };
+  
+  const clearSelectedProfile = () => setSelectedProfileId(null);
+  
+  const handleViewChange = (view: ActiveView) => {
+    clearSelectedProfile();
+    setSelectedRoom(null);
+    setSelectedConversation(null);
+    setActiveView(view);
+    setSidebarOpen(false);
+  }
 
   const renderActiveView = () => {
+    if (selectedProfileId) {
+        const userToShow = users.find(u => u.id === selectedProfileId) || currentUser;
+        return <ProfileView user={userToShow} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} currentUser={currentUser}/>;
+    }
+    
     switch (activeView) {
       case 'home':
         return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={enterRoom} currentUser={currentUser} />;
       case 'trending':
         return <TrendingView />;
       case 'messages':
-        return <MessagesView conversations={MOCK_CONVERSATIONS} currentUser={currentUser} />;
+        return <MessagesView conversations={MOCK_CONVERSATIONS} currentUser={currentUser} onConversationSelect={setSelectedConversation} />;
       case 'scheduled':
         return <ScheduledView rooms={rooms.filter(r => r.isScheduled)} />;
       case 'profile':
-        return <ProfileView user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} />;
+        return <ProfileView user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} currentUser={currentUser}/>;
        case 'my-studio':
         return <MyStudioView />;
       case 'notifications':
-        return <NotificationsView notifications={notifications} setNotifications={setNotifications} />;
+        return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
       default:
         return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={enterRoom} currentUser={currentUser} />;
     }
+  };
+  
+  const mainContent = () => {
+      if (selectedRoom) {
+          return (
+              <div className="max-w-lg mx-auto p-0 md:p-4 h-full">
+                  <RoomView 
+                      room={selectedRoom} 
+                      onLeave={leaveRoom} 
+                      onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)}
+                      onNewMessage={(message) => handleNewMessage(selectedRoom.id, message)}
+                      onUpdateRoom={(data) => updateRoomState(selectedRoom.id, data)}
+                  />
+              </div>
+          );
+      }
+      if (selectedConversation) {
+          return <ConversationView conversation={selectedConversation} currentUser={currentUser} onBack={() => setSelectedConversation(null)} />;
+      }
+      return renderActiveView();
   };
 
   return (
@@ -172,10 +219,7 @@ const App: React.FC = () => {
       <div className="h-full flex bg-gradient-to-br from-gray-900 via-slate-900 to-black antialiased font-sans">
         <Sidebar 
           activeView={activeView}
-          setActiveView={(view) => {
-            setActiveView(view);
-            setSidebarOpen(false);
-          }}
+          setActiveView={handleViewChange}
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
           onCreateRoom={() => setCreateRoomModalOpen(true)}
@@ -193,19 +237,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex-1">
-            {selectedRoom ? (
-              <div className="max-w-lg mx-auto p-0 md:p-4 h-full">
-                <RoomView 
-                  room={selectedRoom} 
-                  onLeave={leaveRoom} 
-                  onToggleScreenShare={() => toggleScreenShare(selectedRoom.id)}
-                  onNewMessage={(message) => handleNewMessage(selectedRoom.id, message)}
-                  onUpdateRoom={(data) => updateRoomState(selectedRoom.id, data)}
-                />
-              </div>
-            ) : (
-              renderActiveView()
-            )}
+            {mainContent()}
           </div>
         </main>
 

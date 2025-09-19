@@ -4,23 +4,19 @@ import { BellIcon } from './Icons';
 
 interface NotificationsViewProps {
   notifications: Notification[];
-  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
+  onNotificationClick: (notification: Notification) => void;
 }
 
-const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications, setNotifications }) => {
+const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications, onNotificationClick }) => {
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  };
-
-  const hasUnread = notifications.some(n => !n.isRead);
+  const unreadNotifications = notifications.filter(n => !n.isRead);
 
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <header className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-white tracking-tight">Notifications</h1>
-        {hasUnread && (
-            <button onClick={markAllAsRead} className="text-sm font-semibold text-indigo-400 hover:text-indigo-300">
+        {unreadNotifications.length > 0 && (
+            <button onClick={() => unreadNotifications.forEach(onNotificationClick)} className="text-sm font-semibold text-indigo-400 hover:text-indigo-300">
                 Mark all as read
             </button>
         )}
@@ -28,16 +24,17 @@ const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications, se
       <div className="max-w-2xl mx-auto space-y-2">
         {notifications.length > 0 ? (
           notifications.map(notif => (
-            <div 
+            <button
               key={notif.id}
-              className={`flex items-start p-4 rounded-lg transition-colors relative ${notif.isRead ? 'bg-gray-800/30' : 'bg-indigo-900/20'}`}
+              onClick={() => onNotificationClick(notif)}
+              className={`w-full flex items-start p-4 rounded-lg transition-colors relative text-left ${notif.isRead ? 'bg-gray-800/30 hover:bg-gray-800/60' : 'bg-indigo-900/20 hover:bg-indigo-900/40'}`}
             >
-              {!notif.isRead && <span className="absolute top-4 left-2 w-2 h-2 bg-indigo-500 rounded-full"></span>}
-              <div className="ml-5">
+              {!notif.isRead && <span className="absolute top-1/2 -translate-y-1/2 left-3 w-2 h-2 bg-indigo-500 rounded-full"></span>}
+              <div className={!notif.isRead ? 'ml-7' : 'ml-2'}>
                  <p className={`text-sm ${notif.isRead ? 'text-gray-400' : 'text-white'}`}>{notif.text}</p>
                  <p className="text-xs text-gray-500 mt-1">{notif.createdAt.toLocaleString()}</p>
               </div>
-            </div>
+            </button>
           ))
         ) : (
             <div className="text-center py-20 bg-gray-800/50 rounded-lg">

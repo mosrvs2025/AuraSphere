@@ -46,12 +46,17 @@ export interface ChatMessage {
 export interface Conversation {
   id: string;
   participants: User[];
-  lastMessage: ChatMessage;
+  messages: ChatMessage[];
 }
 
 export interface Notification {
     id: string;
+    type: 'follow' | 'invite' | 'trending' | 'mention';
     text: string;
+    relatedEntity: {
+        type: 'user' | 'room';
+        id: string;
+    };
     createdAt: Date;
     isRead: boolean;
 }

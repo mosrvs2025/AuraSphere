@@ -10,6 +10,7 @@ enum RecordingState {
   REQUESTING_PERMISSION,
   RECORDING,
   RECORDED,
+  SENT,
   ERROR,
 }
 
@@ -28,14 +29,14 @@ const ListenerControls: React.FC<ListenerControlsProps> = ({ onSendMessage }) =>
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  const resetRecording = () => {
+  const resetRecording = (clearPanel: boolean = true) => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
       if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
       mediaRecorderRef.current = null;
       streamRef.current = null;
       audioChunksRef.current = [];
-      setRecordingState(RecordingState.IDLE);
+      if(clearPanel) setRecordingState(RecordingState.IDLE);
       setAudioBlob(null);
       setRecordingDuration(0);
       setErrorMessage(null);
@@ -44,7 +45,7 @@ const ListenerControls: React.FC<ListenerControlsProps> = ({ onSendMessage }) =>
   useEffect(() => { return () => resetRecording(); }, []);
 
   const startRecording = async () => {
-    resetRecording();
+    resetRecording(false);
     setRecordingState(RecordingState.REQUESTING_PERMISSION);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -85,8 +86,12 @@ const ListenerControls: React.FC<ListenerControlsProps> = ({ onSendMessage }) =>
   const handleSubmitVoiceMemo = () => {
     if (audioBlob) {
       onSendMessage({ voiceMemo: { duration: recordingDuration, blob: audioBlob } });
-      resetRecording();
-      setIsRecordingPanelOpen(false);
+      resetRecording(false);
+      setRecordingState(RecordingState.SENT);
+      setTimeout(() => {
+        setIsRecordingPanelOpen(false);
+        setTimeout(() => resetRecording(true), 300); // Reset state after panel closes
+      }, 2000);
     }
   };
 
@@ -106,9 +111,11 @@ const ListenerControls: React.FC<ListenerControlsProps> = ({ onSendMessage }) =>
             const progress = (recordingDuration / MAX_RECORDING_SECONDS) * 100;
             return (<><p className="text-lg font-bold text-red-400">Recording...</p><div className="relative w-24 h-24 my-4 flex items-center justify-center"><div className="absolute w-full h-full rounded-full bg-gray-700"></div><div className="absolute w-full h-full rounded-full transition-all duration-1000" style={{ background: `conic-gradient(#ef4444 ${progress}%, transparent 0)` }}></div><div className="absolute w-[calc(100%-12px)] h-[calc(100%-12px)] rounded-full bg-gray-800 flex items-center justify-center"><span className="text-xl font-mono text-white">{recordingDuration}s</span></div></div><button onClick={stopRecording} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full transition">Stop</button></>);
         case RecordingState.RECORDED:
-            return (<><p className="text-lg font-bold text-indigo-400">Suggestion Recorded ({recordingDuration}s)</p><p className="text-sm text-gray-400 mb-4">Ready to send to the host?</p><div className="flex w-full space-x-4 mt-4"><button onClick={() => setRecordingState(RecordingState.IDLE)} className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full transition">Cancel</button><button onClick={handleSubmitVoiceMemo} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full transition">Submit</button></div></>);
+            return (<><p className="text-lg font-bold text-indigo-400">Voice note recorded ({recordingDuration}s)</p><p className="text-sm text-gray-400 mb-4">Ready to send privately to the host?</p><div className="flex w-full space-x-4 mt-4"><button onClick={() => resetRecording()} className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full transition">Discard</button><button onClick={handleSubmitVoiceMemo} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full transition">Send to Host</button></div></>);
+        case RecordingState.SENT:
+            return (<><svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p className="text-lg font-bold text-gray-200 mt-2">Your note has been sent!</p></>);
         case RecordingState.IDLE: default:
-            return (<><p className="text-lg font-bold">Suggest a Topic</p><p className="text-sm text-gray-400 mb-4">Record a voice memo for the host.</p><button onClick={startRecording} className="w-20 h-20 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center transition focus:outline-none focus:ring-4 focus:ring-red-400/50" aria-label="Start recording"><svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z" clipRule="evenodd" /></svg></button></>);
+            return (<><p className="text-lg font-bold">Send a private voice note to the host</p><p className="text-sm text-gray-400 mb-4">Record a short audio message for the host.</p><button onClick={startRecording} className="w-20 h-20 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center transition focus:outline-none focus:ring-4 focus:ring-red-400/50" aria-label="Start recording"><svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7a1 1 0 100 2h6a1 1 0 100-2h-2v-2.07z" clipRule="evenodd" /></svg></button></>);
     }
   };
 
