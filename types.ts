@@ -62,7 +62,7 @@ export interface ModalPosition {
 }
 
 // FIX: Centralized the ActiveView type to be used across the application, resolving type inconsistencies.
-export type ActiveView = 'home' | 'trending' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation';
+export type ActiveView = 'home' | 'room' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'conversation';
 
 
 // New type for the Discover feed

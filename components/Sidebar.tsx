@@ -18,7 +18,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded
 
   const navItems = [
     { id: 'home', label: 'Discover', icon: <HomeIcon /> },
-    { id: 'trending', label: 'Trending', icon: <TrendingIcon /> },
     { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
     { id: 'scheduled', label: 'Scheduled', icon: <ScheduledIcon /> },
     { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },

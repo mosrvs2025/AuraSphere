@@ -9,7 +9,7 @@ interface TrendingViewProps {
   onViewProfile: (user: User) => void;
 }
 
-const filters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
+const filters = ['All', 'Trending', 'Live', 'People', 'Images', 'Videos', 'Posts'];
 const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'All': 'All',
     'Live': 'live_room',
@@ -24,7 +24,7 @@ const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, 
   const [activeFilter, setActiveFilter] = useState('All');
     
   const filteredItems = items.filter(item => {
-      if (activeFilter === 'All') return true;
+      if (activeFilter === 'All' || activeFilter === 'Trending') return true;
       const type = filterMap[activeFilter];
       if (type === 'text_post' && item.type === 'text_post') return true;
       return item.type === type;

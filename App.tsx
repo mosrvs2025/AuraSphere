@@ -14,6 +14,7 @@ import EditProfileModal from './components/EditProfileModal';
 import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
 import SearchViewModal from './components/SearchViewModal';
+import MiniPlayer from './components/MiniPlayer';
 import { UserContext } from './context/UserContext';
 import { ActiveView, Room, User, ChatMessage, Notification, Conversation, DiscoverItem, ModalPosition } from './types';
 
@@ -142,6 +143,7 @@ const App: React.FC = () => {
     // --- Handlers ---
     const handleEnterRoom = (room: Room) => {
         setActiveRoom(room);
+        setActiveView('room');
     };
 
     const handleLeaveRoom = () => {
@@ -163,6 +165,7 @@ const App: React.FC = () => {
         setRooms(prev => [newRoom, ...prev]);
         setCreateRoomModalOpen(false);
         setActiveRoom(newRoom);
+        setActiveView('room');
     };
 
     const handleSaveProfile = (name: string, bio: string) => {
@@ -192,15 +195,11 @@ const App: React.FC = () => {
     }, [activeView]);
 
     const renderActiveView = () => {
-        if (activeRoom) {
-            return <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} />;
-        }
-        
         switch (activeView) {
+            case 'room':
+                return activeRoom ? <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} /> : <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
             case 'home':
                 return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
-            case 'trending':
-                return <TrendingView title="Trending" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
             case 'messages':
                 return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
             case 'scheduled':
@@ -231,10 +230,19 @@ const App: React.FC = () => {
                 />
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <Header isSidebarExpanded={isSidebarExpanded} onToggleSidebar={() => setSidebarExpanded(!isSidebarExpanded)} onSearchClick={() => setSearchModalOpen(true)} />
-                    <main className="flex-1 overflow-y-auto">
+                    <main className={`flex-1 overflow-y-auto ${activeRoom && activeView !== 'room' ? 'pb-20' : ''}`}>
                         {renderActiveView()}
                     </main>
                 </div>
+
+                {/* --- Mini Player --- */}
+                {activeRoom && activeView !== 'room' && (
+                    <MiniPlayer
+                        room={activeRoom}
+                        onLeave={handleLeaveRoom}
+                        onMaximize={() => setActiveView('room')}
+                    />
+                )}
 
                 {/* --- Modals --- */}
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
