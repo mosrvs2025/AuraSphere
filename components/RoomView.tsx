@@ -101,9 +101,9 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
     return (
     <RoomActionsContext.Provider value={{ isSharingScreen, onToggleScreenShare }}>
       <div className="h-full flex flex-col md:flex-row animate-fade-in overflow-hidden">
-        {/* Main Room Content */}
-        <div className="flex-1 flex flex-col bg-gray-900 p-4 md:p-6 overflow-hidden">
-          <header className="flex justify-between items-center mb-6">
+        {/* Main Panel (Left side on desktop, full screen on mobile) */}
+        <div className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+          <header className="p-4 md:p-6 flex-shrink-0 flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl font-bold">{currentRoom.title}</h1>
               <p className="text-sm text-gray-400">{currentRoom.hosts.map(h => h.name).join(', ')}</p>
@@ -114,23 +114,26 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           </header>
 
           {/* Screen Share / Video View */}
-          { isSharingScreen || currentRoom.videoUrl ? (
-             <div className="w-full bg-black rounded-lg aspect-video mb-6 flex items-center justify-center text-gray-400">
-               {isSharingScreen ? "Screen share is active" : (
-                 <iframe 
-                   src={currentRoom.videoUrl?.replace('watch?v=', 'embed/')} 
-                   title="YouTube video player" 
-                   frameBorder="0" 
-                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                   allowFullScreen
-                   className="w-full h-full rounded-lg"
-                 ></iframe>
-               )}
-             </div>
-          ) : null}
+          <div className="px-4 md:px-6 flex-shrink-0">
+             { isSharingScreen || currentRoom.videoUrl ? (
+               <div className="w-full bg-black rounded-lg aspect-video mb-6 flex items-center justify-center text-gray-400">
+                 {isSharingScreen ? "Screen share is active" : (
+                   <iframe 
+                     src={currentRoom.videoUrl?.replace('watch?v=', 'embed/')} 
+                     title="YouTube video player" 
+                     frameBorder="0" 
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                     allowFullScreen
+                     className="w-full h-full rounded-lg"
+                   ></iframe>
+                 )}
+               </div>
+            ) : null}
+          </div>
+          
 
-          {/* Participants */}
-          <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+          {/* Child 1: Participants Area */}
+          <div className="flex-1 overflow-y-auto space-y-6 pb-4 px-4 md:px-6">
               <div>
                   <h2 className="text-lg font-bold text-gray-400 mb-4">Hosts</h2>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
@@ -151,8 +154,21 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
               </div>
           </div>
           
-          {/* UNIFIED CONTROLS FOOTER */}
-          <footer className="mt-auto pt-4 border-t border-gray-800">
+          {/* Child 2: The Room Chat Area (mobile only) */}
+           <div className="md:hidden flex-shrink-0 border-t border-gray-800">
+             <ChatView 
+               messages={messages} 
+               currentUser={currentUser}
+               onToggleReaction={handleToggleReaction}
+               nowPlayingAudioNoteId={nowPlayingAudioNoteId}
+               onPlayAudioNote={setNowPlayingAudioNoteId}
+               isCollapsed={isChatCollapsed}
+               onToggleCollapse={() => setChatCollapsed(!isChatCollapsed)}
+             />
+           </div>
+
+          {/* Child 3: The Bottom Control Bar */}
+          <footer className="p-4 md:p-6 pt-4 border-t border-gray-800 flex-shrink-0">
              {isHost ? (
                 // Host Controls
                 <div className="relative space-y-4">
@@ -205,16 +221,16 @@ const RoomView: React.FC<RoomViewProps> = ({ room, currentUser, onLeave, onUserS
           </footer>
         </div>
 
-        {/* Chat Sidebar - Absolute on mobile, relative on desktop */}
-        <div className="md:relative absolute bottom-0 left-0 right-0 w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-gray-800 flex-shrink-0 md:h-full z-20">
+        {/* Chat Sidebar (Desktop only) */}
+        <div className="hidden md:flex md:flex-col w-80 lg:w-96 border-l border-gray-800 flex-shrink-0 h-full">
           <ChatView 
             messages={messages} 
             currentUser={currentUser}
             onToggleReaction={handleToggleReaction}
             nowPlayingAudioNoteId={nowPlayingAudioNoteId}
             onPlayAudioNote={setNowPlayingAudioNoteId}
-            isCollapsed={isChatCollapsed}
-            onToggleCollapse={() => setChatCollapsed(!isChatCollapsed)}
+            isCollapsed={false}
+            onToggleCollapse={() => {}}
           />
         </div>
       </div>

@@ -115,14 +115,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
   }, [messages, isCollapsed]);
 
   return (
-    <div className={`flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden md:h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'h-14' : 'h-1/2'}`}>
+    <div className="flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden md:h-full">
       <header className="p-4 border-b border-gray-700/50 flex-shrink-0">
-         <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold">
+         <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold disabled:cursor-default" disabled={!onToggleCollapse}>
             <span>Room Chat</span>
-            <ChevronDownIcon className={`transform transition-transform duration-300 ${!isCollapsed ? 'rotate-180' : ''}`} />
+            <ChevronDownIcon className={`transform transition-transform duration-300 ${!onToggleCollapse ? 'hidden' : ''} ${!isCollapsed ? 'rotate-180' : ''}`} />
         </button>
       </header>
-      <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-full opacity-100 p-4 space-y-4'}`}>
+      <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] md:max-h-full opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => (
           <div key={msg.id} className="flex items-start space-x-3">
             <img src={msg.user.avatarUrl} alt={msg.user.name} className="w-8 h-8 rounded-full flex-shrink-0" />
