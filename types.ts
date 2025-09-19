@@ -51,6 +51,7 @@ export interface Room {
   featuredUrl?: string;
   poll?: Poll;
   createdAt?: Date;
+  invitedUserIds?: string[];
 }
 
 export interface Conversation {

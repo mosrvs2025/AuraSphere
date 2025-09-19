@@ -66,7 +66,7 @@ const App: React.FC = () => {
         avatarUrl: 'https://i.pravatar.cc/150?img=0',
         bio: 'This is your bio. Edit it to tell others about yourself!',
         followers: [users[1], users[2]],
-        following: [users[3], users[4], users[5]],
+        following: [users[3], users[4], users[5], users[6], users[7], users[8]],
     });
 
     const [rooms, setRooms] = useState<Room[]>([
@@ -81,6 +81,7 @@ const App: React.FC = () => {
             isPrivate: false,
             featuredUrl: 'https://techcrunch.com',
             createdAt: new Date(Date.now() - 3600000 * 1),
+            invitedUserIds: [],
         },
         {
             id: 'room-2',
@@ -92,17 +93,19 @@ const App: React.FC = () => {
             messages: [],
             isPrivate: false,
             createdAt: new Date(Date.now() - 3600000 * 3),
+            invitedUserIds: [],
         },
         {
             id: 'room-3',
-            title: 'Chill Lo-fi Beats',
+            title: 'Chill Lo-fi Beats (Private)',
             description: '24/7 study and relaxation session.',
             hosts: [users[15]],
             speakers: [],
-            listeners: users.slice(16, 20),
+            listeners: [],
             messages: [],
             isPrivate: true,
             createdAt: new Date(Date.now() - 3600000 * 6),
+            invitedUserIds: [],
         },
         {
             id: 'room-4',
@@ -115,6 +118,7 @@ const App: React.FC = () => {
             isPrivate: false,
             isScheduled: true,
             scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+            invitedUserIds: [],
         }
     ]);
     
@@ -275,6 +279,15 @@ const App: React.FC = () => {
     
 
     const handleEnterRoom = (room: Room) => {
+        if (room.isPrivate) {
+            const isHost = room.hosts.some(h => h.id === currentUser.id);
+            const isInvited = room.invitedUserIds?.includes(currentUser.id);
+    
+            if (!isHost && !isInvited) {
+                alert("Sorry, this is a private room and you don't have an invitation.");
+                return;
+            }
+        }
         setActiveRoom(room);
         setPreviousView(activeView);
         setActiveView('room');
@@ -326,8 +339,10 @@ const App: React.FC = () => {
             isPrivate,
             featuredUrl: featuredUrl || undefined,
             createdAt: new Date(),
+            invitedUserIds: [],
         };
-        setRooms(prev => [...prev, newRoom]);
+        setRooms(prev => [newRoom, ...prev]);
+        setDiscoverItems(prev => [{ type: 'live_room', ...newRoom }, ...prev]);
         setCreateRoomModalOpen(false);
         handleEnterRoom(newRoom);
     };
@@ -358,6 +373,35 @@ const App: React.FC = () => {
         // Delay clearing user to allow for fade-out animation
         setTimeout(() => setSelectedUserForCard(null), 300);
     };
+    
+    const handleInviteUsers = (roomId: string, userIdsToInvite: string[]) => {
+        const room = rooms.find(r => r.id === roomId);
+        if (!room) return;
+    
+        // 1. Update room state with invited users
+        setRooms(prevRooms => prevRooms.map(r => {
+            if (r.id === roomId) {
+                const newUserIds = userIdsToInvite.filter(id => !r.invitedUserIds?.includes(id));
+                return {
+                    ...r,
+                    invitedUserIds: [...(r.invitedUserIds || []), ...newUserIds]
+                };
+            }
+            return r;
+        }));
+    
+        // 2. Create notifications for each invited user
+        const newNotifications: Notification[] = userIdsToInvite.map(userId => ({
+            id: `notif-${Date.now()}-${userId}`,
+            text: `${currentUser.name} invited you to their private room: "${room.title}"`,
+            createdAt: new Date(),
+            isRead: false,
+            type: 'room_invite',
+            relatedRoomId: roomId,
+        }));
+    
+        setNotifications(prev => [...newNotifications, ...prev]);
+    };
 
     // --- Notification Handler ---
     const handleNotificationClick = (notification: Notification) => {
@@ -365,7 +409,7 @@ const App: React.FC = () => {
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n));
         
         // Navigate
-        if (notification.type === 'room_start' && notification.relatedRoomId) {
+        if ((notification.type === 'room_start' || notification.type === 'room_invite') && notification.relatedRoomId) {
             const room = rooms.find(r => r.id === notification.relatedRoomId);
             if (room) handleEnterRoom(room);
         }
@@ -501,6 +545,7 @@ const App: React.FC = () => {
                                             onUserSelect={handleUserSelectForCard}
                                             selectedUser={selectedUserForCard}
                                             onOpenLink={(url) => setBrowserUrl(url)}
+                                            handleInviteUsers={handleInviteUsers}
                                         />;
                 return <p>Room not found</p>; // Or redirect to home
             case 'messages':
