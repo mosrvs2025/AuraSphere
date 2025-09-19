@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
 import { MyStudioView } from './components/PlaceholderViews';
 import TrendingView from './components/TrendingView';
@@ -199,9 +198,9 @@ const App: React.FC = () => {
         
         switch (activeView) {
             case 'home':
-                return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+                return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
             case 'trending':
-                return <TrendingView items={discoverItems} />;
+                return <TrendingView title="Trending" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
             case 'messages':
                 return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
             case 'scheduled':
@@ -215,7 +214,7 @@ const App: React.FC = () => {
             case 'conversation':
                 return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
             default:
-                return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+                return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
         }
     };
     
@@ -241,7 +240,14 @@ const App: React.FC = () => {
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={handleAvatarSelect} />}
-                {isSearchModalOpen && <SearchViewModal onClose={() => setSearchModalOpen(false)} allRooms={rooms} allUsers={users} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />}
+                {isSearchModalOpen && <SearchViewModal 
+                    onClose={() => setSearchModalOpen(false)} 
+                    allRooms={rooms} 
+                    allUsers={users}
+                    discoverItems={discoverItems}
+                    onEnterRoom={(room) => { handleEnterRoom(room); setSearchModalOpen(false); }}
+                    onViewProfile={(user) => { handleViewProfile(user); setSearchModalOpen(false); }} 
+                />}
                 {userCard && <UserCardModal user={userCard.user} onClose={() => setUserCard(null)} onViewProfile={handleViewProfile} position={userCard.position} />}
             </div>
         </UserContext.Provider>

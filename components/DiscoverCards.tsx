@@ -1,16 +1,25 @@
 import React from 'react';
 import { DiscoverItem, User, Room } from '../types';
 
-const UserProfileCard: React.FC<{ user: User }> = ({ user }) => (
-  <div className="bg-gray-800/50 p-4 rounded-lg flex flex-col items-center text-center">
+const UserProfileCard: React.FC<{ user: User; onViewProfile: (user: User) => void }> = ({ user, onViewProfile }) => (
+  <div onClick={() => onViewProfile(user)} className="bg-gray-800/50 p-4 rounded-lg flex flex-col items-center text-center cursor-pointer hover:bg-gray-700/70 transition-colors">
     <img src={user.avatarUrl} alt={user.name} className="w-20 h-20 rounded-full mb-3" />
     <p className="font-bold text-white">{user.name}</p>
     <p className="text-sm text-gray-400 line-clamp-2">{user.bio}</p>
-    <button className="mt-4 bg-white text-black font-semibold py-1 px-4 rounded-full text-sm">Follow</button>
+    <button 
+      onClick={(e) => {
+        e.stopPropagation();
+        // Add follow logic here in a real app
+        console.log(`Follow user: ${user.name}`);
+      }} 
+      className="mt-4 bg-white text-black font-semibold py-1 px-4 rounded-full text-sm"
+    >
+      Follow
+    </button>
   </div>
 );
 
-const LiveRoomCard: React.FC<{ room: Room }> = ({ room }) => (
+const LiveRoomCard: React.FC<{ room: Room; onEnterRoom: (room: Room) => void }> = ({ room, onEnterRoom }) => (
     <div className="bg-gray-800/50 p-4 rounded-lg">
         <h3 className="font-bold text-white text-lg">{room.title}</h3>
         <div className="flex items-center space-x-2 mt-2">
@@ -27,7 +36,7 @@ const LiveRoomCard: React.FC<{ room: Room }> = ({ room }) => (
             </svg>
             {room.listeners.length + room.speakers.length + room.hosts.length} listeners
         </div>
-        <button className="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-sm">Join Room</button>
+        <button onClick={() => onEnterRoom(room)} className="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-sm">Join Room</button>
     </div>
 );
 
@@ -70,12 +79,12 @@ const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post'
 );
 
 
-export const DiscoverCard: React.FC<{ item: DiscoverItem }> = ({ item }) => {
+export const DiscoverCard: React.FC<{ item: DiscoverItem; onEnterRoom: (room: Room) => void; onViewProfile: (user: User) => void; }> = ({ item, onEnterRoom, onViewProfile }) => {
   switch (item.type) {
     case 'live_room':
-      return <LiveRoomCard room={item} />;
+      return <LiveRoomCard room={item} onEnterRoom={onEnterRoom} />;
     case 'user_profile':
-      return <UserProfileCard user={item} />;
+      return <UserProfileCard user={item} onViewProfile={onViewProfile} />;
     case 'text_post':
       return <TextPostCard post={item} />;
     case 'image_post':
