@@ -40,8 +40,8 @@ const LiveRoomCard: React.FC<{ room: Room; onEnterRoom: (room: Room) => void }> 
     </div>
 );
 
-const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }> }> = ({ post }) => (
-  <div className="bg-gray-800/50 p-4 rounded-lg">
+const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }>; onClick: () => void }> = ({ post, onClick }) => (
+  <div onClick={onClick} className="bg-gray-800/50 p-4 rounded-lg cursor-pointer hover:bg-gray-700/70 transition-colors">
     <div className="flex items-center mb-3">
       <img src={post.author.avatarUrl} alt={post.author.name} className="w-10 h-10 rounded-full mr-3" />
       <div>
@@ -49,48 +49,55 @@ const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }
         <p className="text-xs text-gray-500">{post.createdAt.toLocaleDateString()}</p>
       </div>
     </div>
-    <p className="text-gray-300">{post.content}</p>
+    <p className="text-gray-300 line-clamp-4">{post.content}</p>
   </div>
 );
 
-const ImagePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'image_post' }> }> = ({ post }) => (
-  <div className="bg-gray-800/50 rounded-lg overflow-hidden">
-    <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover" />
+const ImagePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'image_post' }>; onClick: () => void }> = ({ post, onClick }) => (
+  <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
+    <img src={post.imageUrl} alt={post.caption || 'Image post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
     <div className="p-4">
-      <p className="text-sm text-gray-300">{post.caption}</p>
+      <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
     </div>
   </div>
 );
 
-const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post' }> }> = ({ post }) => (
-  <div className="bg-gray-800/50 rounded-lg overflow-hidden">
+const VideoPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'video_post' }>; onClick: () => void }> = ({ post, onClick }) => (
+  <div onClick={onClick} className="bg-gray-800/50 rounded-lg overflow-hidden cursor-pointer group hover:shadow-lg hover:shadow-indigo-500/10 transition-shadow">
     <div className="relative">
-      <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover" />
+      <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
       <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-        <button className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white">
+        <div className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white scale-100 group-hover:scale-110 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
-        </button>
+        </div>
       </div>
     </div>
     <div className="p-4">
-      <p className="text-sm text-gray-300">{post.caption}</p>
+      <p className="text-sm text-gray-300 line-clamp-2">{post.caption}</p>
     </div>
   </div>
 );
 
+interface DiscoverCardProps {
+    item: DiscoverItem;
+    onEnterRoom: (room: Room) => void;
+    onViewProfile: (user: User) => void;
+    onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+}
 
-export const DiscoverCard: React.FC<{ item: DiscoverItem; onEnterRoom: (room: Room) => void; onViewProfile: (user: User) => void; }> = ({ item, onEnterRoom, onViewProfile }) => {
+export const DiscoverCard: React.FC<DiscoverCardProps> = ({ item, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
   switch (item.type) {
     case 'live_room':
       return <LiveRoomCard room={item} onEnterRoom={onEnterRoom} />;
     case 'user_profile':
       return <UserProfileCard user={item} onViewProfile={onViewProfile} />;
     case 'text_post':
-      return <TextPostCard post={item} />;
+      return <TextPostCard post={item} onClick={() => onViewPost(item)} />;
     case 'image_post':
-      return <ImagePostCard post={item} />;
+      return <ImagePostCard post={item} onClick={() => onViewMedia(item)} />;
     case 'video_post':
-      return <VideoPostCard post={item} />;
+      return <VideoPostCard post={item} onClick={() => onViewMedia(item)} />;
     default:
       return null;
   }

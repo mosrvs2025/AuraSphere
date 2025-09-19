@@ -7,6 +7,8 @@ interface TrendingViewProps {
   title: string;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
+  onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
 }
 
 const filters = ['All', 'Trending', 'Live', 'People', 'Images', 'Videos', 'Posts'];
@@ -20,7 +22,7 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
 };
 
 
-const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, onViewProfile }) => {
+const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
   const [activeFilter, setActiveFilter] = useState('All');
     
   const filteredItems = items.filter(item => {
@@ -68,6 +70,8 @@ const TrendingView: React.FC<TrendingViewProps> = ({ items, title, onEnterRoom, 
                       item={item}
                       onEnterRoom={onEnterRoom}
                       onViewProfile={onViewProfile}
+                      onViewMedia={onViewMedia}
+                      onViewPost={onViewPost}
                     />
                 ))}
                 </div>

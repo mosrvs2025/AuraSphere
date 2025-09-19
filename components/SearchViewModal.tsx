@@ -11,9 +11,11 @@ interface SearchViewModalProps {
   discoverItems: DiscoverItem[];
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
+  onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
 }
 
-const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, allUsers, discoverItems, onEnterRoom, onViewProfile }) => {
+const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, allUsers, discoverItems, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
   const [query, setQuery] = useState('');
 
   const filteredRooms = query ? allRooms.filter(r => r.title.toLowerCase().includes(query.toLowerCase())) : [];
@@ -62,6 +64,8 @@ const SearchViewModal: React.FC<SearchViewModalProps> = ({ onClose, allRooms, al
             items={discoverItems}
             onEnterRoom={onEnterRoom}
             onViewProfile={onViewProfile}
+            onViewMedia={onViewMedia}
+            onViewPost={onViewPost}
           />
         )}
       </div>

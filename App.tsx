@@ -15,6 +15,8 @@ import AvatarCustomizer from './components/AvatarCustomizer';
 import UserCardModal from './components/UserCardModal';
 import SearchViewModal from './components/SearchViewModal';
 import MiniPlayer from './components/MiniPlayer';
+import MediaViewerModal from './components/MediaViewerModal';
+import PostDetailView from './components/PostDetailView';
 import { UserContext } from './context/UserContext';
 import { ActiveView, Room, User, ChatMessage, Notification, Conversation, DiscoverItem, ModalPosition } from './types';
 
@@ -112,8 +114,9 @@ const App: React.FC = () => {
     const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>([
         { type: 'live_room', ...rooms[0] },
         { type: 'user_profile', ...users[10] },
-        { type: 'text_post', id: 'tp1', author: users[11], content: 'Just had a great discussion about Web3. The potential is massive!', likes: 12, comments: 4, createdAt: new Date() },
-        { type: 'image_post', id: 'ip1', author: users[12], imageUrl: 'https://picsum.photos/seed/123/600/400', caption: 'Working on a new side project.', likes: 45, comments: 8, createdAt: new Date() }
+        { type: 'text_post', id: 'tp1', author: users[11], content: 'Just had a great discussion about Web3. The potential is massive! It feels like we are on the cusp of a new internet, but there are still so many challenges to overcome, from scalability to user experience. What are your thoughts?', likes: 12, comments: 4, createdAt: new Date(Date.now() - 3600000 * 2) },
+        { type: 'image_post', id: 'ip1', author: users[12], imageUrl: 'https://picsum.photos/seed/123/600/400', caption: 'Working on a new side project. The view from the office is not bad!', likes: 45, comments: 8, createdAt: new Date(Date.now() - 3600000 * 5) },
+        { type: 'video_post', id: 'vp1', author: users[13], videoUrl: '#', thumbnailUrl: 'https://picsum.photos/seed/124/600/400', caption: 'A quick tour of the new workspace setup.', likes: 30, comments: 6, createdAt: new Date(Date.now() - 3600000 * 8) }
     ]);
 
     const [activeView, setActiveView] = useState<ActiveView>('home');
@@ -121,6 +124,7 @@ const App: React.FC = () => {
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [profileToShow, setProfileToShow] = useState<User | null>(null);
     const [isSidebarExpanded, setSidebarExpanded] = useState(false);
+    const [postToShow, setPostToShow] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
 
     // Modal States
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
@@ -128,6 +132,8 @@ const App: React.FC = () => {
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
     const [isSearchModalOpen, setSearchModalOpen] = useState(false);
     const [userCard, setUserCard] = useState<{ user: User, position: ModalPosition } | null>(null);
+    const [mediaToView, setMediaToView] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
+
 
     // --- Context Providers ---
     const userContextValue = {
@@ -192,6 +198,15 @@ const App: React.FC = () => {
         setSearchModalOpen(true);
     };
 
+    const handleViewMedia = (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => {
+        setMediaToView(post);
+    };
+
+    const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' }>) => {
+        setPostToShow(post);
+        setActiveView('post_detail');
+    };
+
     useEffect(() => {
         if (activeView !== 'profile') {
             setProfileToShow(null);
@@ -199,14 +214,25 @@ const App: React.FC = () => {
         if (activeView !== 'conversation') {
             setActiveConversation(null);
         }
+        if (activeView !== 'post_detail') {
+            setPostToShow(null);
+        }
     }, [activeView]);
 
     const renderActiveView = () => {
+        const trendingViewProps = {
+            title: "Discover",
+            items: discoverItems,
+            onEnterRoom: handleEnterRoom,
+            onViewProfile: handleViewProfile,
+            onViewMedia: handleViewMedia,
+            onViewPost: handleViewPost,
+        };
         switch (activeView) {
             case 'room':
-                return activeRoom ? <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} /> : <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
+                return activeRoom ? <RoomView room={activeRoom} currentUser={currentUser} onLeave={handleLeaveRoom} onUserSelect={(user, position) => setUserCard({ user, position })} selectedUser={userCard?.user ?? null} /> : <TrendingView {...trendingViewProps} />;
             case 'home':
-                return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
+                return <TrendingView {...trendingViewProps} />;
             case 'messages':
                 return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
             case 'scheduled':
@@ -219,8 +245,10 @@ const App: React.FC = () => {
                 return <MyStudioView />;
             case 'conversation':
                 return activeConversation ? <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveView('messages')} onViewProfile={handleViewProfile} /> : <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={c => { setActiveConversation(c); setActiveView('conversation')}} />;
+            case 'post_detail':
+                return postToShow ? <PostDetailView post={postToShow} onBack={() => setActiveView('home')} onViewProfile={handleViewProfile} /> : <TrendingView {...trendingViewProps} />;
             default:
-                return <TrendingView title="Discover" items={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} />;
+                return <TrendingView {...trendingViewProps} />;
         }
     };
     
@@ -261,9 +289,12 @@ const App: React.FC = () => {
                     allUsers={users}
                     discoverItems={discoverItems}
                     onEnterRoom={(room) => { handleEnterRoom(room); setSearchModalOpen(false); }}
-                    onViewProfile={(user) => { handleViewProfile(user); setSearchModalOpen(false); }} 
+                    onViewProfile={(user) => { handleViewProfile(user); setSearchModalOpen(false); }}
+                    onViewMedia={(post) => { setMediaToView(post); setSearchModalOpen(false); }}
+                    onViewPost={(post) => { handleViewPost(post); setSearchModalOpen(false); }}
                 />}
                 {userCard && <UserCardModal user={userCard.user} onClose={() => setUserCard(null)} onViewProfile={handleViewProfile} position={userCard.position} />}
+                {mediaToView && <MediaViewerModal post={mediaToView} onClose={() => setMediaToView(null)} />}
             </div>
         </UserContext.Provider>
     );
