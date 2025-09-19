@@ -229,7 +229,7 @@ const App: React.FC = () => {
 
     const handleBackNavigation = () => {
       // Simple back navigation logic
-      if (activeProfile || activeConversation || activePost) {
+      if (activeProfile || activeConversation || activePost || activeView === 'notifications') {
           setActiveProfile(null);
           setActiveConversation(null);
           setActivePost(null);
@@ -472,7 +472,7 @@ const App: React.FC = () => {
                 const userToView = activeProfile || currentUser;
                 return <UserProfile user={userToView} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={handleBackNavigation} />;
             case 'notifications':
-                return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} />;
+                return <NotificationsView notifications={notifications} onNotificationClick={handleNotificationClick} onBack={handleBackNavigation} />;
             case 'post_detail':
                 if (activePost) return <PostDetailView post={activePost} onBack={handleBackNavigation} onViewProfile={handleViewProfile} />;
                 return null;
@@ -501,6 +501,8 @@ const App: React.FC = () => {
                         activeView={activeView}
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
+                        unreadNotificationCount={unreadNotificationCount}
+                        onNavigateToNotifications={() => changeView('notifications')}
                     />
                 )}
                 <main className="flex-1 overflow-y-auto pb-16">

@@ -5,22 +5,34 @@ import { BellIcon } from './Icons';
 interface NotificationsViewProps {
   notifications: Notification[];
   onNotificationClick: (notification: Notification) => void;
+  onBack: () => void;
 }
 
-const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications, onNotificationClick }) => {
+const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications, onNotificationClick, onBack }) => {
 
   const unreadNotifications = notifications.filter(n => !n.isRead);
 
   return (
     <div className="p-4 md:p-6 animate-fade-in">
       <div className="max-w-2xl mx-auto">
-        {unreadNotifications.length > 0 && (
-            <div className="text-right mb-4">
+         <header className="mb-6">
+            <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Back</span>
+            </button>
+        </header>
+
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Notifications</h1>
+           {unreadNotifications.length > 0 && (
               <button onClick={() => unreadNotifications.forEach(onNotificationClick)} className="text-sm font-semibold text-indigo-400 hover:text-indigo-300">
                   Mark all as read
               </button>
-            </div>
-        )}
+           )}
+        </div>
+        
         <div className="space-y-2">
           {notifications.length > 0 ? (
             notifications.map(notif => (

@@ -1,14 +1,16 @@
 import React from 'react';
 import { ActiveView } from '../types';
-import { SearchIcon, XIcon } from './Icons';
+import { SearchIcon, XIcon, BellIcon } from './Icons';
 
 interface GlobalHeaderProps {
   activeView: ActiveView;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  unreadNotificationCount: number;
+  onNavigateToNotifications: () => void;
 }
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery }) => {
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, setSearchQuery, unreadNotificationCount, onNavigateToNotifications }) => {
   let title = '';
   let placeholder = '';
 
@@ -24,9 +26,6 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
     case 'scheduled':
       title = 'Content Planner';
       break;
-    case 'notifications':
-        title = 'Notifications';
-        break;
   }
 
   const showSearch = activeView === 'home' || activeView === 'messages';
@@ -34,7 +33,19 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ activeView, searchQuery, se
   return (
     <header className="p-4 md:p-6 flex-shrink-0 border-b border-gray-800 bg-gray-900 z-10">
         <div className="max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold">{title}</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold">{title}</h1>
+                <button
+                  onClick={onNavigateToNotifications}
+                  className="relative p-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="View notifications"
+                >
+                    <BellIcon className="h-7 w-7" />
+                    {unreadNotificationCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
+                    )}
+                </button>
+            </div>
             {showSearch && (
                 <div className="relative mt-4">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">
