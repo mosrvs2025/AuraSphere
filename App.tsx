@@ -151,14 +151,29 @@ const App: React.FC = () => {
 
     const handleEnterRoom = (room: Room) => {
         setActiveRoom(room);
-        setActiveView('home'); // or a dedicated 'room' view
+        setActiveView('room');
     };
 
-    const handleLeaveRoom = () => setActiveRoom(null);
+    const handleLeaveRoom = () => {
+        setActiveRoom(null);
+        setActiveView('home');
+    };
     
     const handleViewProfile = (user: User) => {
         setViewingProfile(user);
-        setActiveRoom(null);
+        if (activeView === 'room') {
+            setActiveView('profile');
+        }
+    };
+    
+    const handleBackFromProfile = () => {
+        setViewingProfile(null);
+        // If a room is active, go back to the room view, otherwise go to home
+        if (activeRoom) {
+            setActiveView('room');
+        } else {
+            setActiveView('home');
+        }
     };
 
     const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string) => {
@@ -198,6 +213,7 @@ const App: React.FC = () => {
         case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setActiveView('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => setActiveView('home')} />;
         case 'my-studio': return <MyStudioView />;
+        case 'room': // Handled separately below, but as a fallback, show home
         default: return <HomeView rooms={rooms} onEnterRoom={handleEnterRoom} />;
       }
     };
@@ -251,12 +267,14 @@ const App: React.FC = () => {
                           onEnterRoom={handleEnterRoom}
                           scrollTop={mainScrollTop}
                       />
-                      {activeRoom && !viewingProfile ? (
+                      {activeView === 'room' && activeRoom ? (
                         <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile}/>
                       ) : (
                         renderActiveView()
                       )}
                     </main>
+                    
+                    {activeRoom && activeView !== 'room' && <MiniPlayer room={activeRoom} onExpand={() => setActiveView('room')} onLeave={handleLeaveRoom} />}
 
                     {/* Mobile Bottom Nav */}
                     <BottomNavBar activeView={activeView} setActiveView={setActiveView} onCreateContent={() => setCreateHubOpen(true)} unreadNotificationCount={3} />
@@ -266,7 +284,6 @@ const App: React.FC = () => {
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && <EditProfileModal user={currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
                 {isAvatarCustomizerOpen && <AvatarCustomizer onClose={() => setAvatarCustomizerOpen(false)} onAvatarSelect={(url) => userContextValue.updateCurrentUser({avatarUrl: url})} />}
-                {activeRoom && viewingProfile && <MiniPlayer room={activeRoom} onExpand={() => setViewingProfile(null)} onLeave={handleLeaveRoom} />}
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
                 {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContent} />}
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}

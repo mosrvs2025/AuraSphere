@@ -13,12 +13,12 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, 
   const navItems = [
     { id: 'home', label: 'Discover', icon: <HomeIcon /> },
     { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
-    { id: 'create', label: 'Create', icon: <PlusIcon /> },
+    { id: 'create', label: 'Create', icon: <PlusIcon className="w-8 h-8" /> },
     { id: 'scheduled', label: 'Scheduled', icon: <ScheduledIcon /> },
     { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },
   ] as const;
 
-  const handleNavClick = (id: ActiveView | 'create') => {
+  const handleNavClick = (id: typeof navItems[number]['id']) => {
     if (id === 'create') {
       onCreateContent();
     } else {
@@ -30,30 +30,30 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, 
     <nav className="h-16 bg-gray-900/80 backdrop-blur-sm border-t border-gray-700/50 flex-shrink-0 lg:hidden">
       <div className="flex h-full w-full">
         {navItems.map(item => {
-          if (item.id === 'create') {
-            return (
-              <div key={item.id} className="flex-1 w-0 flex justify-center items-center">
+          const isCreate = item.id === 'create';
+          const isActive = activeView === item.id;
+
+          return (
+            <div key={item.id} className="flex-1 w-0 flex justify-center items-center">
+              {isCreate ? (
                 <button
                   onClick={() => handleNavClick(item.id)}
                   className="w-16 h-16 -mt-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30"
-                  aria-label="Create content"
+                  aria-label={item.label}
                 >
-                  <PlusIcon className="w-8 h-8" />
+                  {item.icon}
                 </button>
-              </div>
-            );
-          }
-          
-          const isActive = activeView === item.id;
-          return (
-             <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`flex-1 w-0 flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? 'text-indigo-400' : 'text-gray-400 hover:text-white'}`}
-            >
-              {item.icon}
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
+              ) : (
+                <button
+                  onClick={() => handleNavClick(item.id)}
+                  className={`w-full h-full flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? 'text-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                  aria-label={item.label}
+                >
+                  {item.icon}
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
