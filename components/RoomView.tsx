@@ -8,7 +8,7 @@ import Poll from './Poll';
 import { UserContext } from '../context/UserContext';
 import FeaturedLink from './FeaturedLink';
 import AiAssistantPanel from './AiAssistantPanel';
-import { SparklesIcon, MicIcon, UserPlusIcon, HeartIcon } from './Icons';
+import { SparklesIcon, MicIcon, UserPlusIcon, HeartIcon, ChevronDownIcon } from './Icons';
 import InviteUsersModal from './InviteUsersModal';
 import CreatePollModal from './CreatePollModal';
 import DynamicInput from './DynamicInput';
@@ -21,6 +21,7 @@ interface RoomViewProps {
   onLeave: () => void;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onViewProfile: (user: User) => void;
+  onMinimize: () => void;
 }
 
 const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: HTMLButtonElement) => void, title: string, gridClass?: string }> = ({ users, onUserClick, title, gridClass = 'grid-cols-4' }) => (
@@ -37,7 +38,7 @@ const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: 
   </div>
 );
 
-const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onViewProfile }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onViewProfile, onMinimize }) => {
   const { currentUser } = useContext(UserContext);
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ user: User, position: { top: number, left: number, width: number, height: number } } | null>(null);
@@ -219,15 +220,19 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
     <div className="h-full bg-gray-900 text-white flex flex-col animate-fade-in">
       {/* TOP PART: The scrolling area */}
       <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto min-h-0">
-        <header className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{room.title}</h1>
-            <p className="text-gray-400 text-sm">{room.description}</p>
-          </div>
-          <button onClick={() => setShowConfirmLeave(true)} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm">
-            Leave
-          </button>
+        <header className="flex justify-between items-center mb-4">
+            <button onClick={onMinimize} className="p-2 -ml-2 text-gray-400 hover:text-white" aria-label="Minimize Room">
+                <ChevronDownIcon />
+            </button>
+            <div className="flex-1" /> {/* Spacer */}
+            <button onClick={() => setShowConfirmLeave(true)} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm flex-shrink-0">
+                Leave
+            </button>
         </header>
+        <div className="text-center mb-4">
+            <h1 className="text-2xl font-bold">{room.title}</h1>
+            {room.description && <p className="text-gray-400 text-sm mt-1">{room.description}</p>}
+        </div>
 
         {room.featuredUrl && <FeaturedLink url={room.featuredUrl} onOpenLink={(url) => console.log('Open link:', url)} />}
         {room.poll && <Poll poll={room.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
@@ -329,10 +334,13 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0"></div>
 
         <div className="relative z-10 flex flex-col h-full p-4">
-            <header className="flex justify-between items-start">
-                <div>
-                    <h1 className="text-2xl font-bold">{room.title}</h1>
-                    <p className="text-gray-300 text-sm">{room.description}</p>
+            <header className="flex justify-between items-center">
+                <button onClick={onMinimize} className="p-2 bg-black/30 rounded-full text-white hover:bg-black/50" aria-label="Minimize Room">
+                    <ChevronDownIcon />
+                </button>
+                <div className="text-center">
+                    <h1 className="text-xl font-bold drop-shadow-lg">{room.title}</h1>
+                    {room.description && <p className="text-gray-300 text-xs drop-shadow-md">{room.description}</p>}
                 </div>
                 <button onClick={() => setShowConfirmLeave(true)} className="bg-red-600/80 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm">
                     Leave

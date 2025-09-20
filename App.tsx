@@ -211,6 +211,10 @@ const App: React.FC = () => {
         setActiveView('home');
     };
     
+    const handleMinimizeRoom = () => {
+        setActiveView('home');
+    };
+
     const handleViewProfile = (user: User) => {
         setViewingProfile(user);
     };
@@ -401,7 +405,7 @@ const App: React.FC = () => {
         case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
         case 'my-studio': return <MyStudioView />;
-        case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onMinimize={handleMinimizeRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
         case 'search': return <GlobalSearchView 
             query={searchQuery}
             onSearch={setSearchQuery}
