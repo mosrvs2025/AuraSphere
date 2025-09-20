@@ -11,7 +11,7 @@ interface UserProfileProps {
   onBack: () => void;
   allPosts: DiscoverItem[];
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost }) => {

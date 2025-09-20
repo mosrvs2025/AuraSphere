@@ -46,6 +46,11 @@ export interface RequestToSpeak {
     url: string;
     duration: number;
   };
+  videoNote?: {
+    url: string;
+    thumbnailUrl: string;
+    duration: number;
+  };
   likes: string[]; // user ids
   createdAt: Date;
 }
@@ -71,50 +76,52 @@ export interface Room {
   totalListeners?: User[];
   isVideoEnabled?: boolean;
   geolocation?: { lat: number; lng: number; };
+  broadcastingMedia?: { type: 'voice' | 'video'; url: string; user: User } | null;
 }
+
+export interface Comment {
+  id: string;
+  user: User;
+  text: string;
+  createdAt: Date;
+}
+
+type PostBase = {
+    id: string;
+    author: User;
+    createdAt: Date;
+    likes: number;
+    comments: Comment[];
+    status: 'published' | 'scheduled';
+    scheduledTime?: Date;
+    geolocation?: { lat: number; lng: number; };
+    replyingTo?: { commentId: string; user: User };
+}
+
 
 // For the discover/trending feed
 export type DiscoverItem = (Room & { type: 'live_room' }) |
   (User & { type: 'user_profile' }) |
-  {
+  (PostBase & {
     type: 'text_post';
-    id: string;
-    author: User;
     content: string;
-    createdAt: Date;
-    likes: number;
-    comments: number;
-    status: 'published' | 'scheduled';
-    scheduledTime?: Date;
-    geolocation?: { lat: number; lng: number; };
-  } |
-  {
+  }) |
+  (PostBase & {
     type: 'image_post';
-    id:string;
-    author: User;
     imageUrl: string;
     caption?: string;
-    createdAt: Date;
-    likes: number;
-    comments: number;
-    status: 'published' | 'scheduled';
-    scheduledTime?: Date;
-    geolocation?: { lat: number; lng: number; };
-  } |
-  {
+  }) |
+  (PostBase & {
     type: 'video_post';
-    id: string;
-    author: User;
     videoUrl: string;
     thumbnailUrl: string;
     caption?: string;
-    createdAt: Date;
-    likes: number;
-    comments: number;
-    status: 'published' | 'scheduled';
-    scheduledTime?: Date;
-    geolocation?: { lat: number; lng: number; };
-  };
+  }) |
+   (PostBase & {
+    type: 'voice_note_post';
+    voiceMemo: { url: string; duration: number };
+    caption?: string;
+  });
 
 
 export interface Conversation {

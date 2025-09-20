@@ -1,5 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage } from './types';
+// FIX: Added Comment to be used in type casting for new posts.
+import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment } from './types';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
@@ -27,6 +29,8 @@ import CreateNoteView from './components/CreateNoteView';
 import InAppBrowser from './components/InAppBrowser';
 import AuraSphereView from './components/AuraSphereView';
 import PostCreationAnimation from './components/PostCreationAnimation';
+import CreateVoiceNoteView from './components/CreateVoiceNoteView';
+import CreateVideoReplyView from './components/CreateVideoReplyView';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -66,17 +70,24 @@ const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-3', title: 'Scheduled Event', description: 'This room is scheduled for a future date.', hosts: [users[0]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
 ]);
 
-const generatePosts = (users: User[]): Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }>[] => [
-    { type: 'text_post', id: 'tp-1', author: users[2], content: 'Just had a great discussion in the Tech Talk room! The future of AI is looking incredibly bright.', createdAt: new Date(), likes: 12, comments: 3, status: 'published', geolocation: { lat: 34.0522, lng: -118.2437 } },
-    { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: 12, status: 'published', geolocation: { lat: 40.7128, lng: -74.0060 } },
-    { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: 8, status: 'published', geolocation: { lat: 51.5074, lng: -0.1278 } }
+const mockComments = (users: User[]): Comment[] => [
+    { id: 'c-1', user: users[3], text: 'This is a great point, thanks for sharing!', createdAt: new Date(Date.now() - 120000) },
+    { id: 'c-2', user: users[4], text: 'Totally agree. I was thinking the same thing.', createdAt: new Date(Date.now() - 60000) },
+];
+
+
+const generatePosts = (users: User[]): Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }>[] => [
+    { type: 'text_post', id: 'tp-1', author: users[2], content: 'Just had a great discussion in the Tech Talk room! The future of AI is looking incredibly bright.', createdAt: new Date(), likes: 12, comments: mockComments(users), status: 'published', geolocation: { lat: 34.0522, lng: -118.2437 } },
+    { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: [], status: 'published', geolocation: { lat: 40.7128, lng: -74.0060 } },
+    { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: [], status: 'published', geolocation: { lat: 51.5074, lng: -0.1278 } },
+    { type: 'voice_note_post', id: 'vnp-1', author: users[6], voiceMemo: { url: 'https://file-examples.com/storage/fe55cb6d3362d5899981a17/2017/11/file_example_MP3_700KB.mp3', duration: 21 }, caption: 'Some thoughts on the latest design trends. What do you all think?', createdAt: new Date(Date.now() - 3600000), likes: 18, comments: [], status: 'published' }
 ];
 
 
 const generateDiscoverItems = (
     users: User[], 
     rooms: Room[], 
-    posts: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }>[]
+    posts: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }>[]
 ): DiscoverItem[] => [
     ...rooms.filter(r => !r.isScheduled).map(r => ({ ...r, type: 'live_room' as const })),
     ...users.slice(1, 6).map(u => ({ ...u, type: 'user_profile' as const })),
@@ -163,17 +174,19 @@ const App: React.FC = () => {
     const [isSidebarExpanded, setSidebarExpanded] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-    const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' }> | null>(null);
+    const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> | null>(null);
     const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
     const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
     const [activeFilter, setActiveFilter] = useState('All');
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
     const [createPostFile, setCreatePostFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
     const [createNote, setCreateNote] = useState(false);
+    const [createVoiceNote, setCreateVoiceNote] = useState(false);
+    const [videoReplyInfo, setVideoReplyInfo] = useState<{ post: DiscoverItem; comment: Comment } | null>(null);
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
     const [mainScrollTop, setMainScrollTop] = useState(0);
     const [postCreationAnimationData, setPostCreationAnimationData] = useState<{
-        type: 'image' | 'video' | 'note';
+        type: 'image' | 'video' | 'note' | 'voice_note';
         imageUrl?: string;
         onComplete: () => void;
     } | null>(null);
@@ -252,23 +265,31 @@ const App: React.FC = () => {
     };
 
     const handleCreatePost = async (
-        postData: { content: string } | { caption: string },
+        postData: { content: string } | { caption: string } | { caption: string; voiceMemo: { url: string; duration: number } },
         file: { url: string; type: 'image' | 'video' } | null,
-        scheduleDate?: Date
+        scheduleDate?: Date,
+        replyInfo?: { commentId: string; user: User }
     ) => {
         const location = await getCurrentLocation();
-        const commonData = {
+        // FIX: The `as const` assertion made `comments: []` a `readonly` type, causing an error.
+        // By separating the object and explicitly adding a mutable `comments` array, the type error is resolved.
+        const commonDataBase = {
             id: `post-${Date.now()}`,
             author: currentUser,
             createdAt: scheduleDate || new Date(),
             likes: 0,
-            comments: 0,
-            status: scheduleDate ? 'scheduled' : 'published',
+            status: (scheduleDate ? 'scheduled' : 'published') as 'published' | 'scheduled',
             scheduledTime: scheduleDate,
             geolocation: location || undefined,
-        } as const;
+            replyingTo: replyInfo,
+        };
+        
+        const commonData = {
+            ...commonDataBase,
+            comments: [] as Comment[],
+        };
 
-        let newPost: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }> | null = null;
+        let newPost: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }> | null = null;
 
         if (file) { // Image or video post
             if (file.type === 'image') {
@@ -287,7 +308,15 @@ const App: React.FC = () => {
                     caption: (postData as { caption: string }).caption,
                 };
             }
-        } else { // Text note
+        } else if ('voiceMemo' in postData) { // Voice note post
+            newPost = {
+                ...commonData,
+                type: 'voice_note_post',
+                voiceMemo: postData.voiceMemo,
+                caption: postData.caption,
+            };
+        }
+        else { // Text note
             newPost = {
                 ...commonData,
                 type: 'text_post',
@@ -298,6 +327,9 @@ const App: React.FC = () => {
         // Close creation views first
         setCreatePostFile(null);
         setCreateNote(false);
+        setCreateVoiceNote(false);
+        setVideoReplyInfo(null);
+
 
         if (newPost) {
             setPosts(prev => [newPost!, ...prev]);
@@ -320,6 +352,9 @@ const App: React.FC = () => {
                     destinationFilter = 'Videos';
                     previewImageUrl = newPost.thumbnailUrl;
                     break;
+                case 'voice_note_post':
+                     destinationFilter = 'Audio';
+                     break;
                 case 'text_post':
                 default:
                     destinationFilter = 'Posts';
@@ -333,7 +368,7 @@ const App: React.FC = () => {
             };
 
             setPostCreationAnimationData({
-                type: newPost.type === 'text_post' ? 'note' : (newPost.type === 'image_post' ? 'image' : 'video'),
+                type: newPost.type.split('_')[0] as any,
                 imageUrl: previewImageUrl,
                 onComplete: onAnimationComplete,
             });
@@ -367,6 +402,8 @@ const App: React.FC = () => {
         setViewingPost(null);
         setCreatePostFile(null);
         setCreateNote(false);
+        setCreateVoiceNote(false);
+        setVideoReplyInfo(null);
         setBrowserUrl(null);
         setViewingMedia(null);
 
@@ -392,9 +429,11 @@ const App: React.FC = () => {
       // Prioritize modal-like views
       if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
-      if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} />;
+      if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} onStartVideoReply={setVideoReplyInfo} />;
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={(data, scheduleDate) => handleCreatePost(data, createPostFile, scheduleDate)} />;
       if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={(data, scheduleDate) => handleCreatePost(data, null, scheduleDate)} />;
+      if (createVoiceNote) return <CreateVoiceNoteView onClose={() => setCreateVoiceNote(false)} onPost={(data, scheduleDate) => handleCreatePost(data, null, scheduleDate)} />;
+      if (videoReplyInfo) return <CreateVideoReplyView replyInfo={videoReplyInfo} onClose={() => setVideoReplyInfo(null)} onPost={(data, file) => handleCreatePost(data, file, undefined, { commentId: videoReplyInfo.comment.id, user: videoReplyInfo.comment.user })} />;
 
       // Render main page views
       switch (activeView) {
@@ -421,7 +460,7 @@ const App: React.FC = () => {
       }
     };
     
-    const handleCreateContent = (option: 'live' | 'video' | 'image' | 'note') => {
+    const handleCreateContent = (option: 'live' | 'video' | 'image' | 'note' | 'voice_note') => {
         setCreateHubOpen(false);
         if (option === 'live') {
             setCreateRoomModalOpen(true);
@@ -433,11 +472,13 @@ const App: React.FC = () => {
             setCreatePostFile({ url: mockFileUrl, type: option });
         } else if (option === 'note') {
             setCreateNote(true);
+        } else if (option === 'voice_note') {
+            setCreateVoiceNote(true);
         }
     };
     
     // Determine if a secondary view is active, which should hide the main nav elements.
-    const isSubViewActive = !!(viewingProfile || activeConversation || viewingPost || createPostFile || createNote || viewingMedia || browserUrl || activeRoom);
+    const isSubViewActive = !!(viewingProfile || activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || activeRoom);
     
     // Define main views that show the global header.
     const mainViews: ActiveView[] = ['home'];

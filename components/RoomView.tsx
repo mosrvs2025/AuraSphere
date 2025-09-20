@@ -15,6 +15,7 @@ import DynamicInput from './DynamicInput';
 import RequestToSpeakModal from './RequestToSpeakModal';
 import RequestQueueView from './RequestQueueView';
 import RoomActivityModal from './RoomActivityModal';
+import BroadcastMediaView from './BroadcastMediaView';
 
 interface RoomViewProps {
   room: Room;
@@ -178,7 +179,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
     }, 3000); // Remove after 3s (animation duration)
   };
 
-  const handleSubmitRequest = (requestData: { text?: string; voiceMemo?: { url: string; duration: number }}) => {
+  const handleSubmitRequest = (requestData: { text?: string; voiceMemo?: { url: string; duration: number }; videoNote?: { url: string; thumbnailUrl: string; duration: number } }) => {
     const newRequest: RequestToSpeak = {
         id: `req-${Date.now()}`,
         user: currentUser,
@@ -215,6 +216,24 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         requestsToSpeak: newRequests
     });
   };
+
+  const handleBroadcastRequest = (request: RequestToSpeak) => {
+    let mediaToBroadcast: Room['broadcastingMedia'] = null;
+    if (request.videoNote) {
+        mediaToBroadcast = { type: 'video', url: request.videoNote.url, user: request.user };
+    } else if (request.voiceMemo) {
+        mediaToBroadcast = { type: 'voice', url: request.voiceMemo.url, user: request.user };
+    }
+    
+    if (mediaToBroadcast) {
+        onUpdateRoom({
+            broadcastingMedia: mediaToBroadcast,
+            // Remove request from queue after broadcasting
+            requestsToSpeak: (room.requestsToSpeak || []).filter(r => r.id !== request.id),
+        });
+    }
+  };
+
 
   const renderAudioLayout = () => (
     <div className="h-full bg-gray-900 text-white flex flex-col animate-fade-in">
@@ -283,6 +302,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                     requests={room.requestsToSpeak || []}
                     onLikeRequest={handleLikeRequest}
                     onApproveRequest={handleApproveRequest}
+                    onBroadcastRequest={handleBroadcastRequest}
                     isHost={isHost}
                     currentUser={currentUser}
                 />
@@ -392,6 +412,14 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         </div>
         
         {room.isVideoEnabled ? renderVideoLayout() : renderAudioLayout()}
+
+        {room.broadcastingMedia && (
+            <BroadcastMediaView
+                media={room.broadcastingMedia}
+                isHost={isHost}
+                onStop={() => onUpdateRoom({ broadcastingMedia: null })}
+            />
+        )}
 
         {isHost && (
           <button onClick={() => setAiPanelOpen(!isAiPanelOpen)} className="absolute bottom-4 right-4 z-30 bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full shadow-lg transform transition-transform hover:scale-110">

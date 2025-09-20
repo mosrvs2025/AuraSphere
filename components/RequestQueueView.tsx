@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { RequestToSpeak, User } from '../types';
-import { PlayIcon, PauseIcon, MicIcon } from './Icons';
+import { PlayIcon, PauseIcon, MicIcon, VideoCameraIcon } from './Icons';
 
 interface RequestQueueViewProps {
   requests: RequestToSpeak[];
   onLikeRequest: (requestId: string) => void;
   onApproveRequest: (request: RequestToSpeak) => void;
+  onBroadcastRequest: (request: RequestToSpeak) => void;
   isHost: boolean;
   currentUser: User;
 }
@@ -48,10 +49,12 @@ const RequestCard: React.FC<{
   request: RequestToSpeak;
   onLike: () => void;
   onApprove: () => void;
+  onBroadcast: () => void;
   isHost: boolean;
   currentUser: User;
-}> = ({ request, onLike, onApprove, isHost, currentUser }) => {
+}> = ({ request, onLike, onApprove, onBroadcast, isHost, currentUser }) => {
   const isLiked = request.likes.includes(currentUser.id);
+  const hasMedia = !!request.voiceMemo || !!request.videoNote;
 
   return (
     <div className="bg-gray-800/50 p-3 rounded-lg">
@@ -61,6 +64,14 @@ const RequestCard: React.FC<{
           <p className="font-bold text-sm text-white">{request.user.name}</p>
           {request.text && <p className="text-sm text-gray-300 mt-1">{request.text}</p>}
           {request.voiceMemo && <AudioNotePlayer voiceMemo={request.voiceMemo} />}
+          {request.videoNote && (
+            <div className="relative w-32 h-48 rounded-lg overflow-hidden cursor-pointer group mt-2">
+                <img src={request.videoNote.thumbnailUrl} alt="Video note thumbnail" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                    <PlayIcon className="h-8 w-8 text-white" />
+                </div>
+            </div>
+          )}
           <div className="flex items-center space-x-4 mt-3">
             <button
               onClick={onLike}
@@ -72,9 +83,16 @@ const RequestCard: React.FC<{
               <span>{request.likes.length > 0 ? request.likes.length : 'Like'}</span>
             </button>
             {isHost && (
-              <button onClick={onApprove} className="text-xs font-semibold text-green-400 hover:text-green-300">
-                Invite to Speak
-              </button>
+              <>
+                <button onClick={onApprove} className="text-xs font-semibold text-green-400 hover:text-green-300">
+                    Invite to Speak
+                </button>
+                {hasMedia && (
+                     <button onClick={onBroadcast} className="text-xs font-semibold text-purple-400 hover:text-purple-300">
+                        Broadcast
+                    </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -83,7 +101,7 @@ const RequestCard: React.FC<{
   );
 };
 
-const RequestQueueView: React.FC<RequestQueueViewProps> = ({ requests, onLikeRequest, onApproveRequest, isHost, currentUser }) => {
+const RequestQueueView: React.FC<RequestQueueViewProps> = ({ requests, onLikeRequest, onApproveRequest, onBroadcastRequest, isHost, currentUser }) => {
 
   const sortedRequests = [...requests].sort((a, b) => {
     // Sort by likes descending, then by creation date ascending (oldest first)
@@ -102,6 +120,7 @@ const RequestQueueView: React.FC<RequestQueueViewProps> = ({ requests, onLikeReq
             request={req}
             onLike={() => onLikeRequest(req.id)}
             onApprove={() => onApproveRequest(req)}
+            onBroadcast={() => onBroadcastRequest(req)}
             isHost={isHost}
             currentUser={currentUser}
           />

@@ -17,7 +17,7 @@ interface GlobalHeaderProps {
   scrollTop: number;
 }
 
-const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Posts'];
+const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Audio', 'Posts'];
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
     const uniqueHostsInRooms = new Map<string, Room>();

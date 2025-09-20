@@ -10,7 +10,7 @@ interface TrendingViewProps {
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
 const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
@@ -19,6 +19,7 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'People': 'user_profile',
     'Images': 'image_post',
     'Videos': 'video_post',
+    'Audio': 'voice_note_post',
     'Posts': 'text_post',
 };
 

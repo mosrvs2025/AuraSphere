@@ -5,11 +5,12 @@ import { TrashIcon } from './Icons';
 interface VideoRecorderModalProps {
   onClose: () => void;
   onSend: (url: string, duration: number) => void;
+  children?: React.ReactNode;
 }
 
 const RECORDING_DURATION = 30;
 
-const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend }) => {
+const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend, children }) => {
   const [mode, setMode] = useState<'loading' | 'recording' | 'preview' | 'denied'>('loading');
   const [countdown, setCountdown] = useState(RECORDING_DURATION);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
@@ -117,7 +118,7 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
       
       {/* Header */}
       {/* FIX: Removed redundant 'X' close button from recording/preview states to avoid confusion. It is kept for loading/denied states to allow the user to escape. */}
-      <header className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+      <header className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
         {mode === 'recording' && (
           <div className="flex items-center text-white bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full font-mono text-lg">
             <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
@@ -141,12 +142,13 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
           controls={mode === 'preview'}
           src={mode === 'preview' ? videoPreviewUrl || '' : undefined}
         />
+        {children}
         {mode === 'loading' && <p>Starting camera...</p>}
         {mode === 'denied' && <div className="p-4 text-center"><p>Camera access denied.</p><p className="text-sm mt-2">Please enable camera and microphone permissions in your browser settings.</p></div>}
       </div>
       
       {/* Footer Controls */}
-      <footer className="absolute bottom-10 flex items-center justify-center w-full">
+      <footer className="absolute bottom-10 flex items-center justify-center w-full z-10">
         {mode === 'recording' ? (
           <button 
             onClick={stopRecording}

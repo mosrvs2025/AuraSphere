@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, Room, DiscoverItem } from '../types';
 import RoomCard from './RoomCard';
-import { DocumentTextIcon, VideoCameraIcon, EyeIcon, UsersIcon } from './Icons';
+import { DocumentTextIcon, VideoCameraIcon, EyeIcon, UsersIcon, MicIcon } from './Icons';
+import AudioPlayer from './AudioPlayer';
 
 interface ProfileViewProps {
   user: User;
@@ -11,16 +12,16 @@ interface ProfileViewProps {
   onBack: () => void;
   allPosts: DiscoverItem[];
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
   isFollowing: boolean;
   followUser: () => void;
   unfollowUser: () => void;
 }
 
 const ContentGridItem: React.FC<{ 
-    post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>;
+    post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' | 'voice_note_post' }>;
     onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }> = ({ post, onViewMedia, onViewPost }) => {
     switch(post.type) {
         case 'image_post':
@@ -45,6 +46,15 @@ const ContentGridItem: React.FC<{
                     <DocumentTextIcon className="w-6 h-6 text-gray-500 self-end" />
                 </button>
             );
+        case 'voice_note_post':
+             return (
+                <div className="aspect-square bg-gray-800 rounded-md p-3 flex flex-col justify-between">
+                    <p className="text-left text-sm text-gray-300 line-clamp-3">{post.caption}</p>
+                    <div className="w-full mt-2">
+                      <AudioPlayer src={post.voiceMemo.url} />
+                    </div>
+                </div>
+            );
         default:
             return null;
     }
@@ -60,14 +70,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
   }, [isOwnProfile, user.id]);
   
   const ownerTabs = ['Posts', 'Liked', 'Saved'];
-  const visitorTabs = ['All', 'Live', 'Images', 'Videos', 'Posts'];
+  const visitorTabs = ['All', 'Live', 'Images', 'Videos', 'Audio', 'Posts'];
   const tabs = isOwnProfile ? ownerTabs : visitorTabs;
   
   const userHostedRooms = useMemo(() => allRooms.filter(room => room.hosts.some(host => host.id === user.id) && !room.isScheduled), [allRooms, user.id]);
   
   const userPosts = useMemo(() => (allPosts.filter(
-      p => ('author' in p) && p.author.id === user.id && (p.type === 'image_post' || p.type === 'video_post' || p.type === 'text_post')
-  ) as Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' }>[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [allPosts, user.id]);
+      p => ('author' in p) && p.author.id === user.id && (p.type === 'image_post' || p.type === 'video_post' || p.type === 'text_post' || p.type === 'voice_note_post')
+  ) as Extract<DiscoverItem, { type: 'image_post' | 'video_post' | 'text_post' | 'voice_note_post' }>[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [allPosts, user.id]);
   
   const handleFollowToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,6 +105,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, allRooms, onEditProfile
             case 'Live': items = userHostedRooms; break;
             case 'Images': items = userPosts.filter(p => p.type === 'image_post'); break;
             case 'Videos': items = userPosts.filter(p => p.type === 'video_post'); break;
+            case 'Audio': items = userPosts.filter(p => p.type === 'voice_note_post'); break;
             case 'Posts': items = userPosts.filter(p => p.type === 'text_post'); break;
             default: items = userPosts;
         }

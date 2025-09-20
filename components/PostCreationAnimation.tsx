@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
-import { DocumentTextIcon, GlobeIcon } from './Icons';
+// FIX: Added MicIcon to render a preview for voice notes.
+import { DocumentTextIcon, GlobeIcon, MicIcon } from './Icons';
 
 interface PostCreationAnimationProps {
-  type: 'image' | 'video' | 'note';
+  // FIX: Added 'voice_note' to the type union to allow voice note creation animations.
+  type: 'image' | 'video' | 'note' | 'voice_note';
   imageUrl?: string;
   onAnimationComplete: () => void;
 }
@@ -22,6 +24,10 @@ const PostCreationAnimation: React.FC<PostCreationAnimationProps> = ({ type, ima
     }
     if (type === 'note') {
       return <div className="w-full h-full bg-gray-700 flex items-center justify-center"><DocumentTextIcon className="w-16 h-16 text-gray-400" /></div>;
+    }
+    // FIX: Added a case to render a preview for voice notes.
+    if (type === 'voice_note') {
+        return <div className="w-full h-full bg-gray-700 flex items-center justify-center"><MicIcon className="w-16 h-16 text-gray-400" /></div>;
     }
     return null;
   };

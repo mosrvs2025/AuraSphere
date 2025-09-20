@@ -1,7 +1,7 @@
 import React from 'react';
-import { StudioIcon, VideoCameraIcon, ImageIcon, DocumentTextIcon } from './Icons';
+import { StudioIcon, VideoCameraIcon, ImageIcon, DocumentTextIcon, MicIcon } from './Icons';
 
-type CreateOption = 'live' | 'video' | 'image' | 'note';
+type CreateOption = 'live' | 'video' | 'image' | 'note' | 'voice_note';
 
 interface CreateHubModalProps {
   onClose: () => void;
@@ -13,6 +13,7 @@ const creationOptions = [
   { id: 'video', label: 'Post a Video', icon: <VideoCameraIcon className="h-10 w-10" />, color: 'bg-purple-500' },
   { id: 'image', label: 'Post an Image', icon: <ImageIcon className="h-10 w-10" />, color: 'bg-blue-500' },
   { id: 'note', label: 'Write a Note', icon: <DocumentTextIcon className="h-10 w-10" />, color: 'bg-green-500' },
+  { id: 'voice_note', label: 'Voice Note', icon: <MicIcon className="h-10 w-10" />, color: 'bg-yellow-500' },
 ] as const;
 
 
@@ -30,7 +31,7 @@ const CreateHubModal: React.FC<CreateHubModalProps> = ({ onClose, onSelectOption
             <h2 className="text-4xl font-bold text-white">What would you like to create?</h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8">
             {creationOptions.map((option, index) => (
             <button
                 key={option.id}

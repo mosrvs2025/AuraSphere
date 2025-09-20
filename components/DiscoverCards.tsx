@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { DiscoverItem, User, Room } from '../types';
 import { UserContext } from '../context/UserContext';
+import AudioPlayer from './AudioPlayer';
 
 const UserProfileCard: React.FC<{ user: User; onViewProfile: (user: User) => void }> = ({ user, onViewProfile }) => {
   const { currentUser, followUser, unfollowUser } = useContext(UserContext);
@@ -72,6 +73,21 @@ const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }
   </div>
 );
 
+const VoiceNotePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'voice_note_post' }>; onViewProfile: (user: User) => void }> = ({ post, onViewProfile }) => (
+  <div className="bg-gray-800/50 p-4 rounded-lg">
+    <div className="flex items-center mb-3 cursor-pointer" onClick={() => onViewProfile(post.author)}>
+      <img src={post.author.avatarUrl} alt={post.author.name} className="w-10 h-10 rounded-full mr-3" />
+      <div>
+        <p className="font-bold text-white">{post.author.name}</p>
+        <p className="text-xs text-gray-500">{post.createdAt.toLocaleDateString()}</p>
+      </div>
+    </div>
+    {post.caption && <p className="text-gray-300 mb-3 text-sm">{post.caption}</p>}
+    <AudioPlayer src={post.voiceMemo.url} />
+  </div>
+);
+
+
 const ImagePostCard: React.FC<{
   post: Extract<DiscoverItem, { type: 'image_post' }>;
   onViewMedia: () => void;
@@ -116,6 +132,11 @@ const VideoPostCard: React.FC<{
         <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
         <p className="font-semibold text-sm text-white truncate">{post.author.name}</p>
       </div>
+       {post.replyingTo && (
+        <div className="px-3 pb-2 text-xs text-gray-400">
+            Replying to <span className="font-semibold text-indigo-400">@{post.replyingTo.user.name}</span>
+        </div>
+      )}
       <div onClick={onViewMedia} className="relative cursor-pointer">
         <img src={post.thumbnailUrl} alt={post.caption || 'Video post'} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
         <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
@@ -139,7 +160,7 @@ interface DiscoverCardProps {
     onEnterRoom: (room: Room) => void;
     onViewProfile: (user: User) => void;
     onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+    onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
 export const DiscoverCard: React.FC<DiscoverCardProps> = ({ item, onEnterRoom, onViewProfile, onViewMedia, onViewPost }) => {
@@ -154,6 +175,8 @@ export const DiscoverCard: React.FC<DiscoverCardProps> = ({ item, onEnterRoom, o
       return <ImagePostCard post={item} onViewMedia={() => onViewMedia(item)} onViewProfile={onViewProfile} />;
     case 'video_post':
       return <VideoPostCard post={item} onViewMedia={() => onViewMedia(item)} onViewProfile={onViewProfile} />;
+    case 'voice_note_post':
+        return <VoiceNotePostCard post={item} onViewProfile={onViewProfile} />;
     default:
       return null;
   }
