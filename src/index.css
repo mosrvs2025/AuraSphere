@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Ensure basic styling works if Tailwind compilation fails */
+.bg-gray-900 { background-color: rgb(17 24 39); }
+.text-white { color: rgb(255 255 255); }
+.h-full { height: 100%; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.p-4 { padding: 1rem; }
+.m-4 { margin: 1rem; }
+.rounded { border-radius: 0.25rem; }
+.shadow { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+
+/* Dark theme background and text */
+html, body {
+  background-color: rgb(17 24 39);
+  color: rgb(255 255 255);
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+}
