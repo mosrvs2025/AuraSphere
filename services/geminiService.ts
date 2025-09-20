@@ -1,13 +1,32 @@
-// Fix: Combined imports and updated API key handling to align with guidelines.
-// The API key is assumed to be present in `process.env.API_KEY` and should not be checked at runtime.
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { ChatMessage } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialization of AI client to prevent errors when API key is not set
+let ai: GoogleGenAI | null = null;
+
+const getAIClient = (): GoogleGenAI | null => {
+  if (!process.env.API_KEY && !process.env.GEMINI_API_KEY) {
+    return null;
+  }
+  
+  if (!ai) {
+    ai = new GoogleGenAI({ 
+      apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY 
+    });
+  }
+  
+  return ai;
+};
 
 export const generateIcebreakers = async (topic: string): Promise<string[]> => {
+  const aiClient = getAIClient();
+  
+  if (!aiClient) {
+    return ["Please set your Gemini API key to enable AI-powered icebreaker suggestions."];
+  }
+  
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response: GenerateContentResponse = await aiClient.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Generate a list of 3 creative and engaging icebreaker questions for a live audio room discussion about "${topic}".`,
       config: {
@@ -38,8 +57,15 @@ export const generateIcebreakers = async (topic: string): Promise<string[]> => {
 
 
 export const generateAvatarImage = async (): Promise<string | null> => {
+  const aiClient = getAIClient();
+  
+  if (!aiClient) {
+    console.log("Gemini API key not set - avatar generation unavailable");
+    return null;
+  }
+  
   try {
-    const response = await ai.models.generateImages({
+    const response = await aiClient.models.generateImages({
       model: 'imagen-4.0-generate-001',
       prompt: 'A vibrant, abstract, geometric profile picture, minimalist, colorful, high-quality.',
       config: {
@@ -70,8 +96,14 @@ export const summarizeChat = async (messages: ChatMessage[]): Promise<string> =>
     .map(msg => `${msg.user.name}: ${msg.text || '[Audio/Video Note]'}`)
     .join('\n');
 
+  const aiClient = getAIClient();
+  
+  if (!aiClient) {
+    return "Please set your Gemini API key to enable AI-powered chat summaries.";
+  }
+  
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response: GenerateContentResponse = await aiClient.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Please provide a concise summary of the key points and overall sentiment from the following chat conversation:\n\n${formattedChat}`,
       config: {
