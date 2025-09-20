@@ -1,5 +1,6 @@
 
 
+
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, User } from '../types';
@@ -136,7 +137,6 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
       </header>
       <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => {
-          // Collect reactions as a typed map for proper TypeScript inference
           const reactions: Record<string, string[]> = msg.reactions ?? {};
           const totalReactions = Object.values(reactions).reduce((sum, users) => sum + users.length, 0);
           return (
@@ -163,13 +163,11 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
                     
                     {totalReactions > 0 && (
                         <div className="absolute -bottom-4 left-2 flex items-center space-x-1.5 bg-gray-900 px-1.5 py-0.5 rounded-full text-xs z-10">
-                            {Object.entries(reactions).map(([emoji, users]) =>
+                            {Object.entries(reactions).map(([emoji, users]) => 
                                 users.length > 0 ? (
-                                    <span
+                                    <span 
                                         key={emoji}
-                                        className={
-                                            `${animatedReaction?.messageId === msg.id && animatedReaction?.emoji === emoji ? 'animate-reaction' : ''}`
-                                        }
+                                        className={`${animatedReaction?.messageId === msg.id && animatedReaction?.emoji === emoji ? 'animate-reaction' : ''}`}
                                     >
                                         {emoji} <span className="text-gray-400">{users.length}</span>
                                     </span>

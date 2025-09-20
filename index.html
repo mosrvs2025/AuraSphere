@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AuraSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
 {
   "imports": {
@@ -12,142 +13,12 @@
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react-dom": "https://aistudiocdn.com/react-dom@^19.1.1"
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.1.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.3"
   }
 }
 </script>
-<style>
-  @keyframes scale-pop {
-    0% { transform: scale(1) rotate(0deg); }
-    50% { transform: scale(1.5) rotate(-10deg); }
-    100% { transform: scale(1) rotate(0deg); }
-  }
-  .animate-reaction {
-    display: inline-block; /* Needed for transform */
-    animation: scale-pop 0.4s ease-out;
-  }
-  
-  /* New Animations for Create Hub */
-  @keyframes hub-pop-in {
-    0% {
-      transform: scale(0.5);
-      opacity: 0;
-    }
-    70% {
-      transform: scale(1.05);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  .hub-option-button {
-    animation: hub-pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
-  }
-
-  /* New animation for LIVE button */
-  @keyframes pulse-live {
-    0%, 100% {
-      opacity: 1;
-      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-    }
-    50% {
-      opacity: 0.8;
-      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-    }
-  }
-
-  .animate-pulse-live {
-    animation: pulse-live 2s infinite;
-  }
-
-  /* New animation for floating reactions */
-  @keyframes float-up {
-      0% { transform: translateY(0) scale(0.5); opacity: 1; }
-      100% { transform: translateY(-300px) scale(1.5); opacity: 0; }
-  }
-  .animate-float-up {
-      position: absolute;
-      bottom: 80px;
-      font-size: 2rem;
-      animation: float-up 3s ease-out forwards;
-      pointer-events: none;
-      user-select: none;
-  }
-  
-  /* Post Creation Animation */
-  @keyframes glow-fade-in {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-
-  @keyframes content-appear {
-    0% { transform: scale(0.5) translateY(20px); opacity: 0; }
-    30% { transform: scale(1) translateY(0); opacity: 1; }
-    80% { transform: scale(1) translateY(0); opacity: 1; }
-    100% { transform: scale(0.8) translateY(-10px); opacity: 0; }
-  }
-  
-  @keyframes text-appear {
-    0%, 20% { opacity: 0; transform: translateY(10px); }
-    40% { opacity: 1; transform: translateY(0); }
-    80% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-5px); }
-  }
-
-  @keyframes aura-travel {
-    0%, 30% {
-        top: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0;
-    }
-    40% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-    80% {
-        top: 75%; /* Corresponds to bottom-1/4 */
-        transform: translate(-50%, -50%) scale(0.5);
-        opacity: 0.5;
-    }
-    100% {
-        top: 75%;
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0;
-    }
-  }
-
-  @keyframes globe-appear {
-    0%, 60% {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    80% { /* Pulse on impact */
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(1);
-    }
-  }
-
-  .animate-glow-fade-in { animation: glow-fade-in 0.3s ease-out forwards; }
-  .animate-content-appear { animation: content-appear 2.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-  .animate-text-appear { animation: text-appear 2.3s ease-out forwards; }
-  .animate-aura-travel { animation: aura-travel 2.3s cubic-bezier(0.445, 0.05, 0.55, 0.95) forwards; }
-  .animate-globe-appear { animation: globe-appear 2.3s ease-out forwards; }
-
-  /* Utility for hiding scrollbars */
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-</style>
 </head>
   <body class="h-full bg-gray-900 text-white">
     <div id="root" class="h-full"></div>
