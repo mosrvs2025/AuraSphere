@@ -8,6 +8,7 @@ AuraSphere is a modern, feature-rich social audio application built with React a
 
 ## 🚀 Core Features
 
+- **🌐 AuraSphere Discovery:** Explore a 3D interactive globe that visualizes global conversations as a real-time "aura." Discover content hotspots and tune into different thematic energies around the world.
 - **🎙️ Live Audio Rooms:** Host, speak, or listen in real-time audio conversations.
 - **💬 Rich Interactive Chat:** Go beyond text with emoji reactions, voice memos, and video notes.
 - **🤖 Gemini-Powered AI Assistant:**

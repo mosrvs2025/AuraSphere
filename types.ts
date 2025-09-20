@@ -70,6 +70,7 @@ export interface Room {
   createdAt?: Date;
   totalListeners?: User[];
   isVideoEnabled?: boolean;
+  geolocation?: { lat: number; lng: number; };
 }
 
 // For the discover/trending feed
@@ -85,6 +86,7 @@ export type DiscoverItem = (Room & { type: 'live_room' }) |
     comments: number;
     status: 'published' | 'scheduled';
     scheduledTime?: Date;
+    geolocation?: { lat: number; lng: number; };
   } |
   {
     type: 'image_post';
@@ -97,6 +99,7 @@ export type DiscoverItem = (Room & { type: 'live_room' }) |
     comments: number;
     status: 'published' | 'scheduled';
     scheduledTime?: Date;
+    geolocation?: { lat: number; lng: number; };
   } |
   {
     type: 'video_post';
@@ -110,6 +113,7 @@ export type DiscoverItem = (Room & { type: 'live_room' }) |
     comments: number;
     status: 'published' | 'scheduled';
     scheduledTime?: Date;
+    geolocation?: { lat: number; lng: number; };
   };
 
 
@@ -127,7 +131,7 @@ export interface Notification {
   link?: string; // e.g., to a room, profile, or post
 }
 
-export type ActiveView = 'home' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
+export type ActiveView = 'home' | 'aurasphere' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
 
 export type CurationTab = 'forYou' | 'following';
 

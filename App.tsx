@@ -25,6 +25,8 @@ import CreateHubModal from './components/CreateHubModal';
 import CreatePostView from './components/CreatePostView';
 import CreateNoteView from './components/CreateNoteView';
 import InAppBrowser from './components/InAppBrowser';
+import AuraSphereView from './components/AuraSphereView';
+import PostCreationAnimation from './components/PostCreationAnimation';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -59,18 +61,28 @@ const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false, requestsToSpeak: [
         { id: 'req-1', user: users[4], text: 'I have a question about the new framework!', createdAt: new Date(Date.now() - 60000), likes: [users[5].id, users[6].id] },
         { id: 'req-2', user: users[5], voiceMemo: { url: 'https://file-examples.com/storage/fe55cb6d3362d5899981a17/2017/11/file_example_MP3_700KB.mp3', duration: 8 }, createdAt: new Date(), likes: [users[4].id] },
-    ], createdAt: new Date(Date.now() - 15 * 60000), totalListeners: [users[4], users[5], users[6], users[10], users[11]] },
-    { id: 'room-2', title: 'Design Critics', description: 'A friendly place to share and critique design work.', hosts: [users[7]], speakers: [users[8], users[9]], listeners: [...users.slice(10, 15)], messages: [], isPrivate: false, isVideoEnabled: true, createdAt: new Date(Date.now() - 5 * 60000), totalListeners: [...users.slice(10, 18)]},
+    ], createdAt: new Date(Date.now() - 15 * 60000), totalListeners: [users[4], users[5], users[6], users[10], users[11]], geolocation: { lat: 48.8566, lng: 2.3522 } },
+    { id: 'room-2', title: 'Design Critics', description: 'A friendly place to share and critique design work.', hosts: [users[7]], speakers: [users[8], users[9]], listeners: [...users.slice(10, 15)], messages: [], isPrivate: false, isVideoEnabled: true, createdAt: new Date(Date.now() - 5 * 60000), totalListeners: [...users.slice(10, 18)], geolocation: { lat: 35.6895, lng: 139.6917 }},
     { id: 'room-3', title: 'Scheduled Event', description: 'This room is scheduled for a future date.', hosts: [users[0]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
 ]);
 
-const generateDiscoverItems = (users: User[], rooms: Room[]): DiscoverItem[] => [
+const generatePosts = (users: User[]): Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }>[] => [
+    { type: 'text_post', id: 'tp-1', author: users[2], content: 'Just had a great discussion in the Tech Talk room! The future of AI is looking incredibly bright.', createdAt: new Date(), likes: 12, comments: 3, status: 'published', geolocation: { lat: 34.0522, lng: -118.2437 } },
+    { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: 12, status: 'published', geolocation: { lat: 40.7128, lng: -74.0060 } },
+    { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: 8, status: 'published', geolocation: { lat: 51.5074, lng: -0.1278 } }
+];
+
+
+const generateDiscoverItems = (
+    users: User[], 
+    rooms: Room[], 
+    posts: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }>[]
+): DiscoverItem[] => [
     ...rooms.filter(r => !r.isScheduled).map(r => ({ ...r, type: 'live_room' as const })),
     ...users.slice(1, 6).map(u => ({ ...u, type: 'user_profile' as const })),
-    { type: 'text_post', id: 'tp-1', author: users[2], content: 'Just had a great discussion in the Tech Talk room! The future of AI is looking incredibly bright.', createdAt: new Date(), likes: 12, comments: 3, status: 'published' },
-    { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: 12, status: 'published' },
-    { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: 8, status: 'published' }
+    ...posts
 ];
+
 
 const generateConversations = (users: User[], currentUser: User): Conversation[] => {
   const conversations: Conversation[] = [];
@@ -118,10 +130,30 @@ const generateConversations = (users: User[], currentUser: User): Conversation[]
 
 const allConversations = generateConversations(allUsers, currentUserData);
 
+const getCurrentLocation = (): Promise<{ lat: number; lng: number } | null> => {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            console.log("Geolocation is not supported by this browser.");
+            resolve(null);
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            }),
+            (error) => {
+                console.error("Error getting geolocation:", error);
+                resolve(null);
+            }
+        );
+    });
+};
+
 const App: React.FC = () => {
     const [activeView, setActiveView] = useState<ActiveView>('home');
     const [currentUser, setCurrentUser] = useState<User>(currentUserData);
     const [rooms, setRooms] = useState(() => generateRooms(allUsers));
+    const [posts, setPosts] = useState(() => generatePosts(allUsers));
     const [conversations, setConversations] = useState<Conversation[]>(allConversations);
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [viewingProfile, setViewingProfile] = useState<User | null>(null);
@@ -140,8 +172,13 @@ const App: React.FC = () => {
     const [createNote, setCreateNote] = useState(false);
     const [browserUrl, setBrowserUrl] = useState<string | null>(null);
     const [mainScrollTop, setMainScrollTop] = useState(0);
+    const [postCreationAnimationData, setPostCreationAnimationData] = useState<{
+        type: 'image' | 'video' | 'note';
+        imageUrl?: string;
+        onComplete: () => void;
+    } | null>(null);
 
-    const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms), [rooms]);
+    const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms, posts), [rooms, posts]);
 
     const userContextValue: IUserContext = {
         currentUser,
@@ -188,7 +225,8 @@ const App: React.FC = () => {
         }
     };
 
-    const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => {
+    const handleCreateRoom = async (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => {
+        const location = await getCurrentLocation();
         const newRoom: Room = { 
             id: `room-${Date.now()}`, 
             title, 
@@ -202,10 +240,104 @@ const App: React.FC = () => {
             messages: [],
             createdAt: new Date(),
             totalListeners: [],
+            geolocation: location || undefined,
         };
         setRooms(prev => [...prev, newRoom]);
         handleEnterRoom(newRoom);
         setCreateRoomModalOpen(false);
+    };
+
+    const handleCreatePost = async (
+        postData: { content: string } | { caption: string },
+        file: { url: string; type: 'image' | 'video' } | null,
+        scheduleDate?: Date
+    ) => {
+        const location = await getCurrentLocation();
+        const commonData = {
+            id: `post-${Date.now()}`,
+            author: currentUser,
+            createdAt: scheduleDate || new Date(),
+            likes: 0,
+            comments: 0,
+            status: scheduleDate ? 'scheduled' : 'published',
+            scheduledTime: scheduleDate,
+            geolocation: location || undefined,
+        } as const;
+
+        let newPost: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' }> | null = null;
+
+        if (file) { // Image or video post
+            if (file.type === 'image') {
+                newPost = {
+                    ...commonData,
+                    type: 'image_post',
+                    imageUrl: file.url,
+                    caption: (postData as { caption: string }).caption,
+                };
+            } else {
+                 newPost = {
+                    ...commonData,
+                    type: 'video_post',
+                    videoUrl: file.url,
+                    thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', // Mock thumbnail
+                    caption: (postData as { caption: string }).caption,
+                };
+            }
+        } else { // Text note
+            newPost = {
+                ...commonData,
+                type: 'text_post',
+                content: (postData as { content: string }).content,
+            };
+        }
+        
+        // Close creation views first
+        setCreatePostFile(null);
+        setCreateNote(false);
+
+        if (newPost) {
+            setPosts(prev => [newPost!, ...prev]);
+
+            // If it's a scheduled post, just navigate home. Otherwise, trigger animation.
+            if (newPost.status === 'scheduled') {
+                handleNavigate('home');
+                return;
+            }
+
+            let destinationFilter: string;
+            let previewImageUrl: string | undefined;
+
+            switch(newPost.type) {
+                case 'image_post':
+                    destinationFilter = 'Images';
+                    previewImageUrl = newPost.imageUrl;
+                    break;
+                case 'video_post':
+                    destinationFilter = 'Videos';
+                    previewImageUrl = newPost.thumbnailUrl;
+                    break;
+                case 'text_post':
+                default:
+                    destinationFilter = 'Posts';
+                    break;
+            }
+
+            const onAnimationComplete = () => {
+                handleNavigate('home');
+                setActiveFilter(destinationFilter);
+                setPostCreationAnimationData(null); // Cleanup
+            };
+
+            setPostCreationAnimationData({
+                type: newPost.type === 'text_post' ? 'note' : (newPost.type === 'image_post' ? 'image' : 'video'),
+                imageUrl: previewImageUrl,
+                onComplete: onAnimationComplete,
+            });
+
+        } else {
+            // Fallback navigation if post creation failed for some reason
+            handleNavigate('home');
+        }
     };
 
     const handleUpdateRoom = (updatedData: Partial<Room>) => {
@@ -257,12 +389,13 @@ const App: React.FC = () => {
       if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
       if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} />;
-      if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={() => {}} />;
-      if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={() => {}} />;
+      if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={(data, scheduleDate) => handleCreatePost(data, createPostFile, scheduleDate)} />;
+      if (createNote) return <CreateNoteView onClose={() => setCreateNote(false)} onPost={(data, scheduleDate) => handleCreatePost(data, null, scheduleDate)} />;
 
       // Render main page views
       switch (activeView) {
         case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
+        case 'aurasphere': return <AuraSphereView onSearchClick={() => handleNavigate('search')} />;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
         case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
         case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
@@ -354,7 +487,13 @@ const App: React.FC = () => {
                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
                 {isCreateHubOpen && <CreateHubModal onClose={() => setCreateHubOpen(false)} onSelectOption={handleCreateContent} />}
                 {browserUrl && <InAppBrowser url={browserUrl} onClose={() => setBrowserUrl(null)} />}
-
+                {postCreationAnimationData && (
+                    <PostCreationAnimation
+                        type={postCreationAnimationData.type}
+                        imageUrl={postCreationAnimationData.imageUrl}
+                        onAnimationComplete={postCreationAnimationData.onComplete}
+                    />
+                )}
             </div>
             {activeRoom && !viewingProfile && !activeConversation && activeView !== 'room' && (
                 <MiniPlayer 
