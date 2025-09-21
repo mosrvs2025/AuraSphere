@@ -45,7 +45,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handlePause);
     };
-  }, []);
+  }, [src]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,7 +53,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(error => console.error("Audio playback failed:", error));
       }
     }
   };
@@ -61,10 +61,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
   return (
     <div className="flex items-center space-x-3 bg-gray-700/50 p-2 rounded-lg">
       <audio ref={audioRef} src={src} preload="metadata" />
-      <button onClick={togglePlay} className="p-2 bg-indigo-500 rounded-full text-white flex-shrink-0">
+      <button 
+        onClick={togglePlay} 
+        className="p-2 bg-indigo-500 rounded-full text-white flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        aria-label={isPlaying ? "Pause audio" : "Play audio"}
+      >
         {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
       </button>
-      <div className="flex-1 h-1.5 bg-gray-600 rounded-full">
+      <div className="flex-1 h-1.5 bg-gray-600 rounded-full cursor-pointer">
          <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${progress}%` }}></div>
       </div>
       <span className="text-xs font-mono text-gray-400">{duration}</span>
