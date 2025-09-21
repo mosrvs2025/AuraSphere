@@ -1,9 +1,7 @@
-
-
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import { User, Room, DiscoverItem, ContributionRequest } from '../types';
+import { User, Room, DiscoverItem, ContributionRequest, ActiveView } from '../types';
 import RoomCard from './RoomCard';
-import { DocumentTextIcon, VideoCameraIcon, EyeIcon, UsersIcon, MicIcon } from './Icons';
+import { DocumentTextIcon, VideoCameraIcon, EyeIcon, UsersIcon, MicIcon, KebabVerticalIcon, ShareIcon, StarIcon, BlockIcon, FlagIcon, ShieldCheckIcon, SettingsIcon, PlusIcon } from './Icons';
 import AudioPlayer from './AudioPlayer';
 import ContributeModal from './ContributeModal';
 import { UserContext } from '../context/UserContext';
@@ -19,6 +17,7 @@ interface ProfileViewProps {
   contributionRequests: ContributionRequest[];
   onUpdateContributionRequest: (requestId: string, status: 'approved' | 'declined') => void;
   onViewProfile: (user: User) => void;
+  onNavigate: (view: ActiveView) => void;
 }
 
 const ContentGridItem: React.FC<{ 
@@ -85,15 +84,19 @@ const ContentGridItem: React.FC<{
 
 
 const ProfileView: React.FC<ProfileViewProps> = (props) => {
-  const { user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost, contributionRequests, onUpdateContributionRequest } = props;
+  const { user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost, contributionRequests, onUpdateContributionRequest, onNavigate } = props;
   const { currentUser, followUser, unfollowUser } = useContext(UserContext);
   const isFollowing = currentUser.following?.some(u => u.id === user.id);
   const isOwnProfile = user.id === currentUser.id;
-  // FIX: Explicitly typed the 'activeTab' state to allow both string and object types, resolving a type mismatch error on update.
   const [activeTab, setActiveTab] = useState<string | { id: string; count: number; }>(isOwnProfile ? 'Posts' : 'All');
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isHeaderActionsOpen, setIsHeaderActionsOpen] = useState(false);
+
 
   useEffect(() => {
     setActiveTab(isOwnProfile ? 'Posts' : 'All');
+    setIsSettingsMenuOpen(false); // Close menus when profile changes
+    setIsHeaderActionsOpen(false);
   }, [isOwnProfile, user.id]);
 
   const pendingRequests = useMemo(() => contributionRequests.filter(r => r.recipient.id === user.id && r.status === 'pending'), [contributionRequests, user.id]);
@@ -124,8 +127,8 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
   );
   
   const renderContent = () => {
-    // FIX: Added a null check to safely handle the 'activeTab' state, which could be an object, preventing a potential runtime error.
-    let activeTabId = typeof activeTab === 'object' && activeTab !== null ? activeTab.id : activeTab;
+    // FIX: Using 'const' here instead of 'let' helps TypeScript correctly narrow the type of 'activeTabId' through the complex control flow below.
+    const activeTabId = typeof activeTab === 'object' && activeTab !== null ? activeTab.id : activeTab;
 
     if (activeTabId === 'Contributions') {
         if (pendingRequests.length === 0) return <Placeholder text="You have no pending contribution requests." />;
@@ -171,45 +174,74 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
         }
     }
 
-    // FIX: Changed 'activeTab' to 'activeTabId' to prevent calling '.toLowerCase()' on an object, which would cause a runtime error.
-    if (items.length === 0) return <Placeholder text={`${user.name} hasn't shared any ${activeTabId.toLowerCase()} yet.`} />;
+    if (items.length === 0) return <Placeholder text={`${user.name} hasn't shared any ${activeTabId.toLowerCase() === 'all' ? 'content' : activeTabId.toLowerCase()} yet.`} />;
     
     return (
         <div className="grid grid-cols-3 gap-1">
-            {/* FIX: Correctly passed 'props.onViewProfile' to 'ContentGridItem' to resolve the missing property error. */}
             {items.map(post => <ContentGridItem key={post.id} post={post} onViewMedia={onViewMedia} onViewPost={onViewPost} onViewProfile={props.onViewProfile} />)}
         </div>
     );
   };
+  
+    const visitorMenuItems = [
+        { label: 'Share Profile', icon: <ShareIcon />, action: () => console.log('Share') },
+        { label: 'Add to Group', icon: <PlusIcon />, action: () => console.log('Add to Group') },
+        { label: 'Mute', icon: <MicIcon />, action: () => console.log('Mute') },
+        { label: 'Block', icon: <BlockIcon />, action: () => console.log('Block') },
+        { label: 'Report', icon: <FlagIcon />, action: () => console.log('Report') },
+    ];
+
+    const ownerMenuItems = [
+        { label: 'Edit Profile', icon: <SettingsIcon />, action: onEditProfile },
+        { label: 'Account Settings', icon: <UsersIcon />, action: () => console.log('Account Settings') },
+        { label: 'Privacy Dashboard', icon: <ShieldCheckIcon />, action: () => onNavigate('privacyDashboard') },
+    ];
+
+    const menuItems = isOwnProfile ? ownerMenuItems : visitorMenuItems;
 
   return (
     <>
     <div className="p-4 md:p-6 animate-fade-in max-w-4xl mx-auto">
-        <header className="mb-6">
+        <header className="mb-6 flex justify-between items-center relative">
             <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm flex items-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                 <span>Back</span>
             </button>
+            <button onClick={() => setIsSettingsMenuOpen(prev => !prev)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50">
+                <KebabVerticalIcon />
+            </button>
+            {isSettingsMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 animate-fade-in">
+                    {menuItems.map(item => (
+                        <button key={item.label} onClick={() => { item.action(); setIsSettingsMenuOpen(false); }} className="w-full flex items-center space-x-3 px-4 py-3 text-left text-sm text-gray-200 hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg">
+                           <div className="w-5 h-5">{item.icon}</div>
+                           <span>{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
         </header>
-        <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
-          <img src={user.avatarUrl} alt={user.name} className="w-32 h-32 rounded-full border-4 border-gray-700 shadow-lg" />
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-white tracking-tight">{user.name}</h1>
-            <div className="flex items-center justify-center md:justify-start space-x-6 mt-3 text-gray-400">
-              <div><span className="font-bold text-white">{user.followers?.length ?? 0}</span> Followers</div>
-              <div><span className="font-bold text-white">{user.following?.length ?? 0}</span> Following</div>
+        <div onClick={() => !isOwnProfile && setIsHeaderActionsOpen(true)} className={`rounded-lg ${!isOwnProfile ? 'cursor-pointer hover:bg-gray-800/50 p-4 -m-4' : ''}`}>
+            <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6 md:gap-8">
+              <img src={user.avatarUrl} alt={user.name} className="w-32 h-32 rounded-full border-4 border-gray-700 shadow-lg" />
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold text-white tracking-tight">{user.name}</h1>
+                <div className="flex items-center justify-center md:justify-start space-x-6 mt-3 text-gray-400">
+                  <div><span className="font-bold text-white">{user.followers?.length ?? 0}</span> Followers</div>
+                  <div><span className="font-bold text-white">{user.following?.length ?? 0}</span> Following</div>
+                </div>
+                <p className="text-gray-300 mt-4 max-w-lg">{user.bio || 'No bio provided.'}</p>
+                 <div className="mt-6 flex items-center justify-center md:justify-start space-x-2">
+                    {isOwnProfile ? (
+                        <button onClick={onEditProfile} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition">Edit Profile</button>
+                    ) : (
+                       <button onClick={handleFollowToggle} className={`font-bold py-2 px-8 rounded-full transition text-sm ${isFollowing ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-200 text-black'}`}>
+                          {isFollowing ? 'Unfollow' : 'Follow'}
+                       </button>
+                    )}
+                </div>
+              </div>
             </div>
-            <p className="text-gray-300 mt-4 max-w-lg">{user.bio || 'No bio provided.'}</p>
-             <div className="mt-6 flex items-center justify-center md:justify-start space-x-2">
-                {isOwnProfile ? (
-                    <button onClick={onEditProfile} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition">Edit Profile</button>
-                ) : (
-                   <button onClick={handleFollowToggle} className={`font-bold py-2 px-8 rounded-full transition text-sm ${isFollowing ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-white hover:bg-gray-200 text-black'}`}>
-                      {isFollowing ? 'Unfollow' : 'Follow'}
-                   </button>
-                )}
-            </div>
-          </div>
         </div>
         
         {isOwnProfile && (
@@ -225,7 +257,6 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
                         const tabId = typeof tab === 'object' ? tab.id : tab;
                         const tabLabel = typeof tab === 'object' ? tab.id : tab;
                         const tabCount = typeof tab === 'object' ? tab.count : 0;
-                        // FIX: Added a null check to safely handle the 'activeTab' state, which could be an object, preventing a potential runtime error.
                         const isActive = (typeof activeTab === 'object' && activeTab !== null ? activeTab.id : activeTab) === tabId;
                         return (
                             <button key={tabId} onClick={() => setActiveTab(tab)} className={`relative whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${isActive ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'}`}>
@@ -239,6 +270,18 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
             <div className="mt-6">{renderContent()}</div>
         </div>
     </div>
+    {isHeaderActionsOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={() => setIsHeaderActionsOpen(false)}>
+            <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-sm m-4 text-white shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-xl font-bold text-center mb-4">{user.name}</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                    <button className="flex flex-col items-center space-y-2 p-2 rounded-lg hover:bg-gray-700"><ShareIcon/><span>Share</span></button>
+                    <button className="flex flex-col items-center space-y-2 p-2 rounded-lg hover:bg-gray-700"><MicIcon/><span>Start Room</span></button>
+                    <button className="flex flex-col items-center space-y-2 p-2 rounded-lg hover:bg-gray-700"><StarIcon/><span>Favorite</span></button>
+                </div>
+            </div>
+        </div>
+    )}
     </>
   );
 };

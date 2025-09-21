@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DiscoverItem, Room, User } from '../types';
+import { DiscoverItem, Room, User, CurationTab } from '../types';
 import { DiscoverCard } from './DiscoverCards';
 
 interface TrendingViewProps {
   items: DiscoverItem[];
   currentUser: User;
-  curationTab: 'forYou' | 'following';
+  curationTab: CurationTab;
   activeFilter: string;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
@@ -20,7 +20,7 @@ const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'Images': 'image_post',
     'Videos': 'video_post',
     'Audio': 'voice_note_post',
-    'Posts': 'text_post',
+    'Text': 'text_post',
 };
 
 const TrendingView: React.FC<TrendingViewProps> = (props) => {
@@ -29,8 +29,8 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
   const displayedItems = useMemo(() => {
     let sourceItems: DiscoverItem[] = [...items]; // Create a mutable copy
 
-    // 1. Primary Curation Filter (For You / Following)
-    if (curationTab === 'following') {
+    // 1. Primary Curation Filter (Resonate / Sphere etc)
+    if (curationTab === 'sphere') {
         const followingIds = new Set(currentUser.following?.map(u => u.id) || []);
         sourceItems = items.filter(item => {
             if (item.type === 'live_room') {
@@ -54,10 +54,16 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
         const liveFromFollows = sourceItems.filter(item => item.type === 'live_room');
         const otherContent = sourceItems.filter(item => item.type !== 'live_room');
         sourceItems = [...liveFromFollows, ...otherContent];
+    } else if (curationTab === 'resonate') {
+        // AI powered "For you" logic would go here. For now, it's just all items.
+    } else if (curationTab === 'world') {
+        // Global feed logic. For now, it's just all items.
+    } else if (curationTab === 'local') {
+        // Geolocation-based feed logic. For now, it's just all items.
     }
     
     // 2. Secondary Content-Type Filter
-    if (activeFilter === 'All' || activeFilter === 'Trending') return sourceItems;
+    if (activeFilter === 'All') return sourceItems;
     const typeToFilter = filterMap[activeFilter];
     return sourceItems.filter(item => item.type === typeToFilter);
 
@@ -92,10 +98,10 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
         ) : (
           <div className="text-center py-20 bg-gray-800/50 rounded-lg border border-gray-700">
             <h2 className="text-xl font-bold text-gray-300">
-                {curationTab === 'following' ? 'It\'s quiet here...' : 'Nothing to see here'}
+                {curationTab === 'sphere' ? 'It\'s quiet here...' : 'Nothing to see here'}
             </h2>
             <p className="text-gray-400 mt-2">
-                {curationTab === 'following' ? 'Follow people to see their latest content.' : 'No items found for this filter. Try another one!'}
+                {curationTab === 'sphere' ? 'Follow people to see their latest content.' : 'No items found for this filter. Try another one!'}
             </p>
           </div>
         )}

@@ -1,12 +1,11 @@
 import React from 'react';
-import { ActiveView, Room, User } from '../types';
+import { ActiveView, Room, User, CurationTab } from '../types';
 import { SearchIcon, BellIcon } from './Icons';
 
-// FIX: Removed unused onNavigateToLive and hasActiveLiveRooms props.
 interface GlobalHeaderProps {
   activeView: ActiveView;
-  curationTab: 'forYou' | 'following';
-  setCurationTab: (tab: 'forYou' | 'following') => void;
+  curationTab: CurationTab;
+  setCurationTab: (tab: CurationTab) => void;
   activeFilter: string;
   setActiveFilter: (filter: string) => void;
   unreadNotificationCount: number;
@@ -17,7 +16,7 @@ interface GlobalHeaderProps {
   scrollTop: number;
 }
 
-const contentFilters = ['All', 'Live', 'People', 'Images', 'Videos', 'Audio', 'Posts'];
+const contentFilters = ['All', 'Live', 'Images', 'Videos', 'Audio', 'Text'];
 
 const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
     const uniqueHostsInRooms = new Map<string, Room>();
@@ -107,14 +106,22 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     onEnterRoom,
     scrollTop,
 }) => {
-  let title = '';
-  if (activeFilter === 'All') {
-    title = curationTab === 'following' ? 'Following' : 'Discover';
-  } else if (activeFilter === 'Live') {
-    title = 'Live Now';
-  } else {
-    title = activeFilter;
+  const curationTabs: { id: CurationTab, label: string }[] = [
+      { id: 'resonate', label: 'Resonate' },
+      { id: 'sphere', label: 'Sphere' },
+      { id: 'world', label: 'World' },
+      { id: 'local', label: 'Local' },
+  ];
+
+  let title = 'Discover';
+  const activeTabObject = curationTabs.find(t => t.id === curationTab);
+  if (activeTabObject) {
+      title = activeTabObject.label;
   }
+  if (activeFilter !== 'All') {
+      title = activeFilter;
+  }
+ 
 
   // Animation progress calculation
   const railFadeStart = 20; // Scroll position to start fading the rail
@@ -180,18 +187,16 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                   >
                       <CollapsedLiveRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
                   </div>
-                  <button
-                      onClick={() => setCurationTab('forYou')}
-                      className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'forYou' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                  >
-                      For You
-                  </button>
-                  <button
-                      onClick={() => setCurationTab('following')}
-                      className={`px-6 py-3 font-bold text-lg transition-colors ${curationTab === 'following' ? 'text-white border-b-2 border-white' : 'text-gray-500 hover:text-gray-300'}`}
-                  >
-                      Following
-                  </button>
+                  {curationTabs.map(tab => (
+                       <button
+                          key={tab.id}
+                          onClick={() => setCurationTab(tab.id)}
+                          className={`px-4 py-3 font-bold text-lg transition-colors relative ${curationTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                      >
+                          {tab.label}
+                          {curationTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white"></div>}
+                      </button>
+                  ))}
               </div>
               {/* Secondary Content-Type Filters */}
               <div className="mt-4 pb-2">

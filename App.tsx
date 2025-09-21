@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // FIX: Added Comment to be used in type casting for new posts.
-import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment, ContributionRequest } from './types';
+import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment, ContributionRequest, CurationTab } from './types';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
@@ -31,6 +31,7 @@ import PostCreationAnimation from './components/PostCreationAnimation';
 import CreateVoiceNoteView from './components/CreateVoiceNoteView';
 import CreateVideoReplyView from './components/CreateVideoReplyView';
 import ContributeModal from './components/ContributeModal';
+import PrivacyDashboard from './components/PrivacyDashboard';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -63,6 +64,17 @@ const allUsers = generateUsers(20);
 const currentUserData = allUsers[0];
 // Ensure current user can receive contributions from followers
 currentUserData.contributionSettings = 'following';
+currentUserData.groups = [
+    { id: 'group-1', name: 'Close Friends', members: [allUsers[2], allUsers[4]] },
+    { id: 'group-2', name: 'Family', members: [allUsers[7]] },
+];
+currentUserData.privacySettings = {
+    liveStreams: { visibility: 'followers' },
+    pictures: { visibility: 'groups', allowedGroups: ['group-1'] },
+    posts: { visibility: 'public' },
+    profileInfo: { visibility: 'public' },
+};
+
 
 const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false, requestsToSpeak: [
@@ -195,7 +207,7 @@ const App: React.FC = () => {
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> | null>(null);
     const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
-    const [curationTab, setCurationTab] = useState<'forYou' | 'following'>('forYou');
+    const [curationTab, setCurationTab] = useState<CurationTab>('resonate');
     const [activeFilter, setActiveFilter] = useState('All');
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
     const [createPostFile, setCreatePostFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
@@ -392,7 +404,7 @@ const App: React.FC = () => {
                      break;
                 case 'text_post':
                 default:
-                    destinationFilter = 'Posts';
+                    destinationFilter = 'Text';
                     break;
             }
 
@@ -512,7 +524,7 @@ const App: React.FC = () => {
 
     const renderActiveView = () => {
       // Prioritize modal-like views
-      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} />;
+      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
       if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} onStartVideoReply={setVideoReplyInfo} />;
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={(data, scheduleDate) => handleCreatePost(data, createPostFile, scheduleDate)} />;
@@ -526,9 +538,10 @@ const App: React.FC = () => {
         case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} liveRooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
         case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
         case 'my-studio': return <MyStudioView />;
+        case 'privacyDashboard': return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => handleNavigate('profile')} />;
         case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onMinimize={handleMinimizeRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
         case 'search': return <GlobalSearchView 
             query={searchQuery}

@@ -8,7 +8,25 @@ export interface User {
   followers: User[];
   following: User[];
   contributionSettings?: 'everyone' | 'following' | 'none';
+  groups?: UserGroup[];
+  privacySettings?: PrivacySettings;
 }
+
+export interface UserGroup {
+    id: string;
+    name:string;
+    members: User[];
+}
+
+export type VisibilitySetting = 'public' | 'followers' | 'groups' | 'private';
+
+export interface PrivacySettings {
+    liveStreams: { visibility: VisibilitySetting, allowedGroups?: string[] }; // group ids
+    pictures: { visibility: VisibilitySetting, allowedGroups?: string[] };
+    posts: { visibility: VisibilitySetting, allowedGroups?: string[] };
+    profileInfo: { visibility: VisibilitySetting, allowedGroups?: string[] };
+}
+
 
 export interface ChatMessage {
   id: string;
@@ -151,9 +169,9 @@ export interface ContributionRequest {
   createdAt: Date;
 }
 
-export type ActiveView = 'home' | 'explore' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
+export type ActiveView = 'home' | 'explore' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search' | 'privacyDashboard';
 
-export type CurationTab = 'forYou' | 'following';
+export type CurationTab = 'resonate' | 'sphere' | 'world' | 'local';
 
 export interface ModalPosition {
     top: number;

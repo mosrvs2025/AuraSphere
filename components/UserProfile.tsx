@@ -1,7 +1,6 @@
-
 // Implemented UserProfile as a wrapper for the ProfileView component.
 import React from 'react';
-import { User, Room, DiscoverItem, ContributionRequest } from '../types';
+import { User, Room, DiscoverItem, ContributionRequest, ActiveView } from '../types';
 import ProfileView from './ProfileView';
 
 interface UserProfileProps {
@@ -15,10 +14,11 @@ interface UserProfileProps {
   contributionRequests: ContributionRequest[];
   onUpdateContributionRequest: (requestId: string, status: 'approved' | 'declined') => void;
   onViewProfile: (user: User) => void;
+  onNavigate: (view: ActiveView) => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = (props) => {
-    const { user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost, contributionRequests, onUpdateContributionRequest, onViewProfile } = props;
+    const { user, allRooms, onEditProfile, onBack, allPosts, onViewMedia, onViewPost, contributionRequests, onUpdateContributionRequest, onViewProfile, onNavigate } = props;
     
     return (
         <ProfileView 
@@ -32,6 +32,7 @@ const UserProfile: React.FC<UserProfileProps> = (props) => {
             contributionRequests={contributionRequests}
             onUpdateContributionRequest={onUpdateContributionRequest}
             onViewProfile={onViewProfile}
+            onNavigate={onNavigate}
         />
     );
 };

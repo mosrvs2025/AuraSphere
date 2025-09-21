@@ -1,4 +1,3 @@
-
 import React, { useContext } from 'react';
 import { DiscoverItem, User, Room } from '../types';
 import { UserContext } from '../context/UserContext';
@@ -69,7 +68,7 @@ const TextPostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'text_post' }
       <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-2" />
       <div>
         <p className="font-bold text-white text-sm">{post.author.name}</p>
-        <p className="text-xs text-gray-500">{post.createdAt.toLocaleDateString()}</p>
+        <p className="text-xs text-gray-500">{post.createdAt.toLocaleString()}</p>
       </div>
     </div>
     <p className="text-gray-300 text-sm line-clamp-5">{post.content}</p>
@@ -82,7 +81,7 @@ const VoiceNotePostCard: React.FC<{ post: Extract<DiscoverItem, { type: 'voice_n
       <img src={post.author.avatarUrl} alt={post.author.name} className="w-8 h-8 rounded-full mr-2" />
       <div>
         <p className="font-bold text-white text-sm">{post.author.name}</p>
-        <p className="text-xs text-gray-500">{post.createdAt.toLocaleDateString()}</p>
+        <p className="text-xs text-gray-500">{post.createdAt.toLocaleString()}</p>
       </div>
     </div>
     {post.caption && <p className="text-gray-300 mb-2 text-sm">{post.caption}</p>}
