@@ -64,7 +64,7 @@ const currentUserData = allUsers[0];
 const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false, requestsToSpeak: [
         { id: 'req-1', user: users[4], text: 'I have a question about the new framework!', createdAt: new Date(Date.now() - 60000), likes: [users[5].id, users[6].id] },
-        { id: 'req-2', user: users[5], voiceMemo: { url: 'https://file-examples.com/storage/fe55cb6d3362d5899981a17/2017/11/file_example_MP3_700KB.mp3', duration: 8 }, createdAt: new Date(), likes: [users[4].id] },
+        { id: 'req-2', user: users[5], voiceMemo: { url: 'https://archive.org/download/test-mp3-file/test.mp3', duration: 5 }, createdAt: new Date(), likes: [users[4].id] },
     ], createdAt: new Date(Date.now() - 15 * 60000), totalListeners: [users[4], users[5], users[6], users[10], users[11]], geolocation: { lat: 48.8566, lng: 2.3522 } },
     { id: 'room-2', title: 'Design Critics', description: 'A friendly place to share and critique design work.', hosts: [users[7]], speakers: [users[8], users[9]], listeners: [...users.slice(10, 15)], messages: [], isPrivate: false, isVideoEnabled: true, createdAt: new Date(Date.now() - 5 * 60000), totalListeners: [...users.slice(10, 18)], geolocation: { lat: 35.6895, lng: 139.6917 }},
     { id: 'room-3', title: 'Scheduled Event', description: 'This room is scheduled for a future date.', hosts: [users[0]], speakers: [], listeners: [], messages: [], isPrivate: false, isScheduled: true, scheduledTime: new Date(Date.now() + 24 * 60 * 60 * 1000) },
@@ -80,7 +80,7 @@ const generatePosts = (users: User[]): Extract<DiscoverItem, { type: 'text_post'
     { type: 'text_post', id: 'tp-1', author: users[2], content: 'Just had a great discussion in the Tech Talk room! The future of AI is looking incredibly bright.', createdAt: new Date(), likes: 12, comments: mockComments(users), status: 'published', geolocation: { lat: 34.0522, lng: -118.2437 } },
     { type: 'image_post', id: 'ip-1', author: users[8], imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4', caption: 'My current workspace setup. Keeping it minimal.', createdAt: new Date(), likes: 45, comments: [], status: 'published', geolocation: { lat: 40.7128, lng: -74.0060 } },
     { type: 'video_post', id: 'vp-1', author: users[4], videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4', thumbnailUrl: 'https://images.unsplash.com/photo-1517292987719-0369a794ec0f', caption: 'Quick demo of a new feature I\'m working on.', createdAt: new Date(), likes: 23, comments: [], status: 'published', geolocation: { lat: 51.5074, lng: -0.1278 } },
-    { type: 'voice_note_post', id: 'vnp-1', author: users[6], voiceMemo: { url: 'https://file-examples.com/storage/fe55cb6d3362d5899981a17/2017/11/file_example_MP3_700KB.mp3', duration: 21 }, caption: 'Some thoughts on the latest design trends. What do you all think?', createdAt: new Date(Date.now() - 3600000), likes: 18, comments: [], status: 'published' }
+    { type: 'voice_note_post', id: 'vnp-1', author: users[6], voiceMemo: { url: 'https://archive.org/download/test-mp3-file/test.mp3', duration: 5 }, caption: 'Some thoughts on the latest design trends. What do you all think?', createdAt: new Date(Date.now() - 3600000), likes: 18, comments: [], status: 'published' }
 ];
 
 
@@ -125,7 +125,7 @@ const generateConversations = (users: User[], currentUser: User): Conversation[]
             id: `msg-${index}-4`,
             user: currentUser,
             createdAt: new Date(),
-            voiceMemo: { url: 'https://example.com/audio.mp3', duration: 15 }
+            voiceMemo: { url: 'https://archive.org/download/test-mp3-file/test.mp3', duration: 5 }
         });
     }
 
@@ -153,7 +153,7 @@ const getCurrentLocation = (): Promise<{ lat: number; lng: number } | null> => {
                 lng: position.coords.longitude,
             }),
             (error) => {
-                console.error("Error getting geolocation:", error);
+                console.error("Error getting geolocation:", error.message);
                 resolve(null);
             }
         );
