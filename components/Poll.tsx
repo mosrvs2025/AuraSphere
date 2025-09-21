@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { Poll as PollType, User } from '../types';
+// FIX: Corrected import path for types.
+import { Poll as PollType, User } from '../types.ts';
 
 interface PollProps {
   poll: PollType;
@@ -36,24 +38,23 @@ const Poll: React.FC<PollProps> = ({ poll, onVote, isHost, onEndPoll, currentUse
               key={index}
               onClick={() => onVote(index)}
               disabled={!poll.isActive}
-              className={`w-full text-left p-2 rounded-md transition-colors relative overflow-hidden ${poll.isActive ? 'hover:bg-gray-700/50' : 'cursor-default'} ${isUserChoice ? 'bg-indigo-900/50' : 'bg-gray-700/30'}`}
+              className={`w-full text-left p-2 rounded-md transition-colors relative overflow-hidden ${poll.isActive ? 'hover:bg-gray-700/50' : 'cursor-default'} ${hasVoted && isUserChoice ? 'ring-2 ring-indigo-500' : ''}`}
             >
               <div
-                className="absolute top-0 left-0 h-full bg-indigo-500/30 transition-all duration-500"
-                style={{ width: `${percentage}%` }}
-              ></div>
-              <div className="relative flex justify-between items-center text-sm font-semibold">
-                <div className="flex items-center">
-                   {isUserChoice && <span className="mr-2 text-indigo-400">✓</span>}
-                   <span className="text-white">{option.text}</span>
-                </div>
-                <span className={`text-gray-300 ${hasVoted || !poll.isActive ? 'block' : 'hidden'}`}>{percentage}%</span>
+                className="absolute top-0 left-0 bottom-0 bg-indigo-500/30"
+                style={{ width: `${hasVoted || !poll.isActive ? percentage : 0}%`, transition: 'width 0.3s ease-in-out' }}
+              />
+              <div className="relative z-10 flex justify-between items-center">
+                <span className="font-semibold text-sm text-white">{option.text}</span>
+                {(hasVoted || !poll.isActive) && (
+                  <span className="text-xs text-gray-300 font-bold">{percentage}%</span>
+                )}
               </div>
             </button>
           );
         })}
       </div>
-      <p className="text-right text-xs text-gray-400 mt-2">{totalVotes} votes</p>
+      <p className="text-xs text-gray-400 mt-2 text-right">{totalVotes} votes</p>
     </div>
   );
 };

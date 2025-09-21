@@ -1,6 +1,8 @@
+
 // Implemented ListenerControls component for non-host user interactions.
 import React, { useState } from 'react';
-import { MicIcon, SendIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { MicIcon, SendIcon } from './Icons.tsx';
 
 const ListenerControls: React.FC = () => {
   const [isMuted, setIsMuted] = useState(true);

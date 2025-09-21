@@ -1,7 +1,10 @@
+
 import React, { useState } from 'react';
-import { Room, ChatMessage } from '../types';
-import { generateIcebreakers, summarizeChat } from '../services/geminiService';
-import { SparklesIcon, DocumentTextIcon, XIcon } from './Icons';
+// FIX: Corrected import path for types.
+import { Room, ChatMessage } from '../types.ts';
+import { generateIcebreakers, summarizeChat } from '../services/geminiService.ts';
+// FIX: Corrected import path for Icons.
+import { SparklesIcon, DocumentTextIcon, XIcon } from './Icons.tsx';
 
 interface AiAssistantPanelProps {
   room: Room;

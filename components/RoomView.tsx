@@ -1,21 +1,24 @@
+
 import React, { useState, useContext, useEffect, useRef } from 'react';
-import { Room, User, ChatMessage, Poll as PollType, RequestToSpeak } from '../types';
-import ChatView from './ChatView';
-import HostControls from './HostControls';
-import UserCardModal from './UserCardModal';
-import ConfirmationModal from './ConfirmationModal';
-import Poll from './Poll';
-import { UserContext } from '../context/UserContext';
-import FeaturedLink from './FeaturedLink';
-import AiAssistantPanel from './AiAssistantPanel';
-import { SparklesIcon, MicIcon, UserPlusIcon, HeartIcon, ChevronDownIcon } from './Icons';
-import InviteUsersModal from './InviteUsersModal';
-import CreatePollModal from './CreatePollModal';
-import DynamicInput from './DynamicInput';
-import RequestToSpeakModal from './RequestToSpeakModal';
-import RequestQueueView from './RequestQueueView';
-import RoomActivityModal from './RoomActivityModal';
-import BroadcastMediaView from './BroadcastMediaView';
+// FIX: Corrected import path for types.
+import { Room, User, ChatMessage, Poll as PollType, RequestToSpeak } from '../types.ts';
+import ChatView from './ChatView.tsx';
+import HostControls from './HostControls.tsx';
+import UserCardModal from './UserCardModal.tsx';
+import ConfirmationModal from './ConfirmationModal.tsx';
+import Poll from './Poll.tsx';
+import { UserContext } from '../context/UserContext.ts';
+import FeaturedLink from './FeaturedLink.tsx';
+import AiAssistantPanel from './AiAssistantPanel.tsx';
+// FIX: Corrected import path for Icons.
+import { SparklesIcon, MicIcon, UserPlusIcon, HeartIcon, ChevronDownIcon } from './Icons.tsx';
+import InviteUsersModal from './InviteUsersModal.tsx';
+import CreatePollModal from './CreatePollModal.tsx';
+import DynamicInput from './DynamicInput.tsx';
+import RequestToSpeakModal from './RequestToSpeakModal.tsx';
+import RequestQueueView from './RequestQueueView.tsx';
+import RoomActivityModal from './RoomActivityModal.tsx';
+import BroadcastMediaView from './BroadcastMediaView.tsx';
 
 interface RoomViewProps {
   room: Room;
@@ -55,7 +58,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const reactionCounter = useRef(0);
   
   const localStreamRef = useRef<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const isHost = room.hosts.some(h => h.id === currentUser.id);
 
   useEffect(() => {

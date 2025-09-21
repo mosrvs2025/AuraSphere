@@ -1,8 +1,11 @@
+
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
-import { ChatMessage, User } from '../types';
-import { ChevronDownIcon } from './Icons';
-import AudioPlayer from './AudioPlayer';
+// FIX: Corrected import path for types.
+import { ChatMessage, User } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { ChevronDownIcon } from './Icons.tsx';
+import AudioPlayer from './AudioPlayer.tsx';
 
 // --- Sub-component for Emoji Reactions ---
 

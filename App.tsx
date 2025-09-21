@@ -1,227 +1,299 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { User, Room, DiscoverItem, ActiveView, Conversation, ChatMessage, ContributionRequest, PrivacySettings, VisibilitySetting } from './types';
-import { UserContext, IUserContext } from './context/UserContext';
-import HomeView from './components/HomeView';
-import RoomView from './components/RoomView';
-import UserProfile from './components/UserProfile';
-import CreateRoomModal from './components/CreateRoomModal';
-import BottomNavBar from './components/BottomNavBar';
-import EditProfileModal from './components/EditProfileModal';
-import MessagesView from './components/MessagesView';
-import ConversationView from './components/ConversationView';
-import SearchViewModal from './components/SearchViewModal';
-import MediaViewerModal from './components/MediaViewerModal';
-import PostDetailView from './components/PostDetailView';
-import PrivacyDashboard from './components/PrivacyDashboard';
-import CreatePostView from './components/CreatePostView';
-import CreateNoteView from './components/CreateNoteView';
-import PostCreationAnimation from './components/PostCreationAnimation';
-import CreateVoiceNoteView from './components/CreateVoiceNoteView';
-import ExploreView from './components/ExploreView';
-import FabCreateMenu from './components/FabCreateMenu';
-import VerticalNav from './components/VerticalNav';
-import GlobalHeader from './components/GlobalHeader';
-import SwipeView from './components/SwipeView';
-
-
-// --- MOCK DATA GENERATION ---
-const createMockUser = (id: number, name: string): User => ({
-  id: `user-${id}`,
-  name,
-  avatarUrl: `https://i.pravatar.cc/150?img=${id}`,
-  bio: `This is the bio for ${name}. I love discussing technology, design, and the future of audio.`,
-  followers: [],
-  following: [],
-  contributionSettings: 'following',
-  groups: id === 0 ? [{ id: 'group-1', name: 'Close Friends', members: []}] : [],
-  privacySettings: {
-    liveStreams: { visibility: 'public' },
-    pictures: { visibility: 'public' },
-    posts: { visibility: 'public' },
-    profileInfo: { visibility: 'public' },
-  }
-});
+import React, { useState, useEffect } from 'react';
+import { User, Room, DiscoverItem, ActiveView, Conversation, ChatMessage, Notification, ContributionRequest } from './types.ts';
+import { UserContext, IUserContext } from './context/UserContext.ts';
+import { MOCK_USERS, MOCK_ROOMS, MOCK_DISCOVER_ITEMS, MOCK_CONVERSATIONS, MOCK_NOTIFICATIONS, MOCK_CONTRIBUTION_REQUESTS } from './data.ts';
+import HomeView from './components/HomeView.tsx';
+import RoomView from './components/RoomView.tsx';
+import UserProfile from './components/UserProfile.tsx';
+import BottomNavBar from './components/BottomNavBar.tsx';
+import MiniPlayer from './components/MiniPlayer.tsx';
+import CreateRoomModal from './components/CreateRoomModal.tsx';
+import EditProfileModal from './components/EditProfileModal.tsx';
+import MediaViewerModal from './components/MediaViewerModal.tsx';
+import PostDetailView from './components/PostDetailView.tsx';
+import CreateNoteView from './components/CreateNoteView.tsx';
+import CreatePostView from './components/CreatePostView.tsx';
+import PostCreationAnimation from './components/PostCreationAnimation.tsx';
+import SwipeView from './components/SwipeView.tsx';
+import InAppBrowser from './components/InAppBrowser.tsx';
+import MessagesView from './components/MessagesView.tsx';
+import ConversationView from './components/ConversationView.tsx';
+import NotificationsView from './components/NotificationsView.tsx';
+import ScheduledView from './components/ScheduledView.tsx';
+import GlobalSearchView from './components/GlobalSearchView.tsx';
+import TrendingView from './components/TrendingView.tsx';
+import { MyStudioView } from './components/PlaceholderViews.tsx';
+import PrivacyDashboard from './components/PrivacyDashboard.tsx';
+import CreateVideoReplyView from './components/CreateVideoReplyView.tsx';
 
 const App: React.FC = () => {
-    const [users, setUsers] = useState<User[]>(() => {
-        const userList = [
-            createMockUser(0, "Alex"), createMockUser(1, "Maria"), createMockUser(2, "David"), createMockUser(3, "Sophia"),
-            createMockUser(4, "John"), createMockUser(5, "Isabella"), createMockUser(6, "Daniel"), createMockUser(7, "Mia")
-        ];
-        userList[0].following = [userList[1], userList[2]];
-        userList[1].followers = [userList[0]];
-        userList[2].followers = [userList[0]];
-        return userList;
-    });
+    const [users, setUsers] = useState<User[]>(MOCK_USERS);
+    const [currentUser, setCurrentUser] = useState<User>(MOCK_USERS[0]);
+    const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
+    const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>(MOCK_DISCOVER_ITEMS);
+    const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
+    const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+    const [contributionRequests, setContributionRequests] = useState<ContributionRequest[]>(MOCK_CONTRIBUTION_REQUESTS);
 
-    const [currentUser, setCurrentUser] = useState<User>(users[0]);
-    
-    const [rooms, setRooms] = useState<Room[]>([
-        { type: 'live_room', id: 'room-1', title: 'Tech Talk Weekly', hosts: [users[1]], speakers: [], listeners: [users[2], users[3]], messages: [], isPrivate: false, createdAt: new Date(), tags: ['#tech', '#design'] },
-        { type: 'live_room', id: 'room-2', title: 'Morning Coffee & Chill', hosts: [users[4]], speakers: [users[5]], listeners: [], messages: [], isPrivate: false, createdAt: new Date(), tags: ['#nature'] },
-    ]);
-
-    const [discoverItems, setDiscoverItems] = useState<DiscoverItem[]>([
-        ...rooms,
-        // FIX: Added missing 'status' property to conform to PostBase type.
-        { type: 'image_post', id: 'post-1', author: users[1], imageUrl: 'https://picsum.photos/seed/post1/600/800', caption: 'Beautiful sunset!', createdAt: new Date(), likes: 10, comments: [], tags: ['#nature'], status: 'published' },
-        // FIX: Added missing 'status' property to conform to PostBase type.
-        { type: 'text_post', id: 'post-2', author: users[2], content: 'Just released a new article on design systems. Check it out!', createdAt: new Date(), likes: 25, comments: [], tags: ['#design'], status: 'published' },
-        // FIX: Added missing 'status' property to conform to PostBase type.
-        { type: 'video_post', id: 'post-3', author: users[3], videoUrl: 'placeholder.mp4', thumbnailUrl: 'https://picsum.photos/seed/post3/600/800', caption: 'Future tech demo', createdAt: new Date(), likes: 50, comments: [], tags: ['#tech', '#FutureTech'], status: 'published' },
-        { type: 'user_profile', ...users[5] },
-        // FIX: Added missing 'status' property to conform to PostBase type.
-        { type: 'voice_note_post', id: 'post-4', author: users[4], voiceMemo: { url: '', duration: 28 }, caption: 'Quick thoughts on AI ethics.', createdAt: new Date(), likes: 15, comments: [], tags: ['#AI', '#TechTalk'], status: 'published' },
-    ]);
-
-    const [conversations, setConversations] = useState<Conversation[]>([
-      { id: 'convo-1', participants: [currentUser, users[1]], messages: [{id: 'm1', user: users[1], text: 'Hey!', createdAt: new Date()}] }
-    ]);
-    
-    const [activeView, setActiveView] = useState<ActiveView>('home');
+    const [activeView, setActiveView] = useState<ActiveView>({ view: 'home' });
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
-    const [viewingProfile, setViewingProfile] = useState<User | null>(null);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
-    const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
-    const [isSearchModalOpen, setSearchModalOpen] = useState(false);
-    const [viewingConversation, setViewingConversation] = useState<Conversation | null>(null);
-    const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
-    const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> | null>(null);
-    const [swipeViewData, setSwipeViewData] = useState<{ rooms: Room[], initialRoomId: string } | null>(null);
+    const [showPostCreationAnimation, setShowPostCreationAnimation] = useState<{ type: 'image' | 'video' | 'note' | 'voice_note', imageUrl?: string } | null>(null);
 
-    const onNavigate = (view: ActiveView) => {
-        setViewingProfile(null);
-        setViewingConversation(null);
-        setViewingPost(null);
-        setActiveView(view);
+    const userContextValue: IUserContext = {
+        currentUser,
+        updateCurrentUser: (userData) => {
+            const updatedUser = { ...currentUser, ...userData };
+            setCurrentUser(updatedUser);
+            setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+        },
+        getUserById: (id) => users.find(u => u.id === id),
+        followUser: (userId) => {
+             const userToFollow = users.find(u => u.id === userId);
+             if (!userToFollow || currentUser.following.some(f => f.id === userId)) return;
+             
+             const updatedCurrentUser = { ...currentUser, following: [...currentUser.following, userToFollow] };
+             const updatedUserToFollow = { ...userToFollow, followers: [...userToFollow.followers, currentUser] };
+             
+             setCurrentUser(updatedCurrentUser);
+             setUsers(users.map(u => {
+                 if (u.id === currentUser.id) return updatedCurrentUser;
+                 if (u.id === userId) return updatedUserToFollow;
+                 return u;
+             }));
+        },
+        unfollowUser: (userId) => {
+            const userToUnfollow = users.find(u => u.id === userId);
+            if (!userToUnfollow) return;
+
+            const updatedCurrentUser = { ...currentUser, following: currentUser.following.filter(f => f.id !== userId) };
+            const updatedUserToUnfollow = { ...userToUnfollow, followers: userToUnfollow.followers.filter(f => f.id !== currentUser.id) };
+
+            setCurrentUser(updatedCurrentUser);
+            setUsers(users.map(u => {
+                if (u.id === currentUser.id) return updatedCurrentUser;
+                if (u.id === userId) return updatedUserToUnfollow;
+                return u;
+            }));
+        },
     };
 
     const handleEnterRoom = (room: Room) => {
-      const liveRooms = discoverItems.filter(item => item.type === 'live_room') as Room[];
-      if (liveRooms.length > 1) {
-          setSwipeViewData({ rooms: liveRooms, initialRoomId: room.id });
-      } else {
-          setActiveRoom(room);
-      }
-    };
-    const handleLeaveRoom = () => setActiveRoom(null);
-    
-    const handleViewProfile = (user: User) => {
-        setActiveView('profile');
-        setViewingProfile(user);
+        setActiveRoom(room);
+        setActiveView({ view: 'home' }); // Keep home view in background
     };
 
-    const handleViewPost = (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => {
-        setViewingPost(post);
+    const handleLeaveRoom = () => {
+        setActiveRoom(null);
+    };
+
+    const handleUpdateRoom = (updatedData: Partial<Room>) => {
+        if (activeRoom) {
+            const updatedRoom = { ...activeRoom, ...updatedData };
+            setActiveRoom(updatedRoom);
+            setRooms(rooms.map(r => r.id === updatedRoom.id ? updatedRoom : r));
+        }
+    };
+
+    const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => {
+        const newRoom: Room = {
+            id: `room-${Date.now()}`,
+            title,
+            description,
+            isPrivate,
+            featuredUrl,
+            isVideoEnabled,
+            hosts: [currentUser],
+            speakers: [],
+            listeners: [],
+            messages: [],
+            createdAt: new Date(),
+        };
+        setRooms([newRoom, ...rooms]);
+        setCreateRoomModalOpen(false);
+        handleEnterRoom(newRoom);
     };
     
-    const userContextValue: IUserContext = useMemo(() => ({
-      currentUser,
-      updateCurrentUser: (userData) => setCurrentUser(prev => ({ ...prev, ...userData })),
-      getUserById: (id) => users.find(u => u.id === id),
-      followUser: (userId) => {
-          const userToFollow = users.find(u => u.id === userId);
-          if (!userToFollow) return;
-          setCurrentUser(prev => ({ ...prev, following: [...prev.following, userToFollow] }));
-      },
-      unfollowUser: (userId) => {
-          setCurrentUser(prev => ({...prev, following: prev.following.filter(u => u.id !== userId)}));
-      }
-    }), [currentUser, users]);
+    const handlePost = (data: { content: string } | { caption: string }, scheduleDate?: Date) => {
+         // This is where you would call an API to create the post
+        console.log("Posting:", data, "Scheduled for:", scheduleDate);
+        if (activeView.view === 'create_post') {
+            setShowPostCreationAnimation({ type: activeView.file.type, imageUrl: activeView.file.url });
+        } else {
+            setShowPostCreationAnimation({ type: 'note' });
+        }
+    };
+    
+    const handlePostCreationAnimationComplete = () => {
+        setShowPostCreationAnimation(null);
+        setActiveView({ view: 'home' });
+    };
+
+    const handleNavigate = (view: ActiveView['view'], params?: any) => {
+        // A simple navigation handler
+        switch(view) {
+            case 'home':
+                setActiveView({ view: 'home' });
+                break;
+             case 'search':
+                setActiveView({ view: 'search' });
+                break;
+            case 'trending':
+                 setActiveView({ view: 'trending' });
+                 break;
+            case 'messages':
+                setActiveView({ view: 'messages' });
+                break;
+            case 'my_studio':
+                 setActiveView({ view: 'my_studio' });
+                 break;
+             case 'profile':
+                if (params?.userId) {
+                    setActiveView({ view: 'profile', userId: params.userId });
+                } else {
+                    setActiveView({ view: 'profile', userId: currentUser.id });
+                }
+                break;
+        }
+    }
 
     const renderActiveView = () => {
-        if (viewingConversation) {
-            return <ConversationView conversation={viewingConversation} currentUser={currentUser} onBack={() => setViewingConversation(null)} onViewProfile={handleViewProfile} />;
-        }
-        if (viewingPost) {
-            return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} onStartVideoReply={() => {}} />;
-        }
-        switch(activeView) {
-            case 'home':
-                return <HomeView
-                            discoverItems={discoverItems}
-                            onEnterRoom={handleEnterRoom}
-                            onViewProfile={handleViewProfile}
-                            onViewMedia={setViewingMedia}
-                            onViewPost={handleViewPost}
-                       />;
-            case 'messages':
-                return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setViewingConversation} liveRooms={rooms} onEnterRoom={handleEnterRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
+        switch (activeView.view) {
             case 'profile':
-                return <UserProfile user={viewingProfile || currentUser} allRooms={rooms} allPosts={discoverItems} onBack={() => onNavigate('home')} onEditProfile={() => setEditProfileModalOpen(true)} onNavigate={onNavigate} onViewProfile={handleViewProfile} contributionRequests={[]} onUpdateContributionRequest={() => {}} onViewMedia={setViewingMedia} onViewPost={handleViewPost} />;
-            case 'privacyDashboard':
-                return <PrivacyDashboard user={currentUser} onUpdateUser={(data) => setCurrentUser(prev => ({...prev, ...data}))} onBack={() => onNavigate('profile')} />;
+                const user = users.find(u => u.id === activeView.userId);
+                if (!user) return <div>User not found</div>;
+                return <UserProfile 
+                            user={user}
+                            allRooms={rooms}
+                            onEditProfile={() => setActiveView({ view: 'edit_profile' })}
+                            onBack={() => setActiveView({ view: 'home' })}
+                            allPosts={discoverItems.filter(item => item.type !== 'live_room' && item.type !== 'user_profile') as any}
+                            onViewMedia={(post) => setActiveView({ view: 'media', post })}
+                            onViewPost={(post) => setActiveView({ view: 'post', post })}
+                            contributionRequests={contributionRequests.filter(r => r.toUser.id === user.id)}
+                            onUpdateContributionRequest={(reqId, status) => setContributionRequests(contributionRequests.map(r => r.id === reqId ? {...r, status} : r))}
+                            onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
+                            onNavigate={(view) => setActiveView(view)}
+                        />
+            case 'edit_profile':
+                return <EditProfileModal 
+                            user={currentUser}
+                            onClose={() => setActiveView({ view: 'profile', userId: currentUser.id })}
+                            onSave={(name, bio, contributionSettings) => {
+                                userContextValue.updateCurrentUser({ name, bio, contributionSettings });
+                                setActiveView({ view: 'profile', userId: currentUser.id });
+                            }}
+                        />
+            case 'media':
+                return <MediaViewerModal post={activeView.post} onClose={() => setActiveView({ view: 'home' })} />;
+            case 'post':
+                return <PostDetailView 
+                            post={activeView.post} 
+                            onBack={() => setActiveView({ view: 'home' })} 
+                            onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
+                            onStartVideoReply={(replyInfo) => setActiveView({ view: 'create_video_reply', replyInfo })}
+                        />;
+            case 'create_note':
+                return <CreateNoteView onClose={() => setActiveView({ view: 'home' })} onPost={handlePost} />
+            case 'create_post':
+                 return <CreatePostView file={activeView.file} onClose={() => setActiveView({ view: 'home' })} onPost={handlePost} />;
+            case 'swipe':
+                return <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeView.initialRoomId} onClose={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />;
+            case 'in_app_browser':
+                return <InAppBrowser url={activeView.url} onClose={() => setActiveView({ view: 'home' })} />;
+            case 'messages':
+                return <MessagesView 
+                            conversations={conversations} 
+                            currentUser={currentUser} 
+                            onConversationSelect={(convo) => setActiveView({ view: 'conversation', conversationId: convo.id })}
+                            liveRooms={rooms.filter(r => !r.isScheduled)}
+                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onCreateRoom={() => setCreateRoomModalOpen(true)}
+                        />
+            case 'conversation':
+                 const convo = conversations.find(c => c.id === activeView.conversationId);
+                 if (!convo) return <div>Conversation not found</div>;
+                 return <ConversationView conversation={convo} currentUser={currentUser} onBack={() => setActiveView({ view: 'messages' })} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />;
+            case 'notifications':
+                 return <NotificationsView notifications={notifications} onNotificationClick={(notif) => setNotifications(notifications.map(n => n.id === notif.id ? {...n, isRead: true} : n))} onBack={() => setActiveView({ view: 'home' })} />;
+            case 'scheduled':
+                 return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
+            case 'search':
+                 return <GlobalSearchView 
+                    query="" 
+                    onSearch={()=>{}} 
+                    discoverItems={discoverItems} 
+                    currentUser={currentUser} 
+                    onEnterRoom={handleEnterRoom}
+                    onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
+                    onViewMedia={(post) => setActiveView({ view: 'media', post })}
+                    onViewPost={(post) => setActiveView({ view: 'post', post })}
+                    onClose={() => setActiveView({ view: 'home' })}
+                 />
+            case 'trending':
+                const trendingTags = Array.from(new Set(discoverItems.flatMap(item => 'tags' in item && item.tags ? item.tags : []))).slice(0, 5);
+                 return <TrendingView discoverItems={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} onViewMedia={(post) => setActiveView({ view: 'media', post })} onViewPost={(post) => setActiveView({ view: 'post', post })} />;
+            case 'my_studio':
+                return <MyStudioView />;
+            case 'privacy_dashboard':
+                return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => setActiveView({ view: 'profile', userId: currentUser.id })} />;
+            case 'create_video_reply':
+                return <CreateVideoReplyView replyInfo={activeView.replyInfo} onClose={() => setActiveView({ view: 'post', post: activeView.replyInfo.post as any })} onPost={() => {console.log('Video reply posted'); setActiveView({ view: 'post', post: activeView.replyInfo.post as any })}} />
+            case 'home':
             default:
-                return <HomeView discoverItems={discoverItems} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={handleViewPost} />;
+                return <HomeView 
+                            discoverItems={discoverItems}
+                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
+                            onViewMedia={(post) => setActiveView({ view: 'media', post })}
+                            onViewPost={(post) => setActiveView({ view: 'post', post })}
+                        />
         }
     };
-
+    
     return (
         <UserContext.Provider value={userContextValue}>
-            <div className="h-screen w-screen bg-gray-900 text-white flex flex-col font-sans antialiased overflow-hidden">
-                <main className="flex-1 overflow-y-auto">
-                    {activeRoom ? (
-                        <RoomView room={activeRoom} onLeave={handleLeaveRoom} onUpdateRoom={() => {}} onViewProfile={handleViewProfile} />
-                    ) : (
-                       renderActiveView()
-                    )}
+            <div className="bg-gray-900 text-white h-screen w-screen flex flex-col md:flex-row overflow-hidden">
+                {/* Main content */}
+                <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
+                    {renderActiveView()}
                 </main>
 
-                {!activeRoom && !viewingPost && <BottomNavBar activeView={activeView} onNavigate={onNavigate} onSearchClick={() => setSearchModalOpen(true)} />}
-                
-                {swipeViewData && (
-                    <SwipeView
-                        rooms={swipeViewData.rooms}
-                        initialRoomId={swipeViewData.initialRoomId}
-                        onClose={() => setSwipeViewData(null)}
-                        onUpdateRoom={() => {}}
-                        onViewProfile={handleViewProfile}
-                    />
+                {/* Modals and Overlays */}
+                {activeRoom && !activeRoom.isScheduled && (
+                     <div className="md:hidden">
+                        <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeRoom.id} onClose={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />
+                     </div>
                 )}
+                
+                {activeRoom && (
+                    <div className="hidden md:block">
+                        <MiniPlayer room={activeRoom} onExpand={() => console.log('expand')} onLeave={handleLeaveRoom} />
+                    </div>
+                )}
+                
                 {isCreateRoomModalOpen && (
                     <CreateRoomModal 
-                        onClose={() => setCreateRoomModalOpen(false)} 
-                        onCreate={(title, description, isPrivate, featuredUrl, isVideoEnabled) => {
-                            const newRoom: Room = {
-                                type: 'live_room',
-                                id: `room-${Date.now()}`,
-                                title, description, featuredUrl, isVideoEnabled,
-                                hosts: [currentUser],
-                                speakers: [], listeners: [], messages: [], isPrivate,
-                                createdAt: new Date()
-                            };
-                            setRooms(prev => [newRoom, ...prev]);
-                            setActiveRoom(newRoom);
-                            setCreateRoomModalOpen(false);
-                        }} 
+                        onClose={() => setCreateRoomModalOpen(false)}
+                        onCreate={handleCreateRoom}
+                    />
+                )}
+                 {showPostCreationAnimation && (
+                    <PostCreationAnimation 
+                        type={showPostCreationAnimation.type}
+                        imageUrl={showPostCreationAnimation.imageUrl}
+                        onAnimationComplete={handlePostCreationAnimationComplete} 
                     />
                 )}
 
-                 {isSearchModalOpen && (
-                    <SearchViewModal
-                        onClose={() => setSearchModalOpen(false)}
-                        allRooms={rooms}
-                        allUsers={users}
-                        discoverItems={discoverItems}
-                        currentUser={currentUser}
-                        onEnterRoom={(room) => { setSearchModalOpen(false); handleEnterRoom(room); }}
-                        onViewProfile={(user) => { setSearchModalOpen(false); handleViewProfile(user); }}
-                        onViewMedia={(post) => { setSearchModalOpen(false); setViewingMedia(post); }}
-                        onViewPost={(post) => { setSearchModalOpen(false); handleViewPost(post); }}
+                {/* Bottom Nav */}
+                <div className="flex-shrink-0 md:hidden">
+                    <BottomNavBar 
+                        onNavigate={handleNavigate} 
+                        unreadNotifications={notifications.filter(n => !n.isRead).length}
                     />
-                 )}
-                 {viewingMedia && <MediaViewerModal post={viewingMedia} onClose={() => setViewingMedia(null)} />}
-                {isEditProfileModalOpen && (
-                    <EditProfileModal
-                        user={currentUser}
-                        onClose={() => setEditProfileModalOpen(false)}
-                        onSave={(name, bio, contributionSettings) => {
-                            setCurrentUser(prev => ({...prev, name, bio, contributionSettings}));
-                            setEditProfileModalOpen(false);
-                        }}
-                    />
-                )}
+                </div>
             </div>
         </UserContext.Provider>
     );

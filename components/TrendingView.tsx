@@ -1,7 +1,9 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { DiscoverItem, Room, User } from '../types';
-import { DiscoverCard } from './DiscoverCards';
+// FIX: Corrected import path for types.
+import { DiscoverItem, Room, User } from '../types.ts';
+import { DiscoverCard } from './DiscoverCards.tsx';
 
 // A map to connect filter labels to the data types
 const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
@@ -22,7 +24,7 @@ interface TrendingViewProps {
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
 const TrendingView: React.FC<TrendingViewProps> = ({ discoverItems, trendingTags, ...rest }) => {

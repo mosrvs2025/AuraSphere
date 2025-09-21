@@ -1,7 +1,10 @@
+
 import React, { useState } from 'react';
-import { generateIcebreakers } from '../services/geminiService';
-import { Room } from '../types';
-import { UserPlusIcon, ChartBarIcon } from './Icons';
+import { generateIcebreakers } from '../services/geminiService.ts';
+// FIX: Corrected import path for types.
+import { Room } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { UserPlusIcon, ChartBarIcon } from './Icons.tsx';
 
 interface HostControlsProps {
   room: Room;

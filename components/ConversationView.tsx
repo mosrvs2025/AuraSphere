@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Conversation, User, ChatMessage } from '../types';
-import DynamicInput from './DynamicInput';
+// FIX: Corrected import path for types.
+import { Conversation, User, ChatMessage } from '../types.ts';
+import DynamicInput from './DynamicInput.tsx';
 
 // --- Sub-component for Audio Notes ---
 interface AudioNoteBubbleProps {

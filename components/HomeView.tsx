@@ -1,11 +1,15 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { DiscoverItem, Room, User, CurationTab } from '../types';
-import VerticalNav from './VerticalNav';
-import ExploreView from './ExploreView';
-import GlobalHeader from './GlobalHeader';
-import FabCreateMenu from './FabCreateMenu';
-import CreateRoomModal from './CreateRoomModal';
-import CreateNoteView from './CreateNoteView';
+// FIX: Corrected import path for types.
+import { DiscoverItem, Room, User, CurationTab } from '../types.ts';
+import VerticalNav from './VerticalNav.tsx';
+// FIX: Corrected import path for ExploreView component.
+import ExploreView from './ExploreView.tsx';
+import GlobalHeader from './GlobalHeader.tsx';
+// FIX: Corrected import path for FabCreateMenu component.
+import FabCreateMenu from './FabCreateMenu.tsx';
+import CreateRoomModal from './CreateRoomModal.tsx';
+import CreateNoteView from './CreateNoteView.tsx';
 
 interface HomeViewProps {
   discoverItems: DiscoverItem[];

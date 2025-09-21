@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { XIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { XIcon } from './Icons.tsx';
 
 interface InAppBrowserProps {
   url: string;

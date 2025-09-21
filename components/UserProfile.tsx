@@ -1,7 +1,10 @@
+
 // Implemented UserProfile as a wrapper for the ProfileView component.
 import React from 'react';
-import { User, Room, DiscoverItem, ContributionRequest, ActiveView } from '../types';
-import ProfileView from './ProfileView';
+// FIX: Corrected import path for types.
+import { User, Room, DiscoverItem, ContributionRequest, ActiveView } from '../types.ts';
+// FIX: Corrected import path for ProfileView component.
+import ProfileView from './ProfileView.tsx';
 
 interface UserProfileProps {
   user: User;

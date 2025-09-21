@@ -1,6 +1,9 @@
+
 import React from 'react';
-import { Room } from '../types';
-import { MicIcon, XIcon } from './Icons';
+// FIX: Corrected import path for types.
+import { Room } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { MicIcon, XIcon } from './Icons.tsx';
 
 interface MiniPlayerProps {
   room: Room;

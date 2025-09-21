@@ -1,4 +1,3 @@
-// types.ts
 
 export interface User {
   id: string;
@@ -8,32 +7,30 @@ export interface User {
   followers: User[];
   following: User[];
   contributionSettings?: 'everyone' | 'following' | 'none';
-  groups?: UserGroup[];
   privacySettings?: PrivacySettings;
+  groups?: Group[];
 }
 
-export interface UserGroup {
+export interface Group {
     id: string;
-    name:string;
+    name: string;
     members: User[];
 }
 
-export type VisibilitySetting = 'public' | 'followers' | 'groups' | 'private';
-
 export interface PrivacySettings {
-    liveStreams: { visibility: VisibilitySetting, allowedGroups?: string[] }; // group ids
-    pictures: { visibility: VisibilitySetting, allowedGroups?: string[] };
-    posts: { visibility: VisibilitySetting, allowedGroups?: string[] };
-    profileInfo: { visibility: VisibilitySetting, allowedGroups?: string[] };
+    liveStreams: { visibility: VisibilitySetting };
+    pictures: { visibility: VisibilitySetting };
+    posts: { visibility: VisibilitySetting };
+    profileInfo: { visibility: VisibilitySetting };
 }
+
+export type VisibilitySetting = 'public' | 'followers' | 'groups' | 'private';
 
 
 export interface ChatMessage {
   id: string;
   user: User;
   text?: string;
-  createdAt: Date;
-  reactions?: { [emoji: string]: string[] }; // user ids for each emoji
   voiceMemo?: {
     url: string;
     duration: number;
@@ -43,141 +40,161 @@ export interface ChatMessage {
     thumbnailUrl: string;
     duration: number;
   };
-}
-
-export interface PollOption {
-  text: string;
-  votes: string[]; // user ids
+  createdAt: Date;
+  reactions?: { [emoji: string]: string[] }; // emoji -> array of user IDs
 }
 
 export interface Poll {
-  id: string;
-  question: string;
-  options: PollOption[];
-  isActive: boolean;
+    id: string;
+    question: string;
+    options: { text: string; votes: string[] }[];
+    isActive: boolean;
 }
 
 export interface RequestToSpeak {
-  id: string;
-  user: User;
-  text?: string;
-  voiceMemo?: {
-    url: string;
-    duration: number;
-  };
-  videoNote?: {
-    url: string;
-    thumbnailUrl: string;
-    duration: number;
-  };
-  likes: string[]; // user ids
-  createdAt: Date;
+    id: string;
+    user: User;
+    createdAt: Date;
+    likes: string[];
+    text?: string;
+    voiceMemo?: { url: string; duration: number };
+    videoNote?: { url: string; thumbnailUrl: string; duration: number };
 }
 
 export interface Room {
   id: string;
-  type: 'live_room'; // Added to conform to DiscoverItem
   title: string;
   description?: string;
   hosts: User[];
   speakers: User[];
   listeners: User[];
-  messages: ChatMessage[];
   isPrivate: boolean;
-  poll?: Poll;
+  featuredUrl?: string;
   isSharingScreen?: boolean;
   videoUrl?: string;
-  featuredUrl?: string;
+  messages: ChatMessage[];
+  poll?: Poll | null;
+  requestsToSpeak?: RequestToSpeak[];
   isScheduled?: boolean;
   scheduledTime?: Date;
-  invitedUserIds?: string[];
-  requestsToSpeak?: RequestToSpeak[];
   createdAt?: Date;
   totalListeners?: User[];
+  invitedUserIds?: string[];
   isVideoEnabled?: boolean;
-  geolocation?: { lat: number; lng: number; };
   broadcastingMedia?: { type: 'voice' | 'video'; url: string; user: User } | null;
-  tags?: string[];
 }
 
 export interface Comment {
-  id: string;
-  user: User;
-  text: string;
-  createdAt: Date;
-}
-
-type PostBase = {
     id: string;
-    author: User;
+    user: User;
+    text: string;
     createdAt: Date;
-    likes: number;
-    comments: Comment[];
-    status: 'published' | 'scheduled';
-    scheduledTime?: Date;
-    geolocation?: { lat: number; lng: number; };
-    replyingTo?: { commentId: string; user: User };
-    tags?: string[];
-    contributor?: User;
 }
 
-
-// For the discover/trending feed
-export type DiscoverItem = Room |
-  (User & { type: 'user_profile' }) |
-  (PostBase & {
-    type: 'text_post';
-    content: string;
-  }) |
-  (PostBase & {
-    type: 'image_post';
-    imageUrl: string;
-    caption?: string;
-  }) |
-  (PostBase & {
-    type: 'video_post';
-    videoUrl: string;
-    thumbnailUrl: string;
-    caption?: string;
-  }) |
-   (PostBase & {
-    type: 'voice_note_post';
-    voiceMemo: { url: string; duration: number };
-    caption?: string;
-  });
-
-
-export interface Conversation {
-  id: string;
-  participants: User[];
-  messages: ChatMessage[];
-}
-
-export interface Notification {
-  id: string;
-  text: string;
-  createdAt: Date;
-  isRead: boolean;
-  link?: string; // e.g., to a room, profile, or post
-}
+// Union type for items in the discover feed
+export type DiscoverItem =
+  | (Room & { type: 'live_room' })
+  | (User & { type: 'user_profile' })
+  | {
+      id: string;
+      type: 'image_post';
+      author: User;
+      imageUrl: string;
+      caption?: string;
+      likes: number;
+      comments: Comment[];
+      createdAt: Date;
+      tags?: string[];
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
+    }
+  | {
+      id: string;
+      type: 'video_post';
+      author: User;
+      videoUrl: string;
+      thumbnailUrl: string;
+      caption?: string;
+      likes: number;
+      comments: Comment[];
+      createdAt: Date;
+      tags?: string[];
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
+    }
+  | {
+      id: string;
+      type: 'text_post';
+      author: User;
+      content: string;
+      likes: number;
+      comments: Comment[];
+      createdAt: Date;
+      tags?: string[];
+      status?: 'published' | 'scheduled';
+      scheduledTime?: Date;
+    }
+ | {
+      id: string;
+      type: 'voice_note_post';
+      author: User;
+      caption?: string;
+      voiceMemo: { url: string; duration: number; };
+      likes: number;
+      comments: Comment[];
+      createdAt: Date;
+      tags?: string[];
+  };
 
 export interface ContributionRequest {
-  id: string;
-  contributor: User;
-  recipient: User;
-  post: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }>;
-  status: 'pending' | 'approved' | 'declined';
-  createdAt: Date;
+    id: string;
+    fromUser: User;
+    toUser: User;
+    post: DiscoverItem; // The post being contributed
+    status: 'pending' | 'approved' | 'declined';
+    createdAt: Date;
 }
 
-// Updated to reflect the simplified 4-tab bottom navigation.
-export type ActiveView = 'home' | 'search' | 'messages' | 'profile' | 'privacyDashboard';
+export type ActiveView = 
+    | { view: 'home' }
+    | { view: 'room'; roomId: string }
+    | { view: 'profile'; userId: string }
+    | { view: 'edit_profile' }
+    | { view: 'media'; post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> }
+    | { view: 'post'; post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> }
+    | { view: 'create_note' }
+    | { view: 'create_post', file: { url: string; type: 'image' | 'video' } }
+    | { view: 'swipe'; initialRoomId: string }
+    | { view: 'in_app_browser'; url: string }
+    | { view: 'messages' }
+    | { view: 'conversation'; conversationId: string }
+    | { view: 'notifications' }
+    | { view: 'scheduled' }
+    | { view: 'search' }
+    | { view: 'trending' }
+    | { view: 'my_studio' }
+    | { view: 'privacy_dashboard' }
+    | { view: 'create_video_reply', replyInfo: { post: DiscoverItem; comment: Comment } };
+
 
 export type CurationTab = 'forYou' | 'following' | 'world' | 'local';
 
+export interface Conversation {
+    id: string;
+    participants: User[];
+    messages: ChatMessage[];
+}
+
+export interface Notification {
+    id: string;
+    text: string;
+    isRead: boolean;
+    createdAt: Date;
+}
+
 export interface ModalPosition {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
+  top: number;
+  left: number;
+  width: number;
+  height: number;
 }

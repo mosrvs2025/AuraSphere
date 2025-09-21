@@ -1,6 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon } from './Icons';
-import VideoRecorderModal from './VideoRecorderModal';
+// FIX: Corrected import path for Icons.
+import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon } from './Icons.tsx';
+import VideoRecorderModal from './VideoRecorderModal.tsx';
 
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;

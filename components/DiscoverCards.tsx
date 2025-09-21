@@ -1,7 +1,10 @@
+
 import React from 'react';
-import { DiscoverItem, Room, User } from '../types';
-import { VideoCameraIcon } from './Icons';
-import AudioPlayer from './AudioPlayer';
+// FIX: Corrected import path for types.
+import { DiscoverItem, Room, User } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { VideoCameraIcon } from './Icons.tsx';
+import AudioPlayer from './AudioPlayer.tsx';
 
 interface DiscoverCardProps {
   item: DiscoverItem;
@@ -82,7 +85,7 @@ export const DiscoverCard: React.FC<DiscoverCardProps> = ({ item, ...callbacks }
     case 'text_post':
     case 'voice_note_post':
        return <PostCard post={item} onView={() => {
-           if(item.type === 'text_post') callbacks.onViewPost(item);
+           if(item.type === 'text_post' || item.type === 'voice_note_post') callbacks.onViewPost(item);
            // Voice notes are played directly from card, no detail view
         }} />;
     default:

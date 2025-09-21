@@ -1,8 +1,11 @@
+
 // Implemented the ScheduledView to display upcoming rooms.
 import React, { useState } from 'react';
-import { Room, DiscoverItem } from '../types';
-import { DocumentTextIcon, ImageIcon, ScheduledIcon, VideoCameraIcon } from './Icons';
-import ScheduledRoomDetailView from './ScheduledRoomDetailView';
+// FIX: Corrected import path for types.
+import { Room, DiscoverItem } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { DocumentTextIcon, ImageIcon, ScheduledIcon, VideoCameraIcon } from './Icons.tsx';
+import ScheduledRoomDetailView from './ScheduledRoomDetailView.tsx';
 
 interface ScheduledViewProps {
   rooms: Room[];
@@ -84,7 +87,7 @@ const ScheduledView: React.FC<ScheduledViewProps> = ({ rooms, discoverItems }) =
       <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
         <div className="flex justify-between items-center mb-4">
           <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-gray-700 transition" aria-label="Previous month">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l-4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
           </button>
           <h2 className="text-xl font-bold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
           <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-700 transition" aria-label="Next month">

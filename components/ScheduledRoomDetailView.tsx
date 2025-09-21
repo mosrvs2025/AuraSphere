@@ -1,6 +1,8 @@
+
 // Implemented ScheduledRoomDetailView for displaying details of a future event.
 import React from 'react';
-import { Room } from '../types';
+// FIX: Corrected import path for types.
+import { Room } from '../types.ts';
 
 interface ScheduledRoomDetailViewProps {
   room: Room;

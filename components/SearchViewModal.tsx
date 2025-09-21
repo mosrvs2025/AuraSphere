@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { Room, User, DiscoverItem } from '../types';
-import SearchView from './SearchView';
-import { SearchIcon, XIcon } from './Icons';
-import ConfirmationModal from './ConfirmationModal';
+// FIX: Corrected import path for types.
+import { Room, User, DiscoverItem } from '../types.ts';
+import SearchView from './SearchView.tsx';
+// FIX: Corrected import path for Icons.
+import { SearchIcon, XIcon } from './Icons.tsx';
+import ConfirmationModal from './ConfirmationModal.tsx';
 
 // Helper functions for localStorage
 const getSearchHistory = (): string[] => JSON.parse(localStorage.getItem('aura_search_history') || '[]');

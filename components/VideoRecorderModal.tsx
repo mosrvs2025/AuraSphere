@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { TrashIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { TrashIcon } from './Icons.tsx';
 
 interface VideoRecorderModalProps {
   onClose: () => void;

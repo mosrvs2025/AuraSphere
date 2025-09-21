@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { StudioIcon, DocumentTextIcon, MicIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { StudioIcon, DocumentTextIcon, MicIcon } from './Icons.tsx';
 
 interface CreateHubModalProps {
   onClose: () => void;

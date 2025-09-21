@@ -1,6 +1,9 @@
+
 import React from 'react';
-import { Notification } from '../types';
-import { BellIcon } from './Icons';
+// FIX: Corrected import path for types.
+import { Notification } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { BellIcon } from './Icons.tsx';
 
 interface NotificationsViewProps {
   notifications: Notification[];

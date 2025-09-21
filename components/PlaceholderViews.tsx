@@ -1,6 +1,8 @@
+
 // Implemented placeholder components for Trending and My Studio views.
 import React from 'react';
-import { StudioIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { StudioIcon } from './Icons.tsx';
 
 const PlaceholderCard: React.FC<{ title: string; icon: React.ReactNode }> = ({ title, icon }) => (
   <div className="h-full flex items-center justify-center p-8">

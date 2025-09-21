@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { DiscoverItem, Room, User, CurationTab } from '../types';
+import React, { useMemo, useContext } from 'react';
+import { DiscoverItem, CurationTab, User } from '../types';
 import { DiscoverCard } from './DiscoverCards';
+import { UserContext } from '../context/UserContext';
 
 interface ExploreViewProps {
   items: DiscoverItem[];
@@ -8,76 +9,90 @@ interface ExploreViewProps {
   activeMediaType: DiscoverItem['type'] | 'All';
   activeTopicTag: string;
   isLiveFilterActive: boolean;
-  onEnterRoom: (room: Room) => void;
-  onViewProfile: (user: User) => void;
-  onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
+  onEnterRoom: (room: any) => void;
+  onViewProfile: (user: any) => void;
+  onViewMedia: (post: any) => void;
+  onViewPost: (post: any) => void;
 }
 
 const ExploreView: React.FC<ExploreViewProps> = (props) => {
-  const { items, curationTab, activeMediaType, activeTopicTag, isLiveFilterActive, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
+  const { 
+    items, 
+    curationTab, 
+    activeMediaType, 
+    activeTopicTag, 
+    isLiveFilterActive, 
+    ...callbacks 
+  } = props;
+  const { currentUser } = useContext(UserContext);
 
-  const displayedItems = useMemo(() => {
+  const filteredItems = useMemo(() => {
     let filtered = [...items];
 
-    // 1. Apply Global Live Filter
+    // 1. Filter by Live status
     if (isLiveFilterActive) {
       filtered = filtered.filter(item => item.type === 'live_room');
     }
-
-    // 2. Apply Media Type Filter
-    if (activeMediaType !== 'All') {
+    // 2. Filter by Media Type (only if live filter is not active)
+    else if (activeMediaType !== 'All') {
       filtered = filtered.filter(item => item.type === activeMediaType);
     }
     
-    // 3. Apply Curation Tab Filter (For You, Following, etc.)
-    // This is a placeholder for more complex logic
-    if (curationTab === 'following') {
-        // A real implementation would check against current user's following list
-        filtered = filtered.filter(item => 'author' in item || 'hosts' in item);
-    }
-
-    // 4. Apply Topic Tag Filter
+    // 3. Filter by Topic Tag
     if (activeTopicTag !== 'All') {
-      filtered = filtered.filter(item => 'tags' in item && item.tags && item.tags.includes(activeTopicTag));
+      filtered = filtered.filter(item => 
+        'tags' in item && Array.isArray(item.tags) && item.tags.includes(activeTopicTag.replace('# ', ''))
+      );
     }
-    
-    return filtered;
-  }, [items, curationTab, activeMediaType, activeTopicTag, isLiveFilterActive]);
 
-  // Masonry layout logic (2 columns for Explore)
-  const columns = [[], []] as DiscoverItem[][];
-  displayedItems.forEach((item, i) => {
-    columns[i % 2].push(item);
+    // 4. Filter by Curation Tab
+    if (curationTab === 'following' && currentUser) {
+      const followingIds = new Set(currentUser.following.map(f => f.id));
+      filtered = filtered.filter(item => {
+        if ('author' in item && item.author) {
+          return followingIds.has(item.author.id);
+        }
+        if ('hosts' in item && item.hosts) {
+          return item.hosts.some(host => followingIds.has(host.id));
+        }
+        if (item.type === 'user_profile') {
+          return followingIds.has(item.id);
+        }
+        return false;
+      });
+    }
+
+    return filtered;
+  }, [items, isLiveFilterActive, activeMediaType, activeTopicTag, curationTab, currentUser]);
+
+  // Masonry layout logic
+  const columns: DiscoverItem[][] = [[], [], []];
+  filteredItems.forEach((item, i) => {
+    columns[i % 3].push(item);
   });
 
   return (
-    <main className="p-2 flex-1 overflow-y-auto">
-      {displayedItems.length > 0 ? (
-        <div className="grid grid-cols-2 gap-2">
+    <main className="flex-1 overflow-y-auto p-4">
+      {filteredItems.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
           {columns.map((col, colIndex) => (
-            <div key={colIndex} className="flex flex-col gap-2">
+            <div key={colIndex} className="flex flex-col gap-4">
               {col.map((item) => (
                 <DiscoverCard
                   key={`${item.type}-${item.id}`}
                   item={item}
-                  onEnterRoom={onEnterRoom}
-                  onViewProfile={onViewProfile}
-                  onViewMedia={onViewMedia}
-                  onViewPost={onViewPost}
+                  {...callbacks}
                 />
               ))}
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-gray-800/50 rounded-lg border border-gray-700 m-2">
-          <h2 className="text-xl font-bold text-gray-300">
-            Nothing to see here
-          </h2>
-          <p className="text-gray-400 mt-2">
-            No items match your selected filters.
-          </p>
+        <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-500">
+                <h2 className="text-xl font-bold">Nothing to see here</h2>
+                <p className="mt-2">Try adjusting your filters or check back later!</p>
+            </div>
         </div>
       )}
     </main>

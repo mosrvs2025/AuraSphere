@@ -1,8 +1,11 @@
+
 import React, { useContext, useState } from 'react';
-import { DiscoverItem, User, Comment } from '../types';
-import { SendIcon, VideoCameraIcon } from './Icons';
-import { UserContext } from '../context/UserContext';
-import DynamicInput from './DynamicInput'; // Import the enhanced input
+// FIX: Corrected import path for types.
+import { DiscoverItem, User, Comment } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { SendIcon, VideoCameraIcon } from './Icons.tsx';
+import { UserContext } from '../context/UserContext.ts';
+import DynamicInput from './DynamicInput.tsx'; // Import the enhanced input
 
 interface PostDetailViewProps {
   post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>;

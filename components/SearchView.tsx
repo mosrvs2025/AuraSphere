@@ -1,6 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
-import { DiscoverItem, Room, User } from '../types';
-import { DiscoverCard } from './DiscoverCards';
+// FIX: Corrected import path for types.
+import { DiscoverItem, Room, User } from '../types.ts';
+import { DiscoverCard } from './DiscoverCards.tsx';
 
 // This is the same filter map from TrendingView
 const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {

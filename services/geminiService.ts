@@ -1,5 +1,7 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-import { ChatMessage } from "../types";
+// FIX: Corrected import path for types.
+import { ChatMessage } from "../types.ts";
 
 let ai: GoogleGenAI | null = null;
 

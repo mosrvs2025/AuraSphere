@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
-import { User } from '../types';
+// FIX: Corrected import path for types.
+import { User } from '../types.ts';
 
 interface EditProfileModalProps {
   user: User;

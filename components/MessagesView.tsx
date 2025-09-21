@@ -1,6 +1,9 @@
+
 import React, { useMemo } from 'react';
-import { Conversation, User, ChatMessage, Room } from '../types';
-import { MessagesIcon, StudioIcon } from './Icons';
+// FIX: Corrected import path for types.
+import { Conversation, User, ChatMessage, Room } from '../types.ts';
+// FIX: Corrected import path for Icons.
+import { MessagesIcon, StudioIcon } from './Icons.tsx';
 
 interface MessagesViewProps {
   conversations: Conversation[];

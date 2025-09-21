@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { DiscoverItem } from '../types';
+// FIX: Corrected import path for types.
+import { DiscoverItem } from '../types.ts';
 
 interface MediaViewerModalProps {
   post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>;

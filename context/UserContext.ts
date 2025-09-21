@@ -1,6 +1,8 @@
+
 // Implemented UserContext to provide current user data throughout the application.
 import { createContext } from 'react';
-import { User } from '../types';
+// FIX: Corrected import path for types.
+import { User } from '../types.ts';
 
 export interface IUserContext {
   currentUser: User;

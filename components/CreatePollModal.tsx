@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { PlusIcon, TrashIcon } from './Icons.tsx';
 
 interface CreatePollModalProps {
   onClose: () => void;

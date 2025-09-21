@@ -1,7 +1,9 @@
+
 // Implemented the UserCardModal for displaying a brief user profile.
 import React, { useContext } from 'react';
-import { User, ModalPosition } from '../types';
-import { UserContext } from '../context/UserContext';
+// FIX: Corrected import path for types.
+import { User, ModalPosition } from '../types.ts';
+import { UserContext } from '../context/UserContext.ts';
 
 interface UserCardModalProps {
   user: User;

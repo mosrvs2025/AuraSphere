@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
-import { VideoCameraIcon } from './Icons';
+// FIX: Corrected import path for Icons.
+import { VideoCameraIcon } from './Icons.tsx';
 
 interface CreateRoomModalProps {
   onClose: () => void;
