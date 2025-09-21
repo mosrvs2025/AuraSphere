@@ -157,12 +157,15 @@ export interface ContributionRequest {
 
 export type ActiveView = 
     | { view: 'home' }
+    | { view: 'explore' }
+    | { view: 'rooms' }
     | { view: 'room'; roomId: string }
-    | { view: 'profile'; userId: string }
+    | { view: 'profile'; userId?: string }
     | { view: 'edit_profile' }
     | { view: 'media'; post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> }
     | { view: 'post'; post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> }
     | { view: 'create_note' }
+    | { view: 'create_voice_note' }
     | { view: 'create_post', file: { url: string; type: 'image' | 'video' } }
     | { view: 'swipe'; initialRoomId: string }
     | { view: 'in_app_browser'; url: string }
@@ -170,9 +173,6 @@ export type ActiveView =
     | { view: 'conversation'; conversationId: string }
     | { view: 'notifications' }
     | { view: 'scheduled' }
-    | { view: 'search' }
-    | { view: 'trending' }
-    | { view: 'my_studio' }
     | { view: 'privacy_dashboard' }
     | { view: 'create_video_reply', replyInfo: { post: DiscoverItem; comment: Comment } };
 

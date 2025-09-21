@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DiscoverItem } from '../types';
 import { HomeIcon, ImageIcon, VideoCameraIcon, MicIcon, DocumentTextIcon, LiveIcon } from './Icons';
@@ -9,7 +10,6 @@ interface VerticalNavProps {
   onFilterChange: (filter: DiscoverItem['type'] | 'All') => void;
   isLiveFilterActive: boolean;
   onToggleLiveFilter: () => void;
-  liveVibeColor: string;
 }
 
 const filterOptions: { id: DiscoverItem['type'] | 'All', label: string, icon: React.ReactNode }[] = [
@@ -20,7 +20,7 @@ const filterOptions: { id: DiscoverItem['type'] | 'All', label: string, icon: Re
     { id: 'text_post', label: 'Text', icon: <DocumentTextIcon /> },
 ];
 
-const VerticalNav: React.FC<VerticalNavProps> = ({ isOpen, onClose, activeFilter, onFilterChange, isLiveFilterActive, onToggleLiveFilter, liveVibeColor }) => {
+const VerticalNav: React.FC<VerticalNavProps> = ({ isOpen, onClose, activeFilter, onFilterChange, isLiveFilterActive, onToggleLiveFilter }) => {
 
     const handleFilterClick = (filter: DiscoverItem['type'] | 'All') => {
         onFilterChange(filter);
@@ -47,7 +47,7 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ isOpen, onClose, activeFilter
                         onClick={handleLiveClick}
                         className={`flex items-center w-full p-3 rounded-lg transition-all duration-200 ${
                             isLiveFilterActive 
-                                ? `${liveVibeColor} text-white shadow-lg` 
+                                ? `bg-indigo-600 text-white shadow-lg` 
                                 : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                         }`}
                         aria-label="Toggle Live Mode"

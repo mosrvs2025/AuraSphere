@@ -1,15 +1,8 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-// FIX: Corrected import path for types.
-import { DiscoverItem, Room, User, CurationTab } from '../types.ts';
-import VerticalNav from './VerticalNav.tsx';
-// FIX: Corrected import path for ExploreView component.
-import ExploreView from './ExploreView.tsx';
-import GlobalHeader from './GlobalHeader.tsx';
-// FIX: Corrected import path for FabCreateMenu component.
-import FabCreateMenu from './FabCreateMenu.tsx';
-import CreateRoomModal from './CreateRoomModal.tsx';
-import CreateNoteView from './CreateNoteView.tsx';
+import React, { useMemo, useContext } from 'react';
+import { DiscoverItem, Room, User } from '../types.ts';
+import { DiscoverCard } from './DiscoverCards.tsx';
+import { UserContext } from '../context/UserContext.ts';
 
 interface HomeViewProps {
   discoverItems: DiscoverItem[];
@@ -20,81 +13,64 @@ interface HomeViewProps {
 }
 
 const HomeView: React.FC<HomeViewProps> = (props) => {
-  const [isFilterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [isLiveFilterActive, setIsLiveFilterActive] = useState(false);
-  const [liveVibeColor, setLiveVibeColor] = useState('bg-indigo-600');
-  const [activeMediaType, setActiveMediaType] = useState<DiscoverItem['type'] | 'All'>('All');
-  const [curationTab, setCurationTab] = useState<CurationTab>('forYou');
-  const [activeTopicTag, setActiveTopicTag] = useState<string>('All');
-  const [isCreateRoomOpen, setCreateRoomOpen] = useState(false);
-  const [isCreateNoteOpen, setCreateNoteOpen] = useState(false);
+    const { discoverItems, ...callbacks } = props;
+    const { currentUser } = useContext(UserContext);
 
-  // Simulate the "vibe" color changing for the Live Activity button
-  useEffect(() => {
-    const colors = ['bg-indigo-600', 'bg-blue-600', 'bg-green-600', 'bg-orange-600', 'bg-red-600'];
-    const interval = setInterval(() => {
-      setLiveVibeColor(colors[Math.floor(Math.random() * colors.length)]);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    const followingFeed = useMemo(() => {
+        const followingIds = new Set(currentUser.following.map(f => f.id));
+        return discoverItems.filter(item => {
+            if ('author' in item && item.author) {
+              return followingIds.has(item.author.id);
+            }
+            if ('hosts' in item && item.hosts) {
+              return item.hosts.some(host => followingIds.has(host.id));
+            }
+            if (item.type === 'user_profile') {
+              return followingIds.has(item.id);
+            }
+            return false;
+      });
+    }, [discoverItems, currentUser]);
 
-  const trendingTags = useMemo(() => {
-    const tags = new Set<string>(['All']);
-    props.discoverItems.forEach(item => {
-      if ('tags' in item && item.tags) {
-        item.tags.forEach(tag => tags.add(tag));
-      }
+
+    // Masonry layout logic
+    const columns: DiscoverItem[][] = [[], [], []];
+    followingFeed.forEach((item, i) => {
+        columns[i % 3].push(item);
     });
-    return Array.from(tags).slice(0, 10);
-  }, [props.discoverItems]);
 
-  const handleToggleLiveFilter = () => {
-    setIsLiveFilterActive(prev => !prev);
-    // When activating live, ensure media type is compatible or 'All'
-    if (!isLiveFilterActive) {
-        setActiveMediaType('All'); 
-    }
-  };
 
-  return (
-    <>
-      <div className="flex h-full flex-col">
-        <GlobalHeader
-          onFilterClick={() => setFilterPanelOpen(true)}
-          curationTab={curationTab}
-          onCurationTabChange={setCurationTab}
-          trendingTags={trendingTags}
-          activeTopicTag={activeTopicTag}
-          onTopicTagChange={setActiveTopicTag}
-        />
-        <ExploreView
-          items={props.discoverItems}
-          curationTab={curationTab}
-          activeMediaType={activeMediaType}
-          activeTopicTag={activeTopicTag}
-          isLiveFilterActive={isLiveFilterActive}
-          onEnterRoom={props.onEnterRoom}
-          onViewProfile={props.onViewProfile}
-          onViewMedia={props.onViewMedia}
-          onViewPost={props.onViewPost}
-        />
-      </div>
-      <VerticalNav
-        isOpen={isFilterPanelOpen}
-        onClose={() => setFilterPanelOpen(false)}
-        activeFilter={activeMediaType}
-        onFilterChange={setActiveMediaType}
-        isLiveFilterActive={isLiveFilterActive}
-        onToggleLiveFilter={handleToggleLiveFilter}
-        liveVibeColor={liveVibeColor}
-      />
-      <FabCreateMenu 
-        onStartRoom={() => setCreateRoomOpen(true)} 
-        onNewPost={() => setCreateNoteOpen(true)}
-      />
-      {/* Modals for creation would be rendered here in a real app, handled by App.tsx */}
-    </>
-  );
+    return (
+        <div className="flex h-full flex-col">
+            <header className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 sticky top-0 z-10 p-4">
+                <h1 className="text-xl font-bold text-center">Home</h1>
+            </header>
+            <main className="flex-1 overflow-y-auto p-4">
+            {followingFeed.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+                {columns.map((col, colIndex) => (
+                    <div key={colIndex} className="flex flex-col gap-4">
+                    {col.map((item) => (
+                        <DiscoverCard
+                        key={`${item.type}-${item.id}`}
+                        item={item}
+                        {...callbacks}
+                        />
+                    ))}
+                    </div>
+                ))}
+                </div>
+            ) : (
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500 max-w-sm">
+                        <h2 className="text-xl font-bold">Your Feed is Quiet</h2>
+                        <p className="mt-2">Content from people you follow will appear here. Head over to the Explore tab to find new creators!</p>
+                    </div>
+                </div>
+            )}
+            </main>
+        </div>
+    );
 };
 
 export default HomeView;

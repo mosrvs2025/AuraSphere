@@ -1,9 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, Room, DiscoverItem, ActiveView, Conversation, ChatMessage, Notification, ContributionRequest } from './types.ts';
 import { UserContext, IUserContext } from './context/UserContext.ts';
 import { MOCK_USERS, MOCK_ROOMS, MOCK_DISCOVER_ITEMS, MOCK_CONVERSATIONS, MOCK_NOTIFICATIONS, MOCK_CONTRIBUTION_REQUESTS } from './data.ts';
 import HomeView from './components/HomeView.tsx';
+import ExploreView from './components/ExploreView.tsx';
+import RoomsView from './components/RoomsView.tsx';
 import RoomView from './components/RoomView.tsx';
 import UserProfile from './components/UserProfile.tsx';
 import BottomNavBar from './components/BottomNavBar.tsx';
@@ -14,6 +16,7 @@ import MediaViewerModal from './components/MediaViewerModal.tsx';
 import PostDetailView from './components/PostDetailView.tsx';
 import CreateNoteView from './components/CreateNoteView.tsx';
 import CreatePostView from './components/CreatePostView.tsx';
+import CreateVoiceNoteView from './components/CreateVoiceNoteView.tsx';
 import PostCreationAnimation from './components/PostCreationAnimation.tsx';
 import SwipeView from './components/SwipeView.tsx';
 import InAppBrowser from './components/InAppBrowser.tsx';
@@ -21,11 +24,9 @@ import MessagesView from './components/MessagesView.tsx';
 import ConversationView from './components/ConversationView.tsx';
 import NotificationsView from './components/NotificationsView.tsx';
 import ScheduledView from './components/ScheduledView.tsx';
-import GlobalSearchView from './components/GlobalSearchView.tsx';
-import TrendingView from './components/TrendingView.tsx';
-import { MyStudioView } from './components/PlaceholderViews.tsx';
 import PrivacyDashboard from './components/PrivacyDashboard.tsx';
 import CreateVideoReplyView from './components/CreateVideoReplyView.tsx';
+import FabCreateMenu from './components/FabCreateMenu.tsx';
 
 const App: React.FC = () => {
     const [users, setUsers] = useState<User[]>(MOCK_USERS);
@@ -40,6 +41,10 @@ const App: React.FC = () => {
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
     const [showPostCreationAnimation, setShowPostCreationAnimation] = useState<{ type: 'image' | 'video' | 'note' | 'voice_note', imageUrl?: string } | null>(null);
+    const [activeFilter, setActiveFilter] = useState<DiscoverItem['type'] | 'All'>('All');
+    
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
 
     const userContextValue: IUserContext = {
         currentUser,
@@ -115,11 +120,13 @@ const App: React.FC = () => {
         handleEnterRoom(newRoom);
     };
     
-    const handlePost = (data: { content: string } | { caption: string }, scheduleDate?: Date) => {
+    const handlePost = (data: any, scheduleDate?: Date) => {
          // This is where you would call an API to create the post
         console.log("Posting:", data, "Scheduled for:", scheduleDate);
         if (activeView.view === 'create_post') {
             setShowPostCreationAnimation({ type: activeView.file.type, imageUrl: activeView.file.url });
+        } else if (activeView.view === 'create_voice_note') {
+            setShowPostCreationAnimation({ type: 'voice_note' });
         } else {
             setShowPostCreationAnimation({ type: 'note' });
         }
@@ -130,39 +137,26 @@ const App: React.FC = () => {
         setActiveView({ view: 'home' });
     };
 
-    const handleNavigate = (view: ActiveView['view'], params?: any) => {
-        // A simple navigation handler
-        switch(view) {
-            case 'home':
-                setActiveView({ view: 'home' });
-                break;
-             case 'search':
-                setActiveView({ view: 'search' });
-                break;
-            case 'trending':
-                 setActiveView({ view: 'trending' });
-                 break;
-            case 'messages':
-                setActiveView({ view: 'messages' });
-                break;
-            case 'my_studio':
-                 setActiveView({ view: 'my_studio' });
-                 break;
-             case 'profile':
-                if (params?.userId) {
-                    setActiveView({ view: 'profile', userId: params.userId });
-                } else {
-                    setActiveView({ view: 'profile', userId: currentUser.id });
-                }
-                break;
-        }
+    const handleNavigate = (view: 'home' | 'explore' | 'rooms' | 'messages' | 'profile' | 'notifications') => {
+        setActiveView({ view: view });
     }
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setActiveView({ view: 'create_post', file: { url, type } });
+        }
+        event.target.value = ''; // Reset input
+    };
+    
+    const mainTabs: ActiveView['view'][] = ['home', 'explore', 'rooms', 'messages', 'profile'];
+    const showMainUI = mainTabs.includes(activeView.view);
 
     const renderActiveView = () => {
         switch (activeView.view) {
             case 'profile':
-                const user = users.find(u => u.id === activeView.userId);
-                if (!user) return <div>User not found</div>;
+                const user = users.find(u => u.id === (activeView as any).userId) || currentUser;
                 return <UserProfile 
                             user={user}
                             allRooms={rooms}
@@ -186,22 +180,24 @@ const App: React.FC = () => {
                             }}
                         />
             case 'media':
-                return <MediaViewerModal post={activeView.post} onClose={() => setActiveView({ view: 'home' })} />;
+                return <MediaViewerModal post={activeView.post} onClose={() => setActiveView({ view: activeView.post.author.id === currentUser.id ? 'profile' : 'explore' })} />;
             case 'post':
                 return <PostDetailView 
                             post={activeView.post} 
-                            onBack={() => setActiveView({ view: 'home' })} 
+                            onBack={() => setActiveView({ view: activeView.post.author.id === currentUser.id ? 'profile' : 'explore' })} 
                             onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
                             onStartVideoReply={(replyInfo) => setActiveView({ view: 'create_video_reply', replyInfo })}
                         />;
             case 'create_note':
-                return <CreateNoteView onClose={() => setActiveView({ view: 'home' })} onPost={handlePost} />
+                return <CreateNoteView onClose={() => setActiveView({ view: 'explore' })} onPost={handlePost} />
+            case 'create_voice_note':
+                return <CreateVoiceNoteView onClose={() => setActiveView({ view: 'explore' })} onPost={handlePost} />
             case 'create_post':
-                 return <CreatePostView file={activeView.file} onClose={() => setActiveView({ view: 'home' })} onPost={handlePost} />;
+                 return <CreatePostView file={activeView.file} onClose={() => setActiveView({ view: 'explore' })} onPost={handlePost} />;
             case 'swipe':
                 return <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeView.initialRoomId} onClose={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />;
             case 'in_app_browser':
-                return <InAppBrowser url={activeView.url} onClose={() => setActiveView({ view: 'home' })} />;
+                return <InAppBrowser url={activeView.url} onClose={() => setActiveView({ view: 'explore' })} />;
             case 'messages':
                 return <MessagesView 
                             conversations={conversations} 
@@ -219,23 +215,21 @@ const App: React.FC = () => {
                  return <NotificationsView notifications={notifications} onNotificationClick={(notif) => setNotifications(notifications.map(n => n.id === notif.id ? {...n, isRead: true} : n))} onBack={() => setActiveView({ view: 'home' })} />;
             case 'scheduled':
                  return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-            case 'search':
-                 return <GlobalSearchView 
-                    query="" 
-                    onSearch={()=>{}} 
-                    discoverItems={discoverItems} 
-                    currentUser={currentUser} 
-                    onEnterRoom={handleEnterRoom}
-                    onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
-                    onViewMedia={(post) => setActiveView({ view: 'media', post })}
-                    onViewPost={(post) => setActiveView({ view: 'post', post })}
-                    onClose={() => setActiveView({ view: 'home' })}
-                 />
-            case 'trending':
-                const trendingTags = Array.from(new Set(discoverItems.flatMap(item => 'tags' in item && item.tags ? item.tags : []))).slice(0, 5);
-                 return <TrendingView discoverItems={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} onViewMedia={(post) => setActiveView({ view: 'media', post })} onViewPost={(post) => setActiveView({ view: 'post', post })} />;
-            case 'my_studio':
-                return <MyStudioView />;
+            case 'explore':
+                 return <ExploreView
+                            discoverItems={discoverItems}
+                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
+                            onViewMedia={(post) => setActiveView({ view: 'media', post })}
+                            onViewPost={(post) => setActiveView({ view: 'post', post })}
+                            activeFilter={activeFilter}
+                            onFilterChange={setActiveFilter}
+                        />;
+            case 'rooms':
+                return <RoomsView
+                            rooms={rooms}
+                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                        />;
             case 'privacy_dashboard':
                 return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => setActiveView({ view: 'profile', userId: currentUser.id })} />;
             case 'create_video_reply':
@@ -255,6 +249,10 @@ const App: React.FC = () => {
     return (
         <UserContext.Provider value={userContextValue}>
             <div className="bg-gray-900 text-white h-screen w-screen flex flex-col md:flex-row overflow-hidden">
+                {/* File inputs for FAB */}
+                <input type="file" accept="image/*" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
+                <input type="file" accept="video/*" ref={videoInputRef} onChange={(e) => handleFileChange(e, 'video')} className="hidden" />
+
                 {/* Main content */}
                 <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
                     {renderActiveView()}
@@ -287,11 +285,21 @@ const App: React.FC = () => {
                     />
                 )}
 
-                {/* Bottom Nav */}
+                {/* Persistent UI */}
+                {showMainUI && (
+                    <FabCreateMenu 
+                        onStartRoom={() => setCreateRoomModalOpen(true)}
+                        onNewImagePost={() => imageInputRef.current?.click()}
+                        onNewVideoPost={() => videoInputRef.current?.click()}
+                        onNewVoiceNote={() => setActiveView({ view: 'create_voice_note' })}
+                        onNewTextPost={() => setActiveView({ view: 'create_note' })}
+                        activeFilter={activeFilter}
+                    />
+                )}
                 <div className="flex-shrink-0 md:hidden">
                     <BottomNavBar 
                         onNavigate={handleNavigate} 
-                        unreadNotifications={notifications.filter(n => !n.isRead).length}
+                        activeView={activeView.view}
                     />
                 </div>
             </div>
