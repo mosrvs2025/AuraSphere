@@ -32,6 +32,7 @@ import ContributeModal from './components/ContributeModal';
 import PrivacyDashboard from './components/PrivacyDashboard';
 import BottomNavBar from './components/BottomNavBar';
 import SwipeView from './components/SwipeView';
+import { PlusIcon } from './components/Icons';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -176,7 +177,7 @@ const getCurrentLocation = (): Promise<{ lat: number; lng: number } | null> => {
 };
 
 const App: React.FC = () => {
-    const [activeView, setActiveView] = useState<ActiveView>('discover');
+    const [activeView, setActiveView] = useState<ActiveView>('home');
     const [currentUser, setCurrentUser] = useState<User>(currentUserData);
     const [rooms, setRooms] = useState(() => generateRooms(allUsers));
     const [posts, setPosts] = useState(() => generatePosts(allUsers));
@@ -222,6 +223,7 @@ const App: React.FC = () => {
         onComplete: () => void;
     } | null>(null);
     const [contributingToUser, setContributingToUser] = useState<User | null>(null);
+    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const lastScrollTop = useRef(0);
 
     const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms, posts), [rooms, posts]);
@@ -380,7 +382,7 @@ const App: React.FC = () => {
 
             // If it's a scheduled post, just navigate home. Otherwise, trigger animation.
             if (newPost.status === 'scheduled') {
-                handleNavigate('discover');
+                handleNavigate('home');
                 return;
             }
 
@@ -406,7 +408,7 @@ const App: React.FC = () => {
             }
 
             const onAnimationComplete = () => {
-                handleNavigate('discover');
+                handleNavigate('home');
                 setActiveMediaType(destinationFilter);
                 setPostCreationAnimationData(null); // Cleanup
             };
@@ -419,7 +421,7 @@ const App: React.FC = () => {
 
         } else {
             // Fallback navigation if post creation failed for some reason
-            handleNavigate('discover');
+            handleNavigate('home');
         }
     };
 
@@ -477,7 +479,7 @@ const App: React.FC = () => {
         setBrowserUrl(null);
         setViewingMedia(null);
 
-        if (view !== 'explore') { // Search is part of explore
+        if (view !== 'search') { // Search is part of explore
             setSearchQuery('');
         }
 
@@ -514,10 +516,10 @@ const App: React.FC = () => {
 
       // Render main page views
       switch (activeView) {
-        case 'discover': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeMediaType={activeMediaType} activeTopicTag={activeTopicTag} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
-        case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+        case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeMediaType={activeMediaType} activeTopicTag={activeTopicTag} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
+        case 'search': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} liveRooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterLiveRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('discover')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
         // FIX: The privacy dashboard is now accessed via the profile page, so it doesn't need to be a main view.
         case 'privacyDashboard': return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => handleNavigate('profile')} />;
         default: return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeMediaType={activeMediaType} activeTopicTag={activeTopicTag} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
@@ -542,21 +544,24 @@ const App: React.FC = () => {
     };
     
     const isSubViewActive = !!(activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || swipeViewData);
-    const contentViews: ActiveView[] = ['discover', 'explore'];
-    const showVerticalNav = contentViews.includes(activeView) && !isSubViewActive;
+    const contentViews: ActiveView[] = ['home', 'search'];
     const showGlobalHeader = contentViews.includes(activeView) && !isSubViewActive;
     const showBottomNav = !isSubViewActive;
+    const showFab = contentViews.includes(activeView) && !isSubViewActive;
 
     return (
         <UserContext.Provider value={userContextValue}>
             <div className="h-full flex flex-col bg-gray-900">
-                <div className="flex-1 flex flex-row min-h-0">
-                    {showVerticalNav && (
-                        <VerticalNav 
-                            activeMediaType={activeMediaType}
-                            setActiveMediaType={setActiveMediaType}
-                        />
-                    )}
+                <div className="flex-1 flex flex-col min-h-0">
+                    <VerticalNav 
+                        isOpen={isFilterPanelOpen}
+                        onClose={() => setIsFilterPanelOpen(false)}
+                        activeMediaType={activeMediaType}
+                        setActiveMediaType={(mediaType) => {
+                            setActiveMediaType(mediaType);
+                            setIsFilterPanelOpen(false);
+                        }}
+                    />
                     
                     <main id="main-content" onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide">
                          {showGlobalHeader && (
@@ -570,8 +575,8 @@ const App: React.FC = () => {
                                 trendingTags={trendingTags}
                                 activeTopicTag={activeTopicTag}
                                 setActiveTopicTag={setActiveTopicTag}
-// FIX: Passed the mainScrollTop state to the GlobalHeader as the required `scrollTop` prop.
                                 scrollTop={mainScrollTop}
+                                onFilterClick={() => setIsFilterPanelOpen(true)}
                             />
                         )}
                         {renderActiveView()}
@@ -582,9 +587,19 @@ const App: React.FC = () => {
                     <BottomNavBar 
                         activeView={activeView}
                         setActiveView={handleNavigate}
-                        onCreateContent={() => setCreateHubOpen(true)}
                     />
                 )}
+                
+                {showFab && (
+                     <button 
+                        onClick={() => setCreateHubOpen(true)}
+                        className="absolute bottom-24 right-6 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 ease-in-out bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/30 transform hover:scale-110 z-30"
+                        aria-label="Create content"
+                    >
+                        <PlusIcon className="w-8 h-8" />
+                    </button>
+                )}
+
 
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && (currentUser || viewingProfile) && <EditProfileModal user={viewingProfile ?? currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}

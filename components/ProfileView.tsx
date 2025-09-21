@@ -174,7 +174,7 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
         }
     }
 
-    // FIX: The `activeTab` state can be an object, which caused a type error. Replaced with `activeTabId` which is guaranteed to be a string.
+    // FIX: The `activeTab` state can be an object, which caused a type error. Replaced `activeTab` with `activeTabId` which is guaranteed to be a string.
     if (items.length === 0) return <Placeholder text={`${user.name} hasn't shared any ${activeTabId.toLowerCase() === 'all' ? 'content' : activeTabId.toLowerCase()} yet.`} />;
     
     return (

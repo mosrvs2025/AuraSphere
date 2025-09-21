@@ -169,8 +169,8 @@ export interface ContributionRequest {
   createdAt: Date;
 }
 
-// FIX: Added 'privacyDashboard' to allow navigation from the profile settings menu.
-export type ActiveView = 'discover' | 'explore' | 'messages' | 'profile' | 'privacyDashboard';
+// Updated to reflect the simplified 4-tab bottom navigation.
+export type ActiveView = 'home' | 'search' | 'messages' | 'profile' | 'privacyDashboard';
 
 export type CurationTab = 'forYou' | 'following' | 'world' | 'local';
 
