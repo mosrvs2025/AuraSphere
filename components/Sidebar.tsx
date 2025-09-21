@@ -1,9 +1,8 @@
-
 import React, { useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 import { HomeIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon, StudioIcon, SearchIcon } from './Icons';
 // FIX: Imported ActiveView from types.ts to resolve type conflict.
-import { ActiveView } from '../types';
+import { ActiveView, User } from '../types';
 
 interface SidebarProps {
   activeView: ActiveView;
@@ -12,10 +11,11 @@ interface SidebarProps {
   setExpanded: (isOpen: boolean) => void;
   onCreateContent: () => void;
   unreadNotificationCount: number;
+  currentUser: User;
+  viewingProfile: User | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded, setExpanded, onCreateContent, unreadNotificationCount }) => {
-  const { currentUser } = useContext(UserContext);
+const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded, setExpanded, onCreateContent, unreadNotificationCount, currentUser }) => {
 
   const navItems = [
     { id: 'home', label: 'Discover', icon: <HomeIcon /> },

@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 // FIX: Added Comment to be used in type casting for new posts.
-import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment } from './types';
+import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment, ContributionRequest } from './types';
 import Sidebar from './components/Sidebar';
 import HomeView from './components/HomeView';
 import RoomView from './components/RoomView';
@@ -31,6 +31,7 @@ import ExploreView from './components/ExploreView';
 import PostCreationAnimation from './components/PostCreationAnimation';
 import CreateVoiceNoteView from './components/CreateVoiceNoteView';
 import CreateVideoReplyView from './components/CreateVideoReplyView';
+import ContributeModal from './components/ContributeModal';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -43,6 +44,7 @@ const generateUsers = (count: number): User[] => {
       bio: `This is the bio for User ${i}. I am interested in technology, design, and audio experiences.`,
       followers: [],
       following: [],
+      contributionSettings: i % 3 === 0 ? 'everyone' : i % 3 === 1 ? 'following' : 'none',
     });
   }
   // Create some follower/following relationships
@@ -60,6 +62,8 @@ const generateUsers = (count: number): User[] => {
 
 const allUsers = generateUsers(20);
 const currentUserData = allUsers[0];
+// Ensure current user can receive contributions from followers
+currentUserData.contributionSettings = 'following';
 
 const generateRooms = (users: User[]): Room[] => ([
     { id: 'room-1', title: 'Tech Talk Weekly', description: 'Discussing the latest in AI and hardware.', hosts: [users[1], users[2]], speakers: [users[3]], listeners: [users[4], users[5], users[6]], messages: [], isPrivate: false, requestsToSpeak: [
@@ -166,6 +170,22 @@ const App: React.FC = () => {
     const [rooms, setRooms] = useState(() => generateRooms(allUsers));
     const [posts, setPosts] = useState(() => generatePosts(allUsers));
     const [conversations, setConversations] = useState<Conversation[]>(allConversations);
+    const [contributionRequests, setContributionRequests] = useState<ContributionRequest[]>(() => {
+        // Mock a pending contribution request for the current user to review
+        const contributor = allUsers.find(u => currentUser.followers.some(f => f.id === u.id)); // Find a follower
+        const postToContribute = posts.find(p => p.author.id === contributor?.id);
+        if (contributor && postToContribute) {
+            return [{
+                id: 'cr-1',
+                contributor,
+                recipient: currentUser,
+                post: postToContribute,
+                status: 'pending',
+                createdAt: new Date(),
+            }];
+        }
+        return [];
+    });
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [viewingProfile, setViewingProfile] = useState<User | null>(null);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
@@ -190,6 +210,9 @@ const App: React.FC = () => {
         imageUrl?: string;
         onComplete: () => void;
     } | null>(null);
+    const [contributingToUser, setContributingToUser] = useState<User | null>(null);
+    const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
+    const lastScrollTop = useRef(0);
 
     const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms, posts), [rooms, posts]);
     const trendingTags = useMemo(() => {
@@ -403,11 +426,48 @@ const App: React.FC = () => {
         );
     };
 
-    const handleSaveProfile = (name: string, bio: string) => {
-        setCurrentUser(prev => ({...prev, name, bio}));
+    const handleSaveProfile = (name: string, bio: string, contributionSettings: User['contributionSettings']) => {
+        setCurrentUser(prev => ({...prev, name, bio, contributionSettings}));
         setEditProfileModalOpen(false);
     };
     
+    const handleSendContributionRequest = (
+        post: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }>,
+        recipient: User
+    ) => {
+        const newRequest: ContributionRequest = {
+            id: `cr-${Date.now()}`,
+            contributor: currentUser,
+            recipient,
+            post,
+            status: 'pending',
+            createdAt: new Date(),
+        };
+        setContributionRequests(prev => [newRequest, ...prev]);
+        setContributingToUser(null);
+        // In a real app, you'd show a toast notification here
+        console.log(`Contribution request sent to ${recipient.name}`);
+    };
+
+    const handleUpdateContributionRequest = (requestId: string, status: 'approved' | 'declined') => {
+        const request = contributionRequests.find(r => r.id === requestId);
+        if (!request) return;
+
+        if (status === 'approved') {
+            const contributedPost: typeof request.post = {
+                ...request.post,
+                id: `contrib-post-${Date.now()}`,
+                author: request.recipient, // The recipient is now the "author" on their own profile
+                contributor: request.contributor, // The original creator is the "contributor"
+                createdAt: new Date(), // It's a new post on their timeline
+            };
+            setPosts(prev => [contributedPost, ...prev]);
+        }
+        
+        setContributionRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
+    };
+
+
     const handleNavigate = (view: ActiveView) => {
         // Reset all transient sub-views to prevent getting "stuck"
         setViewingProfile(null);
@@ -435,12 +495,25 @@ const App: React.FC = () => {
     };
     
     const handleScroll = (event: React.UIEvent<HTMLElement>) => {
-        setMainScrollTop(event.currentTarget.scrollTop);
+        const currentScrollTop = event.currentTarget.scrollTop;
+        if (Math.abs(currentScrollTop - lastScrollTop.current) < 15) { // Threshold to prevent jitter
+            return;
+        }
+
+        if (currentScrollTop > lastScrollTop.current && currentScrollTop > 50) { // Start hiding after 50px
+            setScrollDirection('down');
+        } else {
+            setScrollDirection('up');
+        }
+        
+        lastScrollTop.current = currentScrollTop <= 0 ? 0 : currentScrollTop;
+        setMainScrollTop(currentScrollTop);
     };
+
 
     const renderActiveView = () => {
       // Prioritize modal-like views
-      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+      if (viewingProfile) return <UserProfile user={viewingProfile} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => setViewingProfile(null)} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} />;
       if (activeConversation) return <ConversationView conversation={activeConversation} currentUser={currentUser} onBack={() => setActiveConversation(null)} onViewProfile={handleViewProfile}/>;
       if (viewingPost) return <PostDetailView post={viewingPost} onBack={() => setViewingPost(null)} onViewProfile={handleViewProfile} onStartVideoReply={setVideoReplyInfo} />;
       if (createPostFile) return <CreatePostView file={createPostFile} onClose={() => setCreatePostFile(null)} onPost={(data, scheduleDate) => handleCreatePost(data, createPostFile, scheduleDate)} />;
@@ -454,7 +527,7 @@ const App: React.FC = () => {
         case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
         case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
         case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
         case 'my-studio': return <MyStudioView />;
         case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onMinimize={handleMinimizeRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
@@ -489,12 +562,22 @@ const App: React.FC = () => {
             setCreateVoiceNote(true);
         }
     };
+
+    const handleFabClick = () => {
+        const canContribute = viewingProfile && viewingProfile.id !== currentUser.id && (viewingProfile.contributionSettings === 'everyone' || (viewingProfile.contributionSettings === 'following' && currentUser.following.some(f => f.id === viewingProfile.id)));
+
+        if (canContribute) {
+            setContributingToUser(viewingProfile);
+        } else {
+            setCreateHubOpen(true);
+        }
+    };
     
     // Determine if a secondary view is active, which should hide the main nav elements.
-    const isSubViewActive = !!(viewingProfile || activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || activeRoom);
+    const isSubViewActive = !!(activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || activeRoom);
     
     // Define main views that show the global header.
-    const mainViews: ActiveView[] = ['home'];
+    const mainViews: ActiveView[] = ['home', 'explore'];
     const showGlobalHeader = mainViews.includes(activeView) && !isSubViewActive;
     
     return (
@@ -505,8 +588,10 @@ const App: React.FC = () => {
                     setActiveView={handleNavigate}
                     isExpanded={isSidebarExpanded} 
                     setExpanded={setSidebarExpanded} 
-                    onCreateContent={() => setCreateHubOpen(true)}
+                    onCreateContent={handleFabClick}
                     unreadNotificationCount={12}
+                    currentUser={currentUser}
+                    viewingProfile={viewingProfile}
                 />
                 
                 <div className="flex-1 flex flex-col min-w-0 h-full"> {/* min-w-0 is important for flex truncation */}
@@ -533,8 +618,11 @@ const App: React.FC = () => {
                       <BottomNavBar 
                           activeView={activeView} 
                           setActiveView={handleNavigate}
-                          onCreateContent={() => setCreateHubOpen(true)} 
+                          onCreateContent={handleFabClick} 
                           unreadNotificationCount={12}
+                          currentUser={currentUser}
+                          viewingProfile={viewingProfile}
+                          scrollDirection={scrollDirection}
                       />
                     )}
                 </div>
@@ -550,6 +638,15 @@ const App: React.FC = () => {
                         type={postCreationAnimationData.type}
                         imageUrl={postCreationAnimationData.imageUrl}
                         onAnimationComplete={postCreationAnimationData.onComplete}
+                    />
+                )}
+                {contributingToUser && (
+                    <ContributeModal
+                        recipient={contributingToUser}
+// FIX: The 'posts' state only contains post types, so filtering out 'live_room' and 'user_profile' is unnecessary and causes a type error. The 'as any' cast is also removed.
+                        currentUserPosts={posts.filter(p => p.author.id === currentUser.id)}
+                        onClose={() => setContributingToUser(null)}
+                        onSendRequest={(post) => handleSendContributionRequest(post, contributingToUser)}
                     />
                 )}
             </div>

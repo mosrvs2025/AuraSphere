@@ -7,6 +7,7 @@ export interface User {
   bio?: string;
   followers: User[];
   following: User[];
+  contributionSettings?: 'everyone' | 'following' | 'none';
 }
 
 export interface ChatMessage {
@@ -98,6 +99,7 @@ type PostBase = {
     geolocation?: { lat: number; lng: number; };
     replyingTo?: { commentId: string; user: User };
     tags?: string[];
+    contributor?: User;
 }
 
 
@@ -138,6 +140,15 @@ export interface Notification {
   createdAt: Date;
   isRead: boolean;
   link?: string; // e.g., to a room, profile, or post
+}
+
+export interface ContributionRequest {
+  id: string;
+  contributor: User;
+  recipient: User;
+  post: Extract<DiscoverItem, { type: 'text_post' | 'image_post' | 'video_post' | 'voice_note_post' }>;
+  status: 'pending' | 'approved' | 'declined';
+  createdAt: Date;
 }
 
 export type ActiveView = 'home' | 'explore' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
