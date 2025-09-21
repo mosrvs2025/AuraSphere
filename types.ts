@@ -76,6 +76,7 @@ export interface RequestToSpeak {
 
 export interface Room {
   id: string;
+  type: 'live_room'; // Added to conform to DiscoverItem
   title: string;
   description?: string;
   hosts: User[];
@@ -122,7 +123,7 @@ type PostBase = {
 
 
 // For the discover/trending feed
-export type DiscoverItem = (Room & { type: 'live_room' }) |
+export type DiscoverItem = Room |
   (User & { type: 'user_profile' }) |
   (PostBase & {
     type: 'text_post';

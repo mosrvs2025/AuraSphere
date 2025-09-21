@@ -1,64 +1,83 @@
 import React from 'react';
-import { HomeIcon, ImageIcon, VideoCameraIcon, MicIcon, DocumentTextIcon } from './Icons';
+import { DiscoverItem } from '../types';
+import { HomeIcon, ImageIcon, VideoCameraIcon, MicIcon, DocumentTextIcon, LiveIcon } from './Icons';
 
 interface VerticalNavProps {
   isOpen: boolean;
   onClose: () => void;
-  activeMediaType: string;
-  setActiveMediaType: (mediaType: string) => void;
+  activeFilter: DiscoverItem['type'] | 'All';
+  onFilterChange: (filter: DiscoverItem['type'] | 'All') => void;
+  isLiveFilterActive: boolean;
+  onToggleLiveFilter: () => void;
+  liveVibeColor: string;
 }
 
-const mediaTypes = [
-  { id: 'All', label: 'Discover', icon: <HomeIcon /> },
-  { id: 'Images', label: 'Images', icon: <ImageIcon /> },
-  { id: 'Video', label: 'Video', icon: <VideoCameraIcon /> },
-  { id: 'Audio', label: 'Audio', icon: <MicIcon /> },
-  { id: 'Text', label: 'Text', icon: <DocumentTextIcon /> },
+const filterOptions: { id: DiscoverItem['type'] | 'All', label: string, icon: React.ReactNode }[] = [
+    { id: 'All', label: 'All Media', icon: <HomeIcon /> },
+    { id: 'image_post', label: 'Images', icon: <ImageIcon /> },
+    { id: 'video_post', label: 'Video', icon: <VideoCameraIcon /> },
+    { id: 'voice_note_post', label: 'Audio', icon: <MicIcon /> },
+    { id: 'text_post', label: 'Text', icon: <DocumentTextIcon /> },
 ];
 
-const VerticalNav: React.FC<VerticalNavProps> = ({ isOpen, onClose, activeMediaType, setActiveMediaType }) => {
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onClose}
-      />
-      
-      {/* Panel */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-gray-900 border-r border-gray-800 flex flex-col items-center py-4 z-40 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-4 flex-shrink-0">
-          <div className="text-2xl font-bold text-white">A</div>
-        </div>
-        
-        <nav className="flex-grow w-56 p-4">
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Media Type</p>
-          <ul className="space-y-1">
-            {mediaTypes.map(item => (
-              <li key={item.id}>
-                <button
-                  onClick={() => setActiveMediaType(item.id)}
-                  className={`w-full flex items-center space-x-4 p-3 rounded-lg transition-colors group text-left ${
-                    activeMediaType === item.id ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
-                  aria-label={item.label}
-                >
-                  <div className="w-6 h-6">{item.icon}</div>
-                  <span className="text-base font-semibold">{item.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-    </>
-  );
+const VerticalNav: React.FC<VerticalNavProps> = ({ isOpen, onClose, activeFilter, onFilterChange, isLiveFilterActive, onToggleLiveFilter, liveVibeColor }) => {
+
+    const handleFilterClick = (filter: DiscoverItem['type'] | 'All') => {
+        onFilterChange(filter);
+        onClose();
+    };
+    
+    const handleLiveClick = () => {
+        onToggleLiveFilter();
+        onClose();
+    }
+
+    return (
+        <>
+            {/* Backdrop */}
+            <div 
+                className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={onClose}
+            ></div>
+            {/* Panel */}
+            <nav className={`fixed top-0 left-0 bottom-0 w-64 flex-shrink-0 bg-gray-900/80 backdrop-blur-md border-r border-gray-800/50 p-4 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="font-bold text-2xl text-white mb-8">Filter Content</div>
+                <div className="space-y-2">
+                    <button
+                        onClick={handleLiveClick}
+                        className={`flex items-center w-full p-3 rounded-lg transition-all duration-200 ${
+                            isLiveFilterActive 
+                                ? `${liveVibeColor} text-white shadow-lg` 
+                                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                        }`}
+                        aria-label="Toggle Live Mode"
+                    >
+                        <div className={`w-7 h-7 mr-4 relative flex items-center justify-center`}>
+                           <LiveIcon className={isLiveFilterActive ? 'animate-pulse-live-indicator' : ''} />
+                        </div>
+                        <span className="font-semibold">Live Activity</span>
+                    </button>
+                    <hr className="my-2 border-gray-700/50" />
+                    {filterOptions.map(item => (
+                       <button
+                            key={item.id}
+                            onClick={() => handleFilterClick(item.id)}
+                            disabled={isLiveFilterActive} // Disable other filters when live mode is on
+                            className={`flex items-center w-full p-3 rounded-lg transition-colors duration-200 ${
+                                activeFilter === item.id && !isLiveFilterActive
+                                    ? 'bg-indigo-600 text-white' 
+                                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50 disabled:text-gray-600 disabled:hover:bg-transparent'
+                            }`}
+                            aria-label={item.label}
+                        >
+                            <div className="w-7 h-7 mr-4">{item.icon}</div>
+                            <span className="font-semibold">{item.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </nav>
+        </>
+    );
 };
 
 export default VerticalNav;

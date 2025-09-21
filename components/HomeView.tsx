@@ -1,41 +1,95 @@
-// Implemented the HomeView to display a list of active rooms.
-import React from 'react';
-import { Room } from '../types';
-import RoomCard from './RoomCard';
-import { SearchIcon } from './Icons';
+import React, { useState, useMemo, useEffect } from 'react';
+import { DiscoverItem, Room, User, CurationTab } from '../types';
+import VerticalNav from './VerticalNav';
+import ExploreView from './ExploreView';
+import GlobalHeader from './GlobalHeader';
+import FabCreateMenu from './FabCreateMenu';
+import CreateRoomModal from './CreateRoomModal';
+import CreateNoteView from './CreateNoteView';
 
 interface HomeViewProps {
-  rooms: Room[];
+  discoverItems: DiscoverItem[];
   onEnterRoom: (room: Room) => void;
+  onViewProfile: (user: User) => void;
+  onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ rooms, onEnterRoom }) => {
+const HomeView: React.FC<HomeViewProps> = (props) => {
+  const [isFilterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [isLiveFilterActive, setIsLiveFilterActive] = useState(false);
+  const [liveVibeColor, setLiveVibeColor] = useState('bg-indigo-600');
+  const [activeMediaType, setActiveMediaType] = useState<DiscoverItem['type'] | 'All'>('All');
+  const [curationTab, setCurationTab] = useState<CurationTab>('forYou');
+  const [activeTopicTag, setActiveTopicTag] = useState<string>('All');
+  const [isCreateRoomOpen, setCreateRoomOpen] = useState(false);
+  const [isCreateNoteOpen, setCreateNoteOpen] = useState(false);
+
+  // Simulate the "vibe" color changing for the Live Activity button
+  useEffect(() => {
+    const colors = ['bg-indigo-600', 'bg-blue-600', 'bg-green-600', 'bg-orange-600', 'bg-red-600'];
+    const interval = setInterval(() => {
+      setLiveVibeColor(colors[Math.floor(Math.random() * colors.length)]);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const trendingTags = useMemo(() => {
+    const tags = new Set<string>(['All']);
+    props.discoverItems.forEach(item => {
+      if ('tags' in item && item.tags) {
+        item.tags.forEach(tag => tags.add(tag));
+      }
+    });
+    return Array.from(tags).slice(0, 10);
+  }, [props.discoverItems]);
+
+  const handleToggleLiveFilter = () => {
+    setIsLiveFilterActive(prev => !prev);
+    // When activating live, ensure media type is compatible or 'All'
+    if (!isLiveFilterActive) {
+        setActiveMediaType('All'); 
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 animate-fade-in">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Live Rooms</h1>
-           <div className="relative">
-              <input type="text" placeholder="Search rooms..." className="bg-gray-800 border border-gray-700 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48" />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  <SearchIcon />
-              </div>
-           </div>
-        </div>
-        {rooms.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rooms.map(room => (
-              <RoomCard key={room.id} room={room} onEnter={() => onEnterRoom(room)} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 bg-gray-800/50 rounded-lg border border-gray-700">
-            <h2 className="text-xl font-bold text-gray-300">It's quiet in here...</h2>
-            <p className="text-gray-400 mt-2">No live rooms right now. Why not start one?</p>
-          </div>
-        )}
+    <>
+      <div className="flex h-full flex-col">
+        <GlobalHeader
+          onFilterClick={() => setFilterPanelOpen(true)}
+          curationTab={curationTab}
+          onCurationTabChange={setCurationTab}
+          trendingTags={trendingTags}
+          activeTopicTag={activeTopicTag}
+          onTopicTagChange={setActiveTopicTag}
+        />
+        <ExploreView
+          items={props.discoverItems}
+          curationTab={curationTab}
+          activeMediaType={activeMediaType}
+          activeTopicTag={activeTopicTag}
+          isLiveFilterActive={isLiveFilterActive}
+          onEnterRoom={props.onEnterRoom}
+          onViewProfile={props.onViewProfile}
+          onViewMedia={props.onViewMedia}
+          onViewPost={props.onViewPost}
+        />
       </div>
-    </div>
+      <VerticalNav
+        isOpen={isFilterPanelOpen}
+        onClose={() => setFilterPanelOpen(false)}
+        activeFilter={activeMediaType}
+        onFilterChange={setActiveMediaType}
+        isLiveFilterActive={isLiveFilterActive}
+        onToggleLiveFilter={handleToggleLiveFilter}
+        liveVibeColor={liveVibeColor}
+      />
+      <FabCreateMenu 
+        onStartRoom={() => setCreateRoomOpen(true)} 
+        onNewPost={() => setCreateNoteOpen(true)}
+      />
+      {/* Modals for creation would be rendered here in a real app, handled by App.tsx */}
+    </>
   );
 };
 

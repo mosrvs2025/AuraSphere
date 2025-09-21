@@ -1,23 +1,19 @@
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
-import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon } from './Icons';
+import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon } from './Icons';
 import VideoRecorderModal from './VideoRecorderModal';
 
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;
     onSubmitAudioNote: (url: string, duration: number) => void;
     onSubmitVideoNote: (url: string, duration: number) => void;
+    // New prop for image replies
+    onSubmitImage?: (file: File) => void;
 }
 
 const RECORDING_DURATION = 30;
 
-const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAudioNote, onSubmitVideoNote }) => {
+const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAudioNote, onSubmitVideoNote, onSubmitImage }) => {
     const [text, setText] = useState('');
-    const [actionMode, setActionMode] = useState<'audio' | 'video'>('audio');
-    const [isModeSelectorOpen, setModeSelectorOpen] = useState(false);
     
     // Recording flow state
     const [mode, setMode] = useState<'idle' | 'recording' | 'preview'>('idle');
@@ -31,7 +27,6 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     
     // Refs
     const countdownInterval = useRef<number | null>(null);
-    const longPressTimer = useRef<number | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -39,6 +34,7 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameIdRef = useRef<number | null>(null);
     const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
 
     // --- Audio Context Cleanup ---
@@ -136,59 +132,48 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
     };
     
-    const startRecording = async () => {
-        if (actionMode === 'audio') {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaStreamRef.current = stream;
+    const startAudioRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaStreamRef.current = stream;
 
-                // Setup visualizer
-                const context = new (window.AudioContext)();
-                audioContextRef.current = context;
-                const source = context.createMediaStreamSource(stream);
-                const analyserNode = context.createAnalyser();
-                analyserNode.fftSize = 128;
-                source.connect(analyserNode);
-                analyserRef.current = analyserNode;
+            const context = new (window.AudioContext)();
+            audioContextRef.current = context;
+            const source = context.createMediaStreamSource(stream);
+            const analyserNode = context.createAnalyser();
+            analyserNode.fftSize = 128;
+            source.connect(analyserNode);
+            analyserRef.current = analyserNode;
 
-                // Setup recorder
+            audioChunksRef.current = [];
+            const recorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = recorder;
+            
+            recorder.ondataavailable = event => audioChunksRef.current.push(event.data);
+            
+            recorder.onstop = () => {
+                const mimeType = recorder.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
                 audioChunksRef.current = [];
-                const recorder = new MediaRecorder(stream);
-                mediaRecorderRef.current = recorder;
-                
-                recorder.ondataavailable = event => {
-                    audioChunksRef.current.push(event.data);
-                };
-                
-                recorder.onstop = () => {
-                    const mimeType = recorder.mimeType || 'audio/webm';
-                    const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-                    audioChunksRef.current = [];
-                    if (audioBlob.size > 0) {
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        setAudioPreview({ url: audioUrl, blob: audioBlob });
-                        setMode('preview');
-                    } else {
-                        console.warn("Recording resulted in an empty audio file.");
-                        setMode('idle');
-                    }
-                };
-                
-                recorder.start();
-                setMode('recording');
-                visualize();
+                if (audioBlob.size > 0) {
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    setAudioPreview({ url: audioUrl, blob: audioBlob });
+                    setMode('preview');
+                } else {
+                    setMode('idle');
+                }
+            };
+            
+            recorder.start();
+            setMode('recording');
+            visualize();
 
-            } catch (err) {
-                console.error("Mic access denied:", err);
-                alert("Microphone access is required to send audio notes. You can change this in your browser settings.");
-            }
-        } else {
-            setVideoRecorderOpen(true);
+        } catch (err) {
+            console.error("Mic access denied:", err);
+            alert("Microphone access is required.");
         }
-        setModeSelectorOpen(false);
     };
 
-    // FIX: Bug where delete button was non-functional. This now correctly stops the player, clears its source, revokes the blob URL, and resets all state.
     const deletePreview = () => {
         if (audioPreviewRef.current) {
             audioPreviewRef.current.pause();
@@ -207,37 +192,11 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         if (audioPreview) {
             const recordedDuration = RECORDING_DURATION - countdown;
             onSubmitAudioNote(audioPreview.url, recordedDuration > 0 ? recordedDuration : 1);
-            // URL is now owned by parent, don't revoke here.
             setAudioPreview(null);
         }
         cleanupAudioContext();
         setMode('idle');
         setIsAudioPreviewPlaying(false);
-    };
-    
-    const handleActionPress = () => {
-        if (longPressTimer.current) clearTimeout(longPressTimer.current);
-        longPressTimer.current = window.setTimeout(() => {
-            if (mode === 'idle') {
-                setModeSelectorOpen(true);
-            }
-            longPressTimer.current = null;
-        }, 500);
-    };
-
-    const handleActionRelease = () => {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-            if (mode === 'idle') {
-                startRecording();
-            }
-        }
-    };
-    
-    const selectMode = (newMode: 'audio' | 'video') => {
-        setActionMode(newMode);
-        setModeSelectorOpen(false);
     };
 
     const toggleAudioPreview = () => {
@@ -250,8 +209,15 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
         }
     };
 
+    const handleImageInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0] && onSubmitImage) {
+            onSubmitImage(event.target.files[0]);
+        }
+    };
+
     return (
         <>
+            <input type="file" ref={imageInputRef} onChange={handleImageInputChange} accept="image/*,image/gif" className="hidden" />
             {audioPreview?.url && <audio 
                 ref={audioPreviewRef} 
                 src={audioPreview.url} 
@@ -267,47 +233,23 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                             type="text"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
-                            placeholder="Send a message..."
+                            placeholder="Add a reply..."
                             className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none"
                         />
-                        {text.trim() ? (
+                         {text.trim() ? (
                             <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300" aria-label="Send message">
                                 <SendIcon />
                             </button>
                         ) : (
-                            <div className="relative">
-                                 {isModeSelectorOpen && (
-                                    <div className="absolute bottom-full right-0 mb-2 flex items-center bg-gray-900/90 backdrop-blur-sm border border-gray-700 p-2 rounded-xl shadow-lg z-10 space-x-2 animate-fade-in">
-                                        <button 
-                                            onClick={() => selectMode('audio')} 
-                                            className={`flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 transition-colors ${actionMode === 'audio' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} 
-                                            aria-label="Switch to audio mode"
-                                        >
-                                            <MicIcon className="h-8 w-8 text-white" />
-                                            <span className="text-sm mt-2 font-semibold text-white">Audio Note</span>
-                                        </button>
-                                         <button 
-                                            onClick={() => selectMode('video')} 
-                                            className={`flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 transition-colors ${actionMode === 'video' ? 'bg-indigo-600' : 'hover:bg-gray-700'}`} 
-                                            aria-label="Switch to video mode"
-                                        >
-                                            <VideoCameraIcon className="h-8 w-8 text-white" />
-                                            <span className="text-sm mt-2 font-semibold text-white">Video Note</span>
-                                        </button>
-                                    </div>
-                                )}
-                                <button
-                                    type="button"
-                                    onMouseDown={handleActionPress}
-                                    onMouseUp={handleActionRelease}
-                                    onTouchStart={handleActionPress}
-                                    onTouchEnd={handleActionRelease}
-                                    onMouseLeave={handleActionRelease}
-                                    onContextMenu={(e) => e.preventDefault()}
-                                    className="p-3 text-gray-300 hover:text-white"
-                                    aria-label={actionMode === 'audio' ? 'Tap to record audio, hold to switch mode' : 'Tap to record video, hold to switch mode'}
-                                >
-                                    {actionMode === 'audio' ? <MicIcon /> : <VideoCameraIcon />}
+                            <div className="flex items-center p-1">
+                                <button type="button" onClick={() => imageInputRef.current?.click()} className="p-2 text-gray-300 hover:text-white" aria-label="Attach an image">
+                                    <ImageIcon />
+                                </button>
+                                <button type="button" onClick={() => setVideoRecorderOpen(true)} className="p-2 text-gray-300 hover:text-white" aria-label="Record a video clip">
+                                    <VideoCameraIcon />
+                                </button>
+                                <button type="button" onClick={startAudioRecording} className="p-2 text-gray-300 hover:text-white" aria-label="Record a voice note">
+                                    <MicIcon />
                                 </button>
                             </div>
                         )}
@@ -322,52 +264,31 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                                     const sampleIndex = Math.floor(i * (dataArray.length / 24));
                                     const value = dataArray[sampleIndex] || 0;
                                     const heightPercent = Math.max(5, (value / 255) * 100); 
-                                    return (
-                                        <div 
-                                            key={i} 
-                                            className="w-0.5 bg-red-400 rounded-full" 
-                                            style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}
-                                        />
-                                    );
+                                    return <div key={i} className="w-0.5 bg-red-400 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}/>;
                                 })}
                             </div>
                             <span className="font-mono text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
                         </div>
-                        
-                        <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording">
-                            <StopIcon className="h-8 w-8" />
-                        </button>
+                        <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording"><StopIcon className="h-8 w-8" /></button>
                     </div>
                 )}
                 
                 {mode === 'preview' && audioPreview && (
                      <div className="w-full flex items-center justify-between p-2 h-[48px]">
-                         <button onClick={deletePreview} className="p-2 text-gray-400 hover:text-white" aria-label="Delete recording">
-                             <TrashIcon className="h-6 w-6" />
-                         </button>
+                         <button onClick={deletePreview} className="p-2 text-gray-400 hover:text-white" aria-label="Delete recording"><TrashIcon className="h-6 w-6" /></button>
                          <div className="flex items-center flex-1 mx-2">
-                            <button onClick={toggleAudioPreview} className="p-2 text-white">
-                                {isAudioPreviewPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
-                            </button>
+                            <button onClick={toggleAudioPreview} className="p-2 text-white">{isAudioPreviewPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}</button>
                              <div className="flex-1 h-8 flex items-center space-x-0.5 px-2">
                                 {Array.from({ length: 24 }).map((_, i) => {
-                                        const sampleIndex = Math.floor(i * (dataArray.length / 24));
-                                        const value = dataArray[sampleIndex] || 0;
-                                        const heightPercent = Math.max(5, (value / 255) * 100); 
-                                        return (
-                                            <div 
-                                                key={i} 
-                                                className="w-0.5 bg-gray-500 rounded-full" 
-                                                style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}
-                                            />
-                                        );
+                                    const sampleIndex = Math.floor(i * (dataArray.length / 24));
+                                    const value = dataArray[sampleIndex] || 0;
+                                    const heightPercent = Math.max(5, (value / 255) * 100); 
+                                    return <div key={i} className="w-0.5 bg-gray-500 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }} />;
                                 })}
                             </div>
                              <span className="text-sm font-mono text-gray-400">0:{(RECORDING_DURATION - countdown).toString().padStart(2, '0')}</span>
                          </div>
-                         <button onClick={sendPreview} className="p-3 text-white bg-indigo-600 rounded-full hover:bg-indigo-500" aria-label="Send audio note">
-                             <SendIcon />
-                         </button>
+                         <button onClick={sendPreview} className="p-3 text-white bg-indigo-600 rounded-full hover:bg-indigo-500" aria-label="Send audio note"><SendIcon /></button>
                      </div>
                 )}
             </div>

@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { User, Room, DiscoverItem, ContributionRequest, ActiveView } from '../types';
 import RoomCard from './RoomCard';
@@ -174,7 +176,7 @@ const ProfileView: React.FC<ProfileViewProps> = (props) => {
         }
     }
 
-    // FIX: The `activeTab` state can be an object, which caused a type error. Replaced `activeTab` with `activeTabId` which is guaranteed to be a string.
+    // FIX: The `activeTab` state can be an object, which could cause a type error. Replaced `activeTab` with `activeTabId` which is guaranteed to be a string.
     if (items.length === 0) return <Placeholder text={`${user.name} hasn't shared any ${activeTabId.toLowerCase() === 'all' ? 'content' : activeTabId.toLowerCase()} yet.`} />;
     
     return (

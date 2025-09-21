@@ -1,90 +1,65 @@
 import React from 'react';
-import { ActiveView, CurationTab } from '../types';
+import { User, CurationTab } from '../types';
 import { FilterIcon } from './Icons';
 
 interface GlobalHeaderProps {
-  activeView: ActiveView;
-  curationTab: CurationTab;
-  setCurationTab: (tab: CurationTab) => void;
-  trendingTags: string[];
-  activeTopicTag: string | null;
-  setActiveTopicTag: (tag: string | null) => void;
-  scrollTop: number;
   onFilterClick: () => void;
+  curationTab: CurationTab;
+  onCurationTabChange: (tab: CurationTab) => void;
+  trendingTags: string[];
+  activeTopicTag: string;
+  onTopicTagChange: (tag: string) => void;
 }
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ 
-    activeView, 
-    curationTab, 
-    setCurationTab,
-    trendingTags,
-    activeTopicTag,
-    setActiveTopicTag,
-    scrollTop,
-    onFilterClick,
-}) => {
-  const curationTabs: { id: CurationTab, label: string }[] = [
-      { id: 'forYou', label: 'For You' },
-      { id: 'following', label: 'Following' },
-      { id: 'world', label: 'World' },
-      { id: 'local', label: 'Local' },
-  ];
+const curationTabs: { id: CurationTab, label: string }[] = [
+    { id: 'forYou', label: 'For You' },
+    { id: 'following', label: 'Following' },
+    { id: 'world', label: 'World' },
+    { id: 'local', label: 'Local' },
+];
+
+const GlobalHeader: React.FC<GlobalHeaderProps> = (props) => {
+  const { onFilterClick, curationTab, onCurationTabChange, trendingTags, activeTopicTag, onTopicTagChange } = props;
   
   return (
-    <div className={`sticky top-0 z-20 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
-      <div className="max-w-6xl mx-auto px-4 md:px-6">
-        {/* Top-Level Feed Navigation */}
-        <div className="flex justify-between items-center h-14">
-          <button onClick={onFilterClick} className="p-2 -ml-2 text-gray-400 hover:text-white" aria-label="Open filters">
-              <FilterIcon className="w-6 h-6" />
-          </button>
-          <div className="flex items-center">
-            {curationTabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setCurationTab(tab.id)}
-                className={`px-4 py-2 font-semibold rounded-lg text-base transition-colors relative ${curationTab === tab.id ? 'text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
-              >
-                {tab.label}
-                {curationTab === tab.id && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>}
-              </button>
-            ))}
-          </div>
-          <div className="w-6"></div>
+    <header className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 sticky top-0 z-10">
+        <div className="p-4 flex items-center justify-between">
+            <button onClick={onFilterClick} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors" aria-label="Open filters">
+                <FilterIcon className="w-6 h-6" />
+            </button>
+             <nav className="flex space-x-6">
+                {curationTabs.map(tab => (
+                    <button 
+                        key={tab.id} 
+                        onClick={() => onCurationTabChange(tab.id)}
+                        className={`font-semibold transition-colors ${curationTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </nav>
+            <div className="w-10"></div> {/* Spacer to balance the filter icon */}
         </div>
         
-        {/* Sticky Sub-Navigation Bar (Topic Filter) */}
-        {(activeView === 'home' || activeView === 'search') && (
-            <div className="py-2 border-t border-gray-800/50">
-              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
-                  <button
-                      onClick={() => setActiveTopicTag(null)}
-                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                          activeTopicTag === null
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      }`}
-                  >
-                      All
-                  </button>
-                  {trendingTags.map(tag => (
-                  <button
-                      key={tag}
-                      onClick={() => setActiveTopicTag(tag)}
-                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                          activeTopicTag === tag
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      }`}
-                  >
-                      {tag}
-                  </button>
-                  ))}
-              </div>
+        {/* Sticky Sub-Navigation */}
+        <div className="px-4 pb-3 overflow-x-auto scrollbar-hide">
+             <div className="flex items-center space-x-2">
+                {trendingTags.map(tag => (
+                    <button
+                        key={tag}
+                        onClick={() => onTopicTagChange(tag)}
+                        className={`px-4 py-1.5 rounded-full font-semibold text-sm whitespace-nowrap transition-colors ${
+                            activeTopicTag === tag 
+                            ? 'bg-indigo-600 text-white' 
+                            : 'bg-gray-700/80 text-gray-300 hover:bg-gray-700'
+                        }`}
+                    >
+                       {tag.startsWith('#') ? tag : `# ${tag}`}
+                    </button>
+                ))}
             </div>
-        )}
-      </div>
-    </div>
+        </div>
+    </header>
   );
 };
 
