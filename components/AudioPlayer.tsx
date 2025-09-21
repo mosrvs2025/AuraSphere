@@ -1,15 +1,41 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { PlayIcon, PauseIcon } from './Icons';
 
 interface AudioPlayerProps {
   src: string;
 }
 
+// Helper to generate a consistent, fake waveform from a string (URL)
+// This ensures the same audio file always gets the same visual representation
+const generateWaveformData = (seed: string, numBars: number = 30): number[] => {
+    let hash = 0;
+    if (seed.length === 0) return Array(numBars).fill(0.1);
+    for (let i = 0; i < seed.length; i++) {
+        const char = seed.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; // Convert to 32bit integer
+    }
+
+    const pseudoRandom = () => {
+        const x = Math.sin(hash++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    const data = [];
+    for (let i = 0; i < numBars; i++) {
+        data.push(Math.max(0.15, pseudoRandom())); // Min height of 15%
+    }
+    return data;
+};
+
+
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState('0:00');
   const audioRef = useRef<HTMLAudioElement>(null);
+  const waveformData = useMemo(() => generateWaveformData(src, 40), [src]);
+
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -68,8 +94,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
       >
         {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
       </button>
-      <div className="flex-1 h-1.5 bg-gray-600 rounded-full cursor-pointer">
-         <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${progress}%` }}></div>
+       <div className="flex-1 h-8 flex items-center space-x-0.5">
+          {waveformData.map((height, i) => {
+              const isPlayed = (progress / 100) * waveformData.length > i;
+              return (
+                  <div
+                      key={i}
+                      className="w-1 rounded-full transition-colors duration-75"
+                      style={{
+                          height: `${height * 90}%`,
+                          backgroundColor: isPlayed ? '#818cf8' : '#4b5563', // indigo-400 : gray-600
+                      }}
+                  />
+              );
+          })}
       </div>
       <span className="text-xs font-mono text-gray-400">{duration}</span>
     </div>

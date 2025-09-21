@@ -1,6 +1,7 @@
+
 import React, { useContext } from 'react';
 import { UserContext } from '../context/UserContext';
-import { HomeIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon, StudioIcon, GlobeIcon } from './Icons';
+import { HomeIcon, MessagesIcon, ScheduledIcon, ProfileIcon, BellIcon, PlusIcon, StudioIcon, SearchIcon } from './Icons';
 // FIX: Imported ActiveView from types.ts to resolve type conflict.
 import { ActiveView } from '../types';
 
@@ -18,7 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isExpanded
 
   const navItems = [
     { id: 'home', label: 'Discover', icon: <HomeIcon /> },
-    { id: 'aurasphere', label: 'AuraSphere', icon: <GlobeIcon /> },
+    { id: 'explore', label: 'Explore', icon: <SearchIcon /> },
     { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
     { id: 'scheduled', label: 'Scheduled', icon: <ScheduledIcon /> },
     { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },

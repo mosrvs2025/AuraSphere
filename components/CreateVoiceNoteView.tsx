@@ -17,21 +17,68 @@ const CreateVoiceNoteView: React.FC<CreateVoiceNoteViewProps> = ({ onPost, onClo
   const [mode, setMode] = useState<'idle' | 'recording' | 'preview'>('idle');
   const [countdown, setCountdown] = useState(RECORDING_MAX_DURATION);
   const [audioPreview, setAudioPreview] = useState<{ url: string; blob: Blob } | null>(null);
-  
+  const [dataArray, setDataArray] = useState<Uint8Array>(new Uint8Array(0));
+
   const countdownInterval = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+
+  const cleanupAudioContext = () => {
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(console.error);
+    }
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    setDataArray(new Uint8Array(0));
+  };
+  
+  const stopMediaStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+  };
+
+  const visualize = () => {
+    if (!analyserRef.current) return;
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const newArray = new Uint8Array(bufferLength);
+    analyserRef.current.getByteFrequencyData(newArray);
+    setDataArray(newArray);
+    animationFrameIdRef.current = requestAnimationFrame(visualize);
+  };
+
 
   useEffect(() => {
     return () => { // Cleanup on unmount
         if (countdownInterval.current) clearInterval(countdownInterval.current);
         if (audioPreview) URL.revokeObjectURL(audioPreview.url);
+        stopMediaStream();
+        cleanupAudioContext();
     };
   }, [audioPreview]);
 
   const startRecording = async () => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
+        
+        const context = new (window.AudioContext)();
+        audioContextRef.current = context;
+        const source = context.createMediaStreamSource(stream);
+        const analyserNode = context.createAnalyser();
+        analyserNode.fftSize = 64;
+        source.connect(analyserNode);
+        analyserRef.current = analyserNode;
+
         audioChunksRef.current = [];
         const recorder = new MediaRecorder(stream);
         mediaRecorderRef.current = recorder;
@@ -41,7 +88,8 @@ const CreateVoiceNoteView: React.FC<CreateVoiceNoteViewProps> = ({ onPost, onClo
         };
         
         recorder.onstop = () => {
-            stream.getTracks().forEach(track => track.stop());
+            stopMediaStream();
+            cleanupAudioContext();
             const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
             if (audioBlob.size > 0) {
                 setAudioPreview({ url: URL.createObjectURL(audioBlob), blob: audioBlob });
@@ -53,6 +101,7 @@ const CreateVoiceNoteView: React.FC<CreateVoiceNoteViewProps> = ({ onPost, onClo
         
         recorder.start();
         setMode('recording');
+        visualize();
         
         countdownInterval.current = window.setInterval(() => {
             setCountdown(prev => {
@@ -127,6 +176,20 @@ const CreateVoiceNoteView: React.FC<CreateVoiceNoteViewProps> = ({ onPost, onClo
             {mode === 'recording' && (
                 <div className="flex flex-col items-center space-y-4">
                     <p className="font-mono text-2xl text-gray-400">0:{countdown.toString().padStart(2, '0')}</p>
+                    <div className="flex items-center justify-center space-x-1 h-16 w-64">
+                      {Array.from({ length: 48 }).map((_, i) => {
+                          const sampleIndex = Math.floor(i * (dataArray.length / 48));
+                          const value = dataArray[sampleIndex] || 0;
+                          const heightPercent = Math.max(5, (value / 255) * 100);
+                          return (
+                              <div
+                                  key={i}
+                                  className="w-1 bg-red-400 rounded-full"
+                                  style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}
+                              />
+                          );
+                      })}
+                    </div>
                     <button onClick={stopRecording} className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white">
                         <StopIcon className="w-10 h-10" />
                     </button>

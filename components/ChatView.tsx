@@ -1,12 +1,10 @@
-
-
-
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, User } from '../types';
 import { ChevronDownIcon } from './Icons';
+import AudioPlayer from './AudioPlayer';
 
-// --- Sub-component for Audio Notes ---
+// --- Sub-component for Emoji Reactions ---
 
 const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🔥', '💡', '🎉'];
 
@@ -55,28 +53,6 @@ const LongPressWrapper: React.FC<{ onToggleReaction: (emoji: string) => void, ch
     );
 };
 
-interface AudioNoteBubbleProps {
-    message: ChatMessage;
-    isPlaying: boolean;
-    onPlay: () => void;
-}
-const AudioNoteBubble: React.FC<AudioNoteBubbleProps> = ({ message, isPlaying, onPlay }) => {
-    return (
-        <div className="flex items-center space-x-2 bg-gray-700 p-2 rounded-lg w-48">
-            <button onClick={onPlay} className="p-2 bg-indigo-500 rounded-full text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                   {isPlaying ? <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1zm6 0a1 1 0 00-1 1v2a1 1 0 102 0V9a1 1 0 00-1-1z" clipRule="evenodd" /> : <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />}
-                </svg>
-            </button>
-            <div className="flex-1 h-6 flex items-center space-x-0.5">
-                {[0.6, 0.9, 0.7, 0.8, 0.5, 0.9, 0.4].map((h, i) => (
-                    <div key={i} style={{ height: `${h * 100}%` }} className="w-1 bg-gray-500 rounded-full"></div>
-                ))}
-            </div>
-            <span className="text-xs text-gray-400 font-mono">0:{message.voiceMemo?.duration.toString().padStart(2, '0')}</span>
-        </div>
-    );
-};
 
 // --- Sub-component for Video Notes ---
 interface VideoNoteBubbleProps {
@@ -107,14 +83,12 @@ interface ChatViewProps {
   messages: ChatMessage[];
   currentUser: User;
   onToggleReaction: (messageId: string, emoji: string) => void;
-  nowPlayingAudioNoteId: string | null;
-  onPlayAudioNote: (messageId: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   animatedReaction: { messageId: string, emoji: string } | null;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, nowPlayingAudioNoteId, onPlayAudioNote, isCollapsed, onToggleCollapse, animatedReaction }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, isCollapsed, onToggleCollapse, animatedReaction }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -152,11 +126,9 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
                     )}
                     {msg.voiceMemo && (
                         <LongPressWrapper onToggleReaction={(emoji) => onToggleReaction(msg.id, emoji)}>
-                            <AudioNoteBubble 
-                                message={msg}
-                                isPlaying={nowPlayingAudioNoteId === msg.id}
-                                onPlay={() => onPlayAudioNote(msg.id)}
-                            />
+                            <div className="w-48">
+                                <AudioPlayer src={msg.voiceMemo.url} />
+                            </div>
                         </LongPressWrapper>
                     )}
                     {msg.videoNote && <VideoNoteBubble message={msg} />}

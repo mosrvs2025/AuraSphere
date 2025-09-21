@@ -43,7 +43,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
   const { currentUser } = useContext(UserContext);
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ user: User, position: { top: number, left: number, width: number, height: number } } | null>(null);
-  const [nowPlayingAudioNoteId, setNowPlayingAudioNoteId] = useState<string | null>(null);
   const [animatedReaction, setAnimatedReaction] = useState<{ messageId: string, emoji: string } | null>(null);
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [isAiPanelOpen, setAiPanelOpen] = useState(false);
@@ -290,8 +289,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
                 messages={room.messages}
                 currentUser={currentUser}
                 onToggleReaction={handleToggleReactionWithAnimation}
-                nowPlayingAudioNoteId={nowPlayingAudioNoteId}
-                onPlayAudioNote={setNowPlayingAudioNoteId}
                 isCollapsed={isChatCollapsed}
                 onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
                 animatedReaction={animatedReaction}

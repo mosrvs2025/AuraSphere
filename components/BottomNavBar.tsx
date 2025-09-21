@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { HomeIcon, MessagesIcon, PlusIcon, ProfileIcon, GlobeIcon } from './Icons';
+import { HomeIcon, MessagesIcon, PlusIcon, ProfileIcon, SearchIcon } from './Icons';
 import { ActiveView } from '../types';
 
 interface BottomNavBarProps {
@@ -12,7 +13,7 @@ interface BottomNavBarProps {
 const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, onCreateContent }) => {
   const navItems = [
     { id: 'home', label: 'Discover', icon: <HomeIcon /> },
-    { id: 'aurasphere', label: 'Aura', icon: <GlobeIcon /> },
+    { id: 'explore', label: 'Explore', icon: <SearchIcon /> },
     { id: 'create', label: 'Create', icon: <PlusIcon className="w-8 h-8" /> },
     { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
     { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },

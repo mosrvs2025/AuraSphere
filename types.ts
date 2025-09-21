@@ -77,6 +77,7 @@ export interface Room {
   isVideoEnabled?: boolean;
   geolocation?: { lat: number; lng: number; };
   broadcastingMedia?: { type: 'voice' | 'video'; url: string; user: User } | null;
+  tags?: string[];
 }
 
 export interface Comment {
@@ -96,6 +97,7 @@ type PostBase = {
     scheduledTime?: Date;
     geolocation?: { lat: number; lng: number; };
     replyingTo?: { commentId: string; user: User };
+    tags?: string[];
 }
 
 
@@ -138,7 +140,7 @@ export interface Notification {
   link?: string; // e.g., to a room, profile, or post
 }
 
-export type ActiveView = 'home' | 'aurasphere' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
+export type ActiveView = 'home' | 'explore' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search';
 
 export type CurationTab = 'forYou' | 'following';
 
