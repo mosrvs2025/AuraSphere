@@ -1,224 +1,82 @@
 import React from 'react';
-import { ActiveView, Room, User, CurationTab } from '../types';
+import { ActiveView, CurationTab } from '../types';
 import { SearchIcon, BellIcon } from './Icons';
 
 interface GlobalHeaderProps {
   activeView: ActiveView;
   curationTab: CurationTab;
   setCurationTab: (tab: CurationTab) => void;
-  activeFilter: string;
-  setActiveFilter: (filter: string) => void;
-  unreadNotificationCount: number;
-  onNavigateToNotifications: () => void;
-  onSearchClick: () => void;
-  liveRooms: Room[];
-  onEnterRoom: (room: Room) => void;
+  trendingTags: string[];
+  activeTopicTag: string | null;
+  setActiveTopicTag: (tag: string | null) => void;
   scrollTop: number;
 }
-
-const contentFilters = ['All', 'Live', 'Images', 'Videos', 'Audio', 'Text'];
-
-const LiveActivityRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
-    const uniqueHostsInRooms = new Map<string, Room>();
-    liveRooms.forEach(room => {
-        room.hosts.forEach(host => {
-            if (!uniqueHostsInRooms.has(host.id)) {
-                uniqueHostsInRooms.set(host.id, room);
-            }
-        });
-    });
-
-    if (uniqueHostsInRooms.size === 0) {
-        return null;
-    }
-
-    return (
-        <div className="flex items-center space-x-4 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
-            {Array.from(uniqueHostsInRooms.entries()).map(([hostId, room]) => {
-                const host = room.hosts.find(h => h.id === hostId);
-                if (!host) return null;
-                return (
-                    <button key={host.id} onClick={() => onEnterRoom(room)} className="flex flex-col items-center space-y-2 flex-shrink-0 w-20 text-center focus:outline-none group">
-                        <div className="relative">
-                            <img 
-                                src={host.avatarUrl} 
-                                alt={host.name} 
-                                className="w-16 h-16 rounded-full border-2 border-gray-700 group-hover:border-indigo-500 transition-colors" 
-                            />
-                            <div className="absolute -bottom-1 -right-1 bg-red-500 text-white text-xs font-bold uppercase px-1.5 py-0.5 rounded-md border-2 border-gray-900">
-                                Live
-                            </div>
-                            <div className="absolute inset-0 rounded-full animate-pulse-live pointer-events-none"></div>
-                        </div>
-                        <p className="text-xs text-white font-semibold truncate w-full">{host.name}</p>
-                    </button>
-                )
-            })}
-        </div>
-    );
-};
-
-const CollapsedLiveRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
-    const uniqueHostsInRooms = new Map<string, Room>();
-    liveRooms.forEach(room => {
-        room.hosts.forEach(host => {
-            if (!uniqueHostsInRooms.has(host.id)) {
-                uniqueHostsInRooms.set(host.id, room);
-            }
-        });
-    });
-
-    if (uniqueHostsInRooms.size === 0) {
-        return null;
-    }
-    const hostsToShow = Array.from(uniqueHostsInRooms.entries()).slice(0, 5);
-
-    return (
-        <div className="flex items-center -space-x-2">
-            {hostsToShow.map(([hostId, room]) => {
-                const host = room.hosts.find(h => h.id === hostId);
-                if (!host) return null;
-                return (
-                    <button key={host.id} onClick={() => onEnterRoom(room)} className="focus:outline-none group">
-                        <img 
-                            src={host.avatarUrl} 
-                            alt={host.name} 
-                            className="w-8 h-8 rounded-full border-2 border-gray-900 group-hover:scale-110 transition-transform" 
-                        />
-                    </button>
-                )
-            })}
-        </div>
-    );
-};
-
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({ 
     activeView, 
     curationTab, 
     setCurationTab,
-    activeFilter, 
-    setActiveFilter,
-    unreadNotificationCount, 
-    onNavigateToNotifications, 
-    onSearchClick, 
-    liveRooms, 
-    onEnterRoom,
+    trendingTags,
+    activeTopicTag,
+    setActiveTopicTag,
     scrollTop,
 }) => {
   const curationTabs: { id: CurationTab, label: string }[] = [
-      { id: 'resonate', label: 'Resonate' },
-      { id: 'sphere', label: 'Sphere' },
+      { id: 'forYou', label: 'For You' },
+      { id: 'following', label: 'Following' },
       { id: 'world', label: 'World' },
       { id: 'local', label: 'Local' },
   ];
-
-  let title = 'Discover';
-  const activeTabObject = curationTabs.find(t => t.id === curationTab);
-  if (activeTabObject) {
-      title = activeTabObject.label;
-  }
-  if (activeFilter !== 'All') {
-      title = activeFilter;
-  }
- 
-
-  // Animation progress calculation
-  const railFadeStart = 20; // Scroll position to start fading the rail
-  const railFadeEnd = 80;   // Scroll position where rail is fully faded
-  const scrollRange = railFadeEnd - railFadeStart;
-  const progress = Math.max(0, Math.min(1, (scrollTop - railFadeStart) / scrollRange));
-
-  const TitleBarContent = (
-      <div className="flex justify-between items-center">
-          <div className="flex-1 flex justify-start">
-              {/* Placeholder for balance */}
-          </div>
-          <div className="flex items-center gap-4 min-w-0">
-              <h1 className="font-bold text-center truncate text-3xl">{title}</h1>
-          </div>
-          <div className="flex-1 flex justify-end items-center space-x-2">
-              <button 
-                  onClick={onSearchClick}
-                  className="p-2 text-gray-400 hover:text-white transition-colors"
-                  aria-label="Search"
-              >
-                  <SearchIcon className="h-6 w-6" />
-              </button>
-              <button
-              onClick={onNavigateToNotifications}
-              className="relative p-2 text-gray-400 hover:text-white transition-colors"
-              aria-label="View notifications"
-              >
-                  <BellIcon className="h-7 w-7" />
-                  {unreadNotificationCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-gray-900"></span>
-                  )}
-              </button>
-          </div>
-      </div>
-  );
   
   return (
-    <>
-      {/* Part 1: Non-sticky content that scrolls away */}
-      <div className="bg-gray-900 z-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:pt-6">
-          {TitleBarContent}
+    <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
+      <div className="max-w-6xl mx-auto px-4 md:px-6">
+        {/* Top-Level Feed Navigation */}
+        <div className="flex justify-center items-center h-14">
+          {curationTabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setCurationTab(tab.id)}
+              className={`px-4 py-2 font-semibold rounded-lg text-base transition-colors relative ${curationTab === tab.id ? 'text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+            >
+              {tab.label}
+              {curationTab === tab.id && <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>}
+            </button>
+          ))}
         </div>
-
-        <div 
-            className="max-w-6xl mx-auto px-4 md:px-6 transition-opacity duration-200"
-            style={{ opacity: 1 - progress }}
-        >
-            <LiveActivityRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-        </div>
-      </div>
-      
-      {/* Part 2: The sticky navigation bar */}
-      <div className={`sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-y border-gray-800/50 transition-shadow ${scrollTop > 10 ? 'shadow-lg shadow-black/20' : ''}`}>
-          <div className="max-w-6xl mx-auto px-4 md:px-6">
-              {/* Primary Curation Tabs */}
-              <div className="flex justify-center border-b border-gray-800 relative">
-                  <div 
-                      className="absolute left-0 top-1/2 -translate-y-1/2 transition-opacity duration-200"
-                      style={{ opacity: progress }}
-                      aria-hidden={progress < 1}
-                  >
-                      <CollapsedLiveRail liveRooms={liveRooms} onEnterRoom={onEnterRoom} />
-                  </div>
-                  {curationTabs.map(tab => (
-                       <button
-                          key={tab.id}
-                          onClick={() => setCurationTab(tab.id)}
-                          className={`px-4 py-3 font-bold text-lg transition-colors relative ${curationTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                      >
-                          {tab.label}
-                          {curationTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white"></div>}
-                      </button>
-                  ))}
-              </div>
-              {/* Secondary Content-Type Filters */}
-              <div className="mt-4 pb-2">
-              <div className="flex items-center space-x-2 overflow-x-auto -mx-4 px-4 scrollbar-hide">
-                  {contentFilters.map(filter => (
+        
+        {/* Sticky Sub-Navigation Bar (Topic Filter) */}
+        {activeView === 'discover' && (
+            <div className="py-2 border-t border-gray-800/50">
+              <div className="flex items-center space-x-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
                   <button
-                      key={filter}
-                      onClick={() => setActiveFilter(filter)}
+                      onClick={() => setActiveTopicTag(null)}
                       className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
-                          activeFilter === filter
+                          activeTopicTag === null
                           ? 'bg-indigo-600 text-white'
                           : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                       }`}
                   >
-                      {filter}
+                      All
+                  </button>
+                  {trendingTags.map(tag => (
+                  <button
+                      key={tag}
+                      onClick={() => setActiveTopicTag(tag)}
+                      className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${
+                          activeTopicTag === tag
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
+                  >
+                      {tag}
                   </button>
                   ))}
               </div>
-              </div>
-          </div>
+            </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -22,7 +22,6 @@ interface RoomViewProps {
   onLeave: () => void;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onViewProfile: (user: User) => void;
-  onMinimize: () => void;
 }
 
 const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: HTMLButtonElement) => void, title: string, gridClass?: string }> = ({ users, onUserClick, title, gridClass = 'grid-cols-4' }) => (
@@ -39,7 +38,7 @@ const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: 
   </div>
 );
 
-const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onViewProfile, onMinimize }) => {
+const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onViewProfile }) => {
   const { currentUser } = useContext(UserContext);
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ user: User, position: { top: number, left: number, width: number, height: number } } | null>(null);
@@ -97,7 +96,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
           createdAt: new Date(),
           ...message
       };
-      onUpdateRoom({ messages: [...room.messages, newMessage] });
+      onUpdateRoom({ ...room, messages: [...room.messages, newMessage] });
   };
 
   const handleSendTextMessage = (text: string) => {
@@ -126,7 +125,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       }
       return msg;
     });
-    onUpdateRoom({ messages: newMessages });
+    onUpdateRoom({ ...room, messages: newMessages });
   };
 
 
@@ -140,12 +139,12 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         }
     });
     newPoll.options[optionIndex].votes.push(currentUser.id);
-    onUpdateRoom({ poll: newPoll });
+    onUpdateRoom({ ...room, poll: newPoll });
   };
 
   const handleEndPoll = () => {
     if (room.poll) {
-        onUpdateRoom({ poll: { ...room.poll, isActive: false } });
+        onUpdateRoom({ ...room, poll: { ...room.poll, isActive: false } });
     }
   };
 
@@ -156,7 +155,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         options: options.map(opt => ({ text: opt, votes: [] })),
         isActive: true,
     };
-    onUpdateRoom({ poll: newPoll });
+    onUpdateRoom({ ...room, poll: newPoll });
     setCreatePollModalOpen(false);
   };
   
@@ -186,7 +185,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         likes: [],
         ...requestData,
     };
-    onUpdateRoom({ requestsToSpeak: [...(room.requestsToSpeak || []), newRequest] });
+    onUpdateRoom({ ...room, requestsToSpeak: [...(room.requestsToSpeak || []), newRequest] });
     setRequestModalOpen(false);
   };
 
@@ -201,7 +200,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
           }
           return req;
       });
-      onUpdateRoom({ requestsToSpeak: newRequests });
+      onUpdateRoom({ ...room, requestsToSpeak: newRequests });
   };
 
   const handleApproveRequest = (request: RequestToSpeak) => {
@@ -210,6 +209,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
     const newRequests = (room.requestsToSpeak || []).filter(r => r.id !== request.id);
 
     onUpdateRoom({
+        ...room,
         listeners: newListeners,
         speakers: newSpeakers,
         requestsToSpeak: newRequests
@@ -226,6 +226,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
     
     if (mediaToBroadcast) {
         onUpdateRoom({
+            ...room,
             broadcastingMedia: mediaToBroadcast,
             // Remove request from queue after broadcasting
             requestsToSpeak: (room.requestsToSpeak || []).filter(r => r.id !== request.id),
@@ -239,7 +240,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
       {/* TOP PART: The scrolling area */}
       <div className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto min-h-0">
         <header className="flex justify-between items-center mb-4">
-            <button onClick={onMinimize} className="p-2 -ml-2 text-gray-400 hover:text-white" aria-label="Minimize Room">
+            <button onClick={onLeave} className="p-2 -ml-2 text-gray-400 hover:text-white" aria-label="Minimize Room">
                 <ChevronDownIcon />
             </button>
             <div className="flex-1" /> {/* Spacer */}
@@ -352,7 +353,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
 
         <div className="relative z-10 flex flex-col h-full p-4">
             <header className="flex justify-between items-center">
-                <button onClick={onMinimize} className="p-2 bg-black/30 rounded-full text-white hover:bg-black/50" aria-label="Minimize Room">
+                <button onClick={onLeave} className="p-2 bg-black/30 rounded-full text-white hover:bg-black/50" aria-label="Minimize Room">
                     <ChevronDownIcon />
                 </button>
                 <div className="text-center">
@@ -414,7 +415,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
             <BroadcastMediaView
                 media={room.broadcastingMedia}
                 isHost={isHost}
-                onStop={() => onUpdateRoom({ broadcastingMedia: null })}
+                onStop={() => onUpdateRoom({ ...room, broadcastingMedia: null })}
             />
         )}
 
@@ -427,7 +428,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onLeave, onUpdateRoom, onView
         {isAiPanelOpen && <AiAssistantPanel room={room} messages={room.messages} onClose={() => setAiPanelOpen(false)} />}
         {showConfirmLeave && <ConfirmationModal title="Leave Room" message="Are you sure you want to leave this room?" confirmText="Leave" onConfirm={onLeave} onCancel={() => setShowConfirmLeave(false)} />}
         {selectedUser && <UserCardModal user={selectedUser.user} position={selectedUser.position} onClose={() => setSelectedUser(null)} onViewProfile={(user) => { setSelectedUser(null); onViewProfile(user); }} />}
-        {isInviteModalOpen && <InviteUsersModal followers={currentUser.followers} onClose={() => setInviteModalOpen(false)} onInvite={(userIds) => onUpdateRoom({ invitedUserIds: [...(room.invitedUserIds || []), ...userIds]})} alreadyInvitedUserIds={room.invitedUserIds || []} />}
+        {isInviteModalOpen && <InviteUsersModal followers={currentUser.followers} onClose={() => setInviteModalOpen(false)} onInvite={(userIds) => onUpdateRoom({ ...room, invitedUserIds: [...(room.invitedUserIds || []), ...userIds]})} alreadyInvitedUserIds={room.invitedUserIds || []} />}
         {isCreatePollModalOpen && <CreatePollModal onClose={() => setCreatePollModalOpen(false)} onCreate={handleCreatePoll} />}
         {isRequestModalOpen && <RequestToSpeakModal onClose={() => setRequestModalOpen(false)} onSubmit={handleSubmitRequest} />}
         {isActivityModalOpen && isHost && <RoomActivityModal room={room} onClose={() => setIsActivityModalOpen(false)} />}

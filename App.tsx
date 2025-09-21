@@ -1,21 +1,19 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // FIX: Added Comment to be used in type casting for new posts.
 import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment, ContributionRequest, CurationTab } from './types';
-import Sidebar from './components/Sidebar';
+import VerticalNav from './components/VerticalNav';
 import HomeView from './components/HomeView';
-import RoomView from './components/RoomView';
 import UserProfile from './components/UserProfile';
 import { UserContext, IUserContext } from './context/UserContext';
 import CreateRoomModal from './components/CreateRoomModal';
 import EditProfileModal from './components/EditProfileModal';
 import AvatarCustomizer from './components/AvatarCustomizer';
-import MiniPlayer from './components/MiniPlayer';
 import MessagesView from './components/MessagesView';
 import { MyStudioView } from './components/PlaceholderViews';
 import ScheduledView from './components/ScheduledView';
 import NotificationsView from './components/NotificationsView';
 import ConversationView from './components/ConversationView';
-import BottomNavBar from './components/BottomNavBar';
 import PostDetailView from './components/PostDetailView';
 import MediaViewerModal from './components/MediaViewerModal';
 import { PREDEFINED_AVATARS } from './constants';
@@ -32,6 +30,8 @@ import CreateVoiceNoteView from './components/CreateVoiceNoteView';
 import CreateVideoReplyView from './components/CreateVideoReplyView';
 import ContributeModal from './components/ContributeModal';
 import PrivacyDashboard from './components/PrivacyDashboard';
+import BottomNavBar from './components/BottomNavBar';
+import SwipeView from './components/SwipeView';
 
 // Mock Data Generation
 const generateUsers = (count: number): User[] => {
@@ -176,7 +176,7 @@ const getCurrentLocation = (): Promise<{ lat: number; lng: number } | null> => {
 };
 
 const App: React.FC = () => {
-    const [activeView, setActiveView] = useState<ActiveView>('home');
+    const [activeView, setActiveView] = useState<ActiveView>('discover');
     const [currentUser, setCurrentUser] = useState<User>(currentUserData);
     const [rooms, setRooms] = useState(() => generateRooms(allUsers));
     const [posts, setPosts] = useState(() => generatePosts(allUsers));
@@ -197,18 +197,18 @@ const App: React.FC = () => {
         }
         return [];
     });
-    const [activeRoom, setActiveRoom] = useState<Room | null>(null);
+    const [swipeViewData, setSwipeViewData] = useState<{ rooms: Room[], initialRoomId: string } | null>(null);
     const [viewingProfile, setViewingProfile] = useState<User | null>(null);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
     const [isEditProfileModalOpen, setEditProfileModalOpen] = useState(false);
     const [isAvatarCustomizerOpen, setAvatarCustomizerOpen] = useState(false);
-    const [isSidebarExpanded, setSidebarExpanded] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [viewingPost, setViewingPost] = useState<Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }> | null>(null);
     const [viewingMedia, setViewingMedia] = useState<Extract<DiscoverItem, { type: 'image_post' | 'video_post' }> | null>(null);
-    const [curationTab, setCurationTab] = useState<CurationTab>('resonate');
-    const [activeFilter, setActiveFilter] = useState('All');
+    const [curationTab, setCurationTab] = useState<CurationTab>('forYou');
+    const [activeMediaType, setActiveMediaType] = useState('All');
+    const [activeTopicTag, setActiveTopicTag] = useState<string | null>(null);
     const [isCreateHubOpen, setCreateHubOpen] = useState(false);
     const [createPostFile, setCreatePostFile] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
     const [createNote, setCreateNote] = useState(false);
@@ -222,7 +222,6 @@ const App: React.FC = () => {
         onComplete: () => void;
     } | null>(null);
     const [contributingToUser, setContributingToUser] = useState<User | null>(null);
-    const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
     const lastScrollTop = useRef(0);
 
     const discoverItems = useMemo(() => generateDiscoverItems(allUsers, rooms, posts), [rooms, posts]);
@@ -261,18 +260,22 @@ const App: React.FC = () => {
         },
     };
 
-    const handleEnterRoom = (room: Room) => {
-        setActiveRoom(room);
-        setActiveView('room');
+    const handleEnterLiveRoom = (room: Room) => {
+        const liveRooms = discoverItems.filter(i => i.type === 'live_room') as Room[];
+        setSwipeViewData({ rooms: liveRooms, initialRoomId: room.id });
     };
 
-    const handleLeaveRoom = () => {
-        setActiveRoom(null);
-        setActiveView('home');
-    };
-    
-    const handleMinimizeRoom = () => {
-        setActiveView('home');
+    const handleUpdateRoom = (updatedData: Partial<Room>) => {
+        setRooms(prevRooms =>
+            prevRooms.map(r => r.id === updatedData.id ? {...r, ...updatedData} : r)
+        );
+        // Also update in swipe view if active
+        if (swipeViewData) {
+            setSwipeViewData(prev => prev ? ({
+                ...prev,
+                rooms: prev.rooms.map(r => r.id === updatedData.id ? {...r, ...updatedData} : r)
+            }) : null);
+        }
     };
 
     const handleViewProfile = (user: User) => {
@@ -281,12 +284,6 @@ const App: React.FC = () => {
     
     const handleBackFromProfile = () => {
         setViewingProfile(null);
-        // If a room is active, go back to the room view, otherwise go to home
-        if (activeRoom) {
-            setActiveView('room');
-        } else {
-            setActiveView('home');
-        }
     };
 
     const handleCreateRoom = async (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => {
@@ -307,7 +304,7 @@ const App: React.FC = () => {
             geolocation: location || undefined,
         };
         setRooms(prev => [...prev, newRoom]);
-        handleEnterRoom(newRoom);
+        handleEnterLiveRoom(newRoom);
         setCreateRoomModalOpen(false);
     };
 
@@ -383,7 +380,7 @@ const App: React.FC = () => {
 
             // If it's a scheduled post, just navigate home. Otherwise, trigger animation.
             if (newPost.status === 'scheduled') {
-                handleNavigate('home');
+                handleNavigate('discover');
                 return;
             }
 
@@ -396,7 +393,7 @@ const App: React.FC = () => {
                     previewImageUrl = newPost.imageUrl;
                     break;
                 case 'video_post':
-                    destinationFilter = 'Videos';
+                    destinationFilter = 'Video';
                     previewImageUrl = newPost.thumbnailUrl;
                     break;
                 case 'voice_note_post':
@@ -409,8 +406,8 @@ const App: React.FC = () => {
             }
 
             const onAnimationComplete = () => {
-                handleNavigate('home');
-                setActiveFilter(destinationFilter);
+                handleNavigate('discover');
+                setActiveMediaType(destinationFilter);
                 setPostCreationAnimationData(null); // Cleanup
             };
 
@@ -422,19 +419,8 @@ const App: React.FC = () => {
 
         } else {
             // Fallback navigation if post creation failed for some reason
-            handleNavigate('home');
+            handleNavigate('discover');
         }
-    };
-
-    const handleUpdateRoom = (updatedData: Partial<Room>) => {
-        if (!activeRoom) return;
-
-        const updatedRoom = { ...activeRoom, ...updatedData };
-        setActiveRoom(updatedRoom);
-
-        setRooms(prevRooms =>
-            prevRooms.map(r => r.id === activeRoom.id ? updatedRoom : r)
-        );
     };
 
     const handleSaveProfile = (name: string, bio: string, contributionSettings: User['contributionSettings']) => {
@@ -491,7 +477,7 @@ const App: React.FC = () => {
         setBrowserUrl(null);
         setViewingMedia(null);
 
-        if (view !== 'search') {
+        if (view !== 'explore') { // Search is part of explore
             setSearchQuery('');
         }
 
@@ -509,12 +495,6 @@ const App: React.FC = () => {
         const currentScrollTop = event.currentTarget.scrollTop;
         if (Math.abs(currentScrollTop - lastScrollTop.current) < 15) { // Threshold to prevent jitter
             return;
-        }
-
-        if (currentScrollTop > lastScrollTop.current && currentScrollTop > 50) { // Start hiding after 50px
-            setScrollDirection('down');
-        } else {
-            setScrollDirection('up');
         }
         
         lastScrollTop.current = currentScrollTop <= 0 ? 0 : currentScrollTop;
@@ -534,27 +514,13 @@ const App: React.FC = () => {
 
       // Render main page views
       switch (activeView) {
-        case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
-        case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
-        case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} liveRooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
-        case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
-        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
-        case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
-        case 'my-studio': return <MyStudioView />;
+        case 'discover': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeMediaType={activeMediaType} activeTopicTag={activeTopicTag} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
+        case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
+        case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} liveRooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterLiveRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
+        case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('discover')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} onNavigate={handleNavigate} />;
+        // FIX: The privacy dashboard is now accessed via the profile page, so it doesn't need to be a main view.
         case 'privacyDashboard': return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => handleNavigate('profile')} />;
-        case 'room': return activeRoom ? <RoomView room={activeRoom} onLeave={handleLeaveRoom} onMinimize={handleMinimizeRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={handleViewProfile} /> : <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
-        case 'search': return <GlobalSearchView 
-            query={searchQuery}
-            onSearch={setSearchQuery}
-            discoverItems={discoverItems}
-            currentUser={currentUser}
-            onEnterRoom={handleEnterRoom}
-            onViewProfile={handleViewProfile}
-            onViewMedia={setViewingMedia}
-            onViewPost={setViewingPost}
-            onClose={() => handleNavigate('home')}
-        />;
-        default: return <HomeView rooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} />;
+        default: return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeMediaType={activeMediaType} activeTopicTag={activeTopicTag} onEnterRoom={handleEnterLiveRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
       }
     };
     
@@ -574,70 +540,51 @@ const App: React.FC = () => {
             setCreateVoiceNote(true);
         }
     };
+    
+    const isSubViewActive = !!(activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || swipeViewData);
+    const contentViews: ActiveView[] = ['discover', 'explore'];
+    const showVerticalNav = contentViews.includes(activeView) && !isSubViewActive;
+    const showGlobalHeader = contentViews.includes(activeView) && !isSubViewActive;
+    const showBottomNav = !isSubViewActive;
 
-    const handleFabClick = () => {
-        const canContribute = viewingProfile && viewingProfile.id !== currentUser.id && (viewingProfile.contributionSettings === 'everyone' || (viewingProfile.contributionSettings === 'following' && currentUser.following.some(f => f.id === viewingProfile.id)));
-
-        if (canContribute) {
-            setContributingToUser(viewingProfile);
-        } else {
-            setCreateHubOpen(true);
-        }
-    };
-    
-    // Determine if a secondary view is active, which should hide the main nav elements.
-    const isSubViewActive = !!(activeConversation || viewingPost || createPostFile || createNote || createVoiceNote || videoReplyInfo || viewingMedia || browserUrl || activeRoom);
-    
-    // Define main views that show the global header.
-    const mainViews: ActiveView[] = ['home', 'explore'];
-    const showGlobalHeader = mainViews.includes(activeView) && !isSubViewActive;
-    
     return (
         <UserContext.Provider value={userContextValue}>
-            <div className="h-full flex flex-col lg:flex-row bg-gray-900">
-                <Sidebar 
-                    activeView={activeView} 
-                    setActiveView={handleNavigate}
-                    isExpanded={isSidebarExpanded} 
-                    setExpanded={setSidebarExpanded} 
-                    onCreateContent={handleFabClick}
-                    unreadNotificationCount={12}
-                    currentUser={currentUser}
-                    viewingProfile={viewingProfile}
-                />
-                
-                <div className="flex-1 flex flex-col min-w-0 h-full"> {/* min-w-0 is important for flex truncation */}
+            <div className="h-full flex flex-col bg-gray-900">
+                <div className="flex-1 flex flex-row min-h-0">
+                    {showVerticalNav && (
+                        <VerticalNav 
+                            activeMediaType={activeMediaType}
+                            setActiveMediaType={setActiveMediaType}
+                        />
+                    )}
+                    
                     <main id="main-content" onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-hide">
                          {showGlobalHeader && (
                             <GlobalHeader 
                                 activeView={activeView}
                                 curationTab={curationTab}
-                                setCurationTab={setCurationTab}
-                                activeFilter={activeFilter}
-                                setActiveFilter={setActiveFilter}
-                                unreadNotificationCount={12}
-                                onNavigateToNotifications={() => handleNavigate('notifications')}
-                                onSearchClick={() => handleNavigate('search')}
-                                liveRooms={rooms.filter(r => !r.isScheduled)}
-                                onEnterRoom={handleEnterRoom}
+                                setCurationTab={(tab) => {
+                                  setCurationTab(tab);
+                                  setActiveTopicTag(null); // Reset topic tag on main tab change
+                                }}
+                                trendingTags={trendingTags}
+                                activeTopicTag={activeTopicTag}
+                                setActiveTopicTag={setActiveTopicTag}
+// FIX: Passed the mainScrollTop state to the GlobalHeader as the required `scrollTop` prop.
                                 scrollTop={mainScrollTop}
                             />
                         )}
                         {renderActiveView()}
                     </main>
-                    
-                    {!isSubViewActive && (
-                      <BottomNavBar 
-                          activeView={activeView} 
-                          setActiveView={handleNavigate}
-                          onCreateContent={handleFabClick} 
-                          unreadNotificationCount={12}
-                          currentUser={currentUser}
-                          viewingProfile={viewingProfile}
-                          scrollDirection={scrollDirection}
-                      />
-                    )}
                 </div>
+                
+                {showBottomNav && (
+                    <BottomNavBar 
+                        activeView={activeView}
+                        setActiveView={handleNavigate}
+                        onCreateContent={() => setCreateHubOpen(true)}
+                    />
+                )}
 
                 {isCreateRoomModalOpen && <CreateRoomModal onClose={() => setCreateRoomModalOpen(false)} onCreate={handleCreateRoom} />}
                 {isEditProfileModalOpen && (currentUser || viewingProfile) && <EditProfileModal user={viewingProfile ?? currentUser} onClose={() => setEditProfileModalOpen(false)} onSave={handleSaveProfile} />}
@@ -661,14 +608,16 @@ const App: React.FC = () => {
                         onSendRequest={(post) => handleSendContributionRequest(post, contributingToUser)}
                     />
                 )}
+                 {swipeViewData && (
+                    <SwipeView
+                        rooms={swipeViewData.rooms}
+                        initialRoomId={swipeViewData.initialRoomId}
+                        onClose={() => setSwipeViewData(null)}
+                        onUpdateRoom={handleUpdateRoom}
+                        onViewProfile={handleViewProfile}
+                    />
+                )}
             </div>
-            {activeRoom && !viewingProfile && !activeConversation && activeView !== 'room' && (
-                <MiniPlayer 
-                    room={activeRoom}
-                    onExpand={() => setActiveView('room')}
-                    onLeave={handleLeaveRoom}
-                />
-            )}
         </UserContext.Provider>
     );
 };

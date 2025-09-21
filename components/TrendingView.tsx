@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { DiscoverItem, Room, User, CurationTab } from '../types';
 import { DiscoverCard } from './DiscoverCards';
 
@@ -6,31 +6,30 @@ interface TrendingViewProps {
   items: DiscoverItem[];
   currentUser: User;
   curationTab: CurationTab;
-  activeFilter: string;
+  activeMediaType: string;
+  activeTopicTag: string | null;
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
   onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
 }
 
-const filterMap: Record<string, DiscoverItem['type'] | 'All'> = {
+const mediaTypeMap: Record<string, DiscoverItem['type'] | 'All'> = {
     'All': 'All',
-    'Live': 'live_room',
-    'People': 'user_profile',
     'Images': 'image_post',
-    'Videos': 'video_post',
+    'Video': 'video_post',
     'Audio': 'voice_note_post',
     'Text': 'text_post',
 };
 
 const TrendingView: React.FC<TrendingViewProps> = (props) => {
-  const { items, currentUser, curationTab, activeFilter, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
+  const { items, currentUser, curationTab, activeMediaType, activeTopicTag, onEnterRoom, onViewProfile, onViewMedia, onViewPost } = props;
     
   const displayedItems = useMemo(() => {
-    let sourceItems: DiscoverItem[] = [...items]; // Create a mutable copy
+    let sourceItems: DiscoverItem[] = [...items];
 
-    // 1. Primary Curation Filter (Resonate / Sphere etc)
-    if (curationTab === 'sphere') {
+    // 1. Primary Curation Filter (For You / Following etc)
+    if (curationTab === 'following') {
         const followingIds = new Set(currentUser.following?.map(u => u.id) || []);
         sourceItems = items.filter(item => {
             if (item.type === 'live_room') {
@@ -43,31 +42,44 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
             return false;
         });
 
-        // Sort chronologically, newest first
         sourceItems.sort((a, b) => {
             const dateA = ('createdAt' in a && a.createdAt) ? new Date(a.createdAt).getTime() : 0;
             const dateB = ('createdAt' in b && b.createdAt) ? new Date(b.createdAt).getTime() : 0;
             return dateB - dateA;
         });
         
-        // Inject live rooms to the top, as they are happening "now"
         const liveFromFollows = sourceItems.filter(item => item.type === 'live_room');
         const otherContent = sourceItems.filter(item => item.type !== 'live_room');
         sourceItems = [...liveFromFollows, ...otherContent];
-    } else if (curationTab === 'resonate') {
+    } else if (curationTab === 'forYou') {
         // AI powered "For you" logic would go here. For now, it's just all items.
-    } else if (curationTab === 'world') {
-        // Global feed logic. For now, it's just all items.
-    } else if (curationTab === 'local') {
-        // Geolocation-based feed logic. For now, it's just all items.
+    } else if (curationTab === 'world' || curationTab === 'local') {
+        // Exclude user profiles from world and local feeds
+        sourceItems = sourceItems.filter(item => item.type !== 'user_profile');
     }
     
-    // 2. Secondary Content-Type Filter
-    if (activeFilter === 'All') return sourceItems;
-    const typeToFilter = filterMap[activeFilter];
-    return sourceItems.filter(item => item.type === typeToFilter);
+    // 2. Secondary Media-Type Filter
+    if (activeMediaType !== 'All') {
+        const typeToFilter = mediaTypeMap[activeMediaType];
+        if (typeToFilter) {
+            sourceItems = sourceItems.filter(item => item.type === typeToFilter);
+        }
+    }
 
-  }, [items, curationTab, activeFilter, currentUser.following]);
+    // 3. Topic Tag Filter
+    if (activeTopicTag) {
+        sourceItems = sourceItems.filter(item => {
+            if ('tags' in item && Array.isArray(item.tags)) {
+                return item.tags.includes(activeTopicTag);
+            }
+            return false;
+        });
+    }
+
+
+    return sourceItems;
+
+  }, [items, curationTab, activeMediaType, activeTopicTag, currentUser.following]);
 
   // Simple column-based layout. A real implementation might use a masonry library.
   const columns = [[], [], []] as DiscoverItem[][];
@@ -98,10 +110,10 @@ const TrendingView: React.FC<TrendingViewProps> = (props) => {
         ) : (
           <div className="text-center py-20 bg-gray-800/50 rounded-lg border border-gray-700">
             <h2 className="text-xl font-bold text-gray-300">
-                {curationTab === 'sphere' ? 'It\'s quiet here...' : 'Nothing to see here'}
+                {curationTab === 'following' ? 'It\'s quiet here...' : 'Nothing to see here'}
             </h2>
             <p className="text-gray-400 mt-2">
-                {curationTab === 'sphere' ? 'Follow people to see their latest content.' : 'No items found for this filter. Try another one!'}
+                {curationTab === 'following' ? 'Follow people to see their latest content.' : 'No items found for this filter. Try another one!'}
             </p>
           </div>
         )}

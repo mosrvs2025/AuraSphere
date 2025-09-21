@@ -169,9 +169,10 @@ export interface ContributionRequest {
   createdAt: Date;
 }
 
-export type ActiveView = 'home' | 'explore' | 'messages' | 'scheduled' | 'profile' | 'notifications' | 'my-studio' | 'room' | 'search' | 'privacyDashboard';
+// FIX: Added 'privacyDashboard' to allow navigation from the profile settings menu.
+export type ActiveView = 'discover' | 'explore' | 'messages' | 'profile' | 'privacyDashboard';
 
-export type CurationTab = 'resonate' | 'sphere' | 'world' | 'local';
+export type CurationTab = 'forYou' | 'following' | 'world' | 'local';
 
 export interface ModalPosition {
     top: number;

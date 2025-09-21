@@ -134,6 +134,23 @@
   .animate-aura-travel { animation: aura-travel 2.3s cubic-bezier(0.445, 0.05, 0.55, 0.95) forwards; }
   .animate-globe-appear { animation: globe-appear 2.3s ease-out forwards; }
 
+  /* Swipe cue animation */
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-15px);
+    }
+    60% {
+      transform: translateY(-8px);
+    }
+  }
+  .animate-bounce {
+    animation: bounce 2s infinite;
+  }
+
+
   /* Utility for hiding scrollbars */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
