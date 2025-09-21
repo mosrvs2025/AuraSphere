@@ -70,7 +70,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView, 
                 <button
                   onClick={() => handleNavClick(item.id)}
                   className={`absolute left-1/2 -translate-x-1/2 top-[-2rem] w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 ease-in-out
-                    ${canContribute ? 'bg-purple-600 shadow-purple-500/30 animate-pulse-ring' : 'bg-indigo-600 shadow-indigo-500/30'}
+                    ${canContribute ? 'bg-teal-500 shadow-teal-500/30' : 'bg-indigo-600 shadow-indigo-500/30'}
                     ${scrollDirection === 'down' ? 'scale-75 translate-y-8' : 'scale-100 translate-y-0'}
                   `}
                   aria-label={item.label}

@@ -70,18 +70,6 @@
   .animate-icon-pop {
     animation: icon-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
-
-  @keyframes pulse-ring {
-    0% {
-      box-shadow: 0 0 0 0px rgba(192, 132, 252, 0.7);
-    }
-    100% {
-      box-shadow: 0 0 0 10px rgba(192, 132, 252, 0);
-    }
-  }
-  .animate-pulse-ring {
-    animation: pulse-ring 1.5s infinite;
-  }
   
   /* Post Creation Animation */
   @keyframes glow-fade-in {

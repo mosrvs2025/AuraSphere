@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 // FIX: Added Comment to be used in type casting for new posts.
 import { User, Room, ActiveView, DiscoverItem, Notification, Conversation, ChatMessage, Comment, ContributionRequest } from './types';
@@ -525,7 +524,7 @@ const App: React.FC = () => {
       switch (activeView) {
         case 'home': return <TrendingView items={discoverItems} currentUser={currentUser} curationTab={curationTab} activeFilter={activeFilter} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost}/>;
         case 'explore': return <ExploreView items={discoverItems} trendingTags={trendingTags} onEnterRoom={handleEnterRoom} onViewProfile={handleViewProfile} onViewMedia={setViewingMedia} onViewPost={setViewingPost} />;
-        case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} />;
+        case 'messages': return <MessagesView conversations={conversations} currentUser={currentUser} onConversationSelect={setActiveConversation} liveRooms={rooms.filter(r => !r.isScheduled)} onEnterRoom={handleEnterRoom} onCreateRoom={() => setCreateRoomModalOpen(true)} />;
         case 'scheduled': return <ScheduledView rooms={rooms} discoverItems={discoverItems} />;
         case 'profile': return <UserProfile user={currentUser} allRooms={rooms} onEditProfile={() => setEditProfileModalOpen(true)} onBack={() => handleNavigate('home')} allPosts={discoverItems} onViewMedia={setViewingMedia} onViewPost={setViewingPost} contributionRequests={contributionRequests} onUpdateContributionRequest={handleUpdateContributionRequest} onViewProfile={handleViewProfile} />;
         case 'notifications': return <NotificationsView notifications={[]} onNotificationClick={() => {}} onBack={() => handleNavigate('home')} />;
