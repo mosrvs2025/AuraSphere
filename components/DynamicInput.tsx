@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon } from './Icons';
 import VideoRecorderModal from './VideoRecorderModal';
@@ -313,7 +314,6 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                     </form>
                 )}
 
-                {/* FIX: Removed the redundant 'X' (cancel) button from the recording UI to simplify the user flow, per user feedback. */}
                 {mode === 'recording' && (
                     <div className="w-full flex items-center justify-between px-4 h-[48px]">
                         <div className="flex items-center text-sm text-gray-300 flex-1 justify-center">

@@ -117,7 +117,6 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center animate-fade-in p-4">
       
       {/* Header */}
-      {/* FIX: Removed redundant 'X' close button from recording/preview states to avoid confusion. It is kept for loading/denied states to allow the user to escape. */}
       <header className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
         {mode === 'recording' && (
           <div className="flex items-center text-white bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full font-mono text-lg">
@@ -125,6 +124,7 @@ const VideoRecorderModal: React.FC<VideoRecorderModalProps> = ({ onClose, onSend
             0:{countdown.toString().padStart(2, '0')}
           </div>
         )}
+        {/* FIX: Removed redundant 'X' close button from recording/preview states to avoid confusion. It is kept for loading/denied states to allow the user to escape. */}
         {(mode === 'denied' || mode === 'loading') && (
             <button onClick={onClose} className="text-white text-3xl font-bold ml-auto">&times;</button>
         )}

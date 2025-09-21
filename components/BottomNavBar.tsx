@@ -1,42 +1,50 @@
 import React from 'react';
-import { HomeIcon, MessagesIcon, ProfileIcon, SearchIcon } from './Icons';
 import { ActiveView } from '../types';
+import { HomeIcon, SearchIcon, MessagesIcon, ProfileIcon } from './Icons';
 
 interface BottomNavBarProps {
   activeView: ActiveView;
-  setActiveView: (view: ActiveView) => void;
+  onNavigate: (view: ActiveView) => void;
+  onSearchClick: () => void;
 }
 
-const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, setActiveView }) => {
-  
-  const navItems = [
-    { id: 'home', label: 'Home', icon: <HomeIcon /> },
-    { id: 'search', label: 'Search', icon: <SearchIcon /> },
-    { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
-    { id: 'profile', label: 'Profile', icon: <ProfileIcon /> },
-  ] as const;
+const NavItem: React.FC<{
+    label: string;
+    icon: React.ReactNode;
+    isActive: boolean;
+    onClick: () => void;
+}> = ({ label, icon, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex flex-col items-center justify-center w-full pt-2 pb-1 transition-colors duration-200 ${isActive ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+        aria-label={label}
+    >
+        <div className="w-7 h-7">{icon}</div>
+        <span className="text-xs mt-1">{label}</span>
+    </button>
+);
 
-  return (
-    <nav className="h-20 bg-black border-t border-gray-800 flex-shrink-0 z-40">
-      <div className="flex h-full w-full max-w-lg mx-auto">
-        {navItems.map(item => {
-          const isActive = activeView === item.id;
-          return (
-            <div key={item.id} className="flex-1 w-0 flex justify-center items-center">
-              <button
-                onClick={() => setActiveView(item.id)}
-                className={`w-full h-full flex flex-col items-center justify-center space-y-1 transition-colors ${isActive ? 'text-white' : 'text-gray-500 hover:text-white'}`}
-                aria-label={item.label}
-              >
-                <div className="w-7 h-7">{item.icon}</div>
-                <span className="text-xs font-medium">{item.label}</span>
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </nav>
-  );
+const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeView, onNavigate, onSearchClick }) => {
+    const navItems: { id: ActiveView, label: string, icon: React.ReactNode, action?: () => void }[] = [
+        { id: 'home', label: 'Home', icon: <HomeIcon /> },
+        { id: 'search', label: 'Search', icon: <SearchIcon />, action: onSearchClick },
+        { id: 'messages', label: 'Messages', icon: <MessagesIcon /> },
+        { id: 'profile', label: 'Profile', icon: <ProfileIcon /> }
+    ];
+
+    return (
+        <nav className="flex-shrink-0 bg-gray-900/80 backdrop-blur-sm border-t border-gray-800/50 flex justify-around">
+            {navItems.map(item => (
+                <NavItem 
+                    key={item.id}
+                    label={item.label}
+                    icon={item.icon}
+                    isActive={activeView === item.id}
+                    onClick={item.action ? item.action : () => onNavigate(item.id)}
+                />
+            ))}
+        </nav>
+    );
 };
 
 export default BottomNavBar;

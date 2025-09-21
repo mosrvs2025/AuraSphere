@@ -1,58 +1,47 @@
 import React from 'react';
-import { StudioIcon, VideoCameraIcon, ImageIcon, DocumentTextIcon, MicIcon } from './Icons';
-
-type CreateOption = 'live' | 'video' | 'image' | 'note' | 'voice_note';
+import { StudioIcon, DocumentTextIcon, MicIcon } from './Icons';
 
 interface CreateHubModalProps {
   onClose: () => void;
-  onSelectOption: (option: CreateOption) => void;
+  onStartRoom: () => void;
+  onNewPost: () => void;
+  onNewNote: () => void;
 }
 
-const creationOptions = [
-  { id: 'live', label: 'Go Live', icon: <StudioIcon className="h-10 w-10" />, color: 'bg-red-500' },
-  { id: 'video', label: 'Post a Video', icon: <VideoCameraIcon className="h-10 w-10" />, color: 'bg-purple-500' },
-  { id: 'image', label: 'Post an Image', icon: <ImageIcon className="h-10 w-10" />, color: 'bg-blue-500' },
-  { id: 'note', label: 'Write a Note', icon: <DocumentTextIcon className="h-10 w-10" />, color: 'bg-green-500' },
-  { id: 'voice_note', label: 'Voice Note', icon: <MicIcon className="h-10 w-10" />, color: 'bg-yellow-500' },
-] as const;
+const CreateHubModal: React.FC<CreateHubModalProps> = ({ onClose, onStartRoom, onNewPost, onNewNote }) => {
+  const options = [
+    { label: 'Start a Room', icon: <StudioIcon />, action: onStartRoom },
+    { label: 'New Media Post', icon: <DocumentTextIcon />, action: onNewPost },
+    { label: 'New Voice Note', icon: <MicIcon />, action: onNewNote },
+  ];
 
-
-const CreateHubModal: React.FC<CreateHubModalProps> = ({ onClose, onSelectOption }) => {
   return (
-    <div
-      className="fixed inset-0 bg-gray-900/80 backdrop-blur-md flex flex-col items-center justify-center z-50 animate-fade-in"
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="flex flex-col items-center justify-center"
+        className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-sm m-4 text-white shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center mb-12 animate-slide-up">
-            <h2 className="text-4xl font-bold text-white">What would you like to create?</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold">Create</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">&times;</button>
         </div>
-
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-5 md:gap-8">
-            {creationOptions.map((option, index) => (
-            <button
-                key={option.id}
-                onClick={() => onSelectOption(option.id)}
-                className="flex flex-col items-center justify-center space-y-4 p-6 rounded-3xl w-40 h-40 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 hub-option-button"
-                style={{ animationDelay: `${index * 100}ms` }}
-            >
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white ${option.color}`}>
-                {option.icon}
-                </div>
-                <span className="font-semibold text-white text-lg">{option.label}</span>
-            </button>
+        
+        <div className="grid grid-cols-2 gap-4">
+            {options.map(opt => (
+                <button 
+                    key={opt.label}
+                    onClick={() => { opt.action(); onClose(); }}
+                    className="flex flex-col items-center justify-center aspect-square bg-gray-700/50 hover:bg-gray-700 transition-colors rounded-lg p-4"
+                >
+                    <div className="w-10 h-10 mb-2">{opt.icon}</div>
+                    <span className="font-semibold text-sm">{opt.label}</span>
+                </button>
             ))}
         </div>
       </div>
-       <button 
-          onClick={onClose}
-          className="absolute bottom-10 text-gray-400 bg-gray-800 rounded-full py-3 px-6 hover:bg-gray-700 hover:text-white transition"
-        >
-          Cancel
-        </button>
     </div>
   );
 };
