@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, DiscoverItem } from '../types';
+import { User, DiscoverItem } from '../types.ts';
 import { DocumentTextIcon, VideoCameraIcon } from './Icons';
 import AudioPlayer from './AudioPlayer';
 

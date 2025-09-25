@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -81,7 +80,10 @@ export interface Room {
   totalListeners?: User[];
   invitedUserIds?: string[];
   isVideoEnabled?: boolean;
+  isMicMuted?: boolean;
   broadcastingMedia?: { type: 'voice' | 'video'; url: string; user: User } | null;
+  isRecorded?: boolean;
+  isChatEnabled?: boolean;
 }
 
 export interface Comment {
@@ -167,7 +169,6 @@ export type ActiveView =
     | { view: 'create_note' }
     | { view: 'create_voice_note' }
     | { view: 'create_post', file: { url: string; type: 'image' | 'video' } }
-    | { view: 'swipe'; initialRoomId: string }
     | { view: 'in_app_browser'; url: string }
     | { view: 'messages' }
     | { view: 'conversation'; conversationId: string }

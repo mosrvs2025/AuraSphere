@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Room } from '../types';
+import { Room } from '../types.ts';
 import { UsersIcon } from './Icons';
 
 interface RoomActivityModalProps {

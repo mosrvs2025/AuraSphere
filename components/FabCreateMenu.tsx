@@ -1,88 +1,61 @@
+import React from 'react';
+import { StudioIcon, VideoCameraIcon, ImageIcon, MicIcon, DocumentTextIcon } from './Icons.tsx';
 
-import React, { useState, useRef } from 'react';
-import { PlusIcon, StudioIcon, VideoCameraIcon, ImageIcon, MicIcon, DocumentTextIcon } from './Icons.tsx';
-import { DiscoverItem } from '../types';
-
-interface FabCreateMenuProps {
+interface CreateMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
   onStartRoom: () => void;
   onNewImagePost: () => void;
   onNewVideoPost: () => void;
   onNewVoiceNote: () => void;
   onNewTextPost: () => void;
-  activeFilter: DiscoverItem['type'] | 'All';
 }
 
-const FabCreateMenu: React.FC<FabCreateMenuProps> = (props) => {
-    const { onStartRoom, onNewImagePost, onNewVideoPost, onNewVoiceNote, onNewTextPost, activeFilter } = props;
-    const [isOpen, setIsOpen] = useState(false);
+const CreateMenu: React.FC<CreateMenuProps> = (props) => {
+    const { isOpen, onClose, onStartRoom, onNewImagePost, onNewVideoPost, onNewVoiceNote, onNewTextPost } = props;
     
     const menuItems = [
-        { label: 'Text Post', icon: <DocumentTextIcon className="w-6 h-6" />, action: onNewTextPost, filterMatch: 'text_post' },
-        { label: 'Voice Note', icon: <MicIcon className="w-6 h-6" />, action: onNewVoiceNote, filterMatch: 'voice_note_post' },
-        { label: 'Post Image', icon: <ImageIcon className="w-6 h-6" />, action: onNewImagePost, filterMatch: 'image_post' },
-        { label: 'Post Video', icon: <VideoCameraIcon className="w-6 h-6" />, action: onNewVideoPost, filterMatch: 'video_post' },
-        { label: 'Go Live', icon: <StudioIcon className="w-6 h-6" />, action: onStartRoom, filterMatch: 'live_room' },
+        { label: 'Go Live', icon: <StudioIcon className="w-6 h-6" />, action: onStartRoom },
+        { label: 'Post Video', icon: <VideoCameraIcon className="w-6 h-6" />, action: onNewVideoPost },
+        { label: 'Post Image', icon: <ImageIcon className="w-6 h-6" />, action: onNewImagePost },
+        { label: 'Voice Note', icon: <MicIcon className="w-6 h-6" />, action: onNewVoiceNote },
+        { label: 'Text Post', icon: <DocumentTextIcon className="w-6 h-6" />, action: onNewTextPost },
     ];
 
     const handleAction = (action: () => void) => {
         action();
-        setIsOpen(false);
+        onClose();
     };
 
-    const isFilterPriority = (filterMatch: string) => {
-        return activeFilter === filterMatch;
-    }
+    if (!isOpen) return null;
 
     return (
-        <div className="fixed bottom-24 right-4 z-30 md:hidden">
-            <div className="relative flex flex-col items-center">
-                 {/* Menu items */}
-                <div 
-                    className={`absolute bottom-0 right-0 transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                    style={{ transitionProperty: 'opacity, transform', transform: isOpen ? 'translateY(-80px)' : 'translateY(0)' }}
-                >
-                    <div className="relative w-48 h-48 -bottom-24 -right-24">
-                        {menuItems.map((item, index) => {
-                            const angle = 180 + (index * (90 / (menuItems.length - 1)));
-                            const isPriority = isFilterPriority(item.filterMatch);
-                            return (
-                                <div
-                                    key={item.label}
-                                    className="absolute top-1/2 left-1/2 w-12 h-12 -m-6 transform origin-center transition-transform duration-300 ease-in-out"
-                                    style={{
-                                        transform: isOpen ? `rotate(${angle}deg) translate(80px) rotate(${-angle}deg)` : 'scale(0.5)',
-                                        transitionDelay: isOpen ? `${index * 30}ms` : '0ms'
-                                    }}
-                                >
-                                    <button
-                                        onClick={() => handleAction(item.action)}
-                                        className={`w-12 h-12 text-white rounded-full flex items-center justify-center shadow-md transition-all duration-200 ${
-                                            isPriority ? 'bg-indigo-500 scale-110' : 'bg-gray-700 hover:bg-gray-600'
-                                        }`}
-                                        aria-label={item.label}
-                                    >
-                                        {item.icon}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex flex-col justify-end"
+          onClick={onClose}
+        >
+            <div 
+                className="bg-gray-800 p-4 rounded-t-2xl animate-slide-up"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="grid grid-cols-3 gap-4 pt-4">
+                    {menuItems.map((item) => (
+                         <button
+                            key={item.label}
+                            onClick={() => handleAction(item.action)}
+                            className="flex flex-col items-center justify-center space-y-2 text-white text-xs font-semibold p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                            aria-label={item.label}
+                        >
+                            <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center">
+                                {item.icon}
+                            </div>
+                            <span className="text-center">{item.label}</span>
+                        </button>
+                    ))}
                 </div>
-
-                {/* Main FAB button */}
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="w-16 h-16 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 ease-in-out hover:scale-110 z-10"
-                    aria-label="Create new content"
-                    aria-expanded={isOpen}
-                >
-                    <div className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : 'rotate-0'}`}>
-                        <PlusIcon className="w-8 h-8" />
-                    </div>
-                </button>
             </div>
         </div>
     );
 };
 
-export default FabCreateMenu;
+export default CreateMenu;

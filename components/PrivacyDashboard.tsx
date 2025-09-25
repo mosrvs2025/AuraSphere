@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, VisibilitySetting } from '../types';
+import { User, VisibilitySetting } from '../types.ts';
 import { GlobeIcon, UsersIcon, ShieldCheckIcon, UserPlusIcon } from './Icons';
 
 interface PrivacyDashboardProps {

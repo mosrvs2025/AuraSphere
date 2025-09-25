@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Room, User } from '../types';
+import { Room, User } from '../types.ts';
 import { XIcon } from './Icons';
 
 interface BroadcastMediaViewProps {

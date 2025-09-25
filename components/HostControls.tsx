@@ -4,7 +4,7 @@ import { generateIcebreakers } from '../services/geminiService.ts';
 // FIX: Corrected import path for types.
 import { Room } from '../types.ts';
 // FIX: Corrected import path for Icons.
-import { UserPlusIcon, ChartBarIcon } from './Icons.tsx';
+import { UserPlusIcon, ChartBarIcon, MessagesIcon } from './Icons.tsx';
 
 interface HostControlsProps {
   room: Room;
@@ -25,6 +25,10 @@ const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreat
 
   const onToggleScreenShare = () => {
     onUpdateRoom({ isSharingScreen: !isSharingScreen });
+  };
+  
+  const onToggleChat = () => {
+    onUpdateRoom({ isChatEnabled: !room.isChatEnabled });
   };
 
   const handleSuggestIcebreakers = async () => {
@@ -59,6 +63,17 @@ const HostControls: React.FC<HostControlsProps> = ({ room, onUpdateRoom, onCreat
         <button onClick={onViewActivity} className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
             <ChartBarIcon className="h-5 w-5" />
             <span>Activity</span>
+        </button>
+        <button
+          onClick={onToggleChat}
+          className={`flex items-center space-x-2 font-bold py-2 px-4 rounded-full text-sm transition ${
+            room.isChatEnabled
+              ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+              : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+          }`}
+        >
+          <MessagesIcon className="h-5 w-5" />
+          <span>{room.isChatEnabled ? 'Disable Chat' : 'Enable Chat'}</span>
         </button>
          <button
           onClick={onToggleScreenShare}

@@ -1,36 +1,92 @@
-
-import React from 'react';
-// FIX: Corrected import path for types.
+import React, { useRef, useEffect, useState } from 'react';
 import { Room } from '../types.ts';
-// FIX: Corrected import path for Icons.
-import { MicIcon, XIcon } from './Icons.tsx';
+import { MicIcon, XIcon, ScreenShareIcon, MicOffIcon } from './Icons.tsx';
+import ConfirmationModal from './ConfirmationModal.tsx';
 
 interface MiniPlayerProps {
   room: Room;
   onExpand: () => void;
   onLeave: () => void;
+  localStream: MediaStream | null;
+  onToggleMute: () => void;
 }
 
-const MiniPlayer: React.FC<MiniPlayerProps> = ({ room, onExpand, onLeave }) => {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 h-16 bg-gray-800/80 backdrop-blur-sm border-t border-gray-700/50 z-30 flex items-center justify-between px-4 animate-slide-up md:bottom-auto md:top-4 md:right-4 md:left-auto md:w-96 md:rounded-lg md:border">
-      <button onClick={onExpand} className="flex items-center space-x-3 overflow-hidden">
-        <img src={room.hosts[0]?.avatarUrl} alt={room.hosts[0]?.name} className="w-10 h-10 rounded-md flex-shrink-0" />
-        <div className="text-left">
-          <p className="font-bold text-sm text-white truncate">{room.title}</p>
-          <p className="text-xs text-gray-400 truncate">Tap to return to the room</p>
-        </div>
-      </button>
+const MiniPlayer: React.FC<MiniPlayerProps> = ({ room, onExpand, onLeave, localStream, onToggleMute }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
 
-      <div className="flex items-center space-x-2">
-        <button className="p-2 bg-gray-700 rounded-full text-gray-300">
-          <MicIcon className="w-5 h-5" />
+  useEffect(() => {
+    if (videoRef.current && localStream) {
+      videoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+  
+  const isVideoActive = room.isVideoEnabled && localStream;
+
+  const renderPreview = () => {
+    if (room.isSharingScreen) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-gray-700">
+                <ScreenShareIcon className="w-6 h-6 text-indigo-400" />
+            </div>
+        )
+    }
+    if (isVideoActive) {
+      return (
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+        />
+      );
+    }
+    return (
+      <img
+        src={room.hosts[0]?.avatarUrl}
+        alt={room.hosts[0]?.name}
+        className="w-full h-full object-cover"
+      />
+    );
+  };
+
+  return (
+    <>
+        <div className="h-20 bg-gray-800/80 backdrop-blur-sm border-t border-gray-700/50 z-30 flex items-center justify-between px-4 animate-slide-up flex-shrink-0">
+        <button onClick={onExpand} className="flex items-center space-x-3 overflow-hidden flex-1">
+            <div className="w-28 h-16 rounded-md bg-black overflow-hidden flex-shrink-0">
+            {renderPreview()}
+            </div>
+            <div className="text-left flex-1 overflow-hidden">
+            <p className="font-bold text-sm text-white truncate">{room.title}</p>
+            <p className="text-xs text-gray-400 truncate">Tap to return to the room</p>
+            </div>
         </button>
-        <button onClick={onLeave} className="p-2 bg-red-600/80 rounded-full text-white">
-          <XIcon className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+
+        <div className="flex items-center space-x-2 pl-2">
+            <button 
+                onClick={onToggleMute} 
+                className={`p-2 rounded-full transition-colors ${room.isMicMuted ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                aria-label={room.isMicMuted ? "Unmute microphone" : "Mute microphone"}
+            >
+                {room.isMicMuted ? <MicOffIcon className="w-5 h-5" /> : <MicIcon className="w-5 h-5" />}
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setShowConfirmLeave(true); }} className="p-2 bg-red-600/80 rounded-full text-white">
+            <XIcon className="w-5 h-5" />
+            </button>
+        </div>
+        </div>
+        {showConfirmLeave && (
+            <ConfirmationModal
+                title="End This Room?"
+                message="Are you sure you want to end this live session for everyone?"
+                confirmText="End Room"
+                onConfirm={onLeave}
+                onCancel={() => setShowConfirmLeave(false)}
+            />
+        )}
+    </>
   );
 };
 

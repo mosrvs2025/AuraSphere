@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
-import { Room, User } from '../types';
+import { Room, User } from '../types.ts';
 import RoomView from './RoomView';
 import { ChevronUpIcon } from './Icons';
 import { UserContext } from '../context/UserContext';
@@ -7,12 +7,15 @@ import { UserContext } from '../context/UserContext';
 interface SwipeViewProps {
   rooms: Room[];
   initialRoomId: string;
-  onClose: () => void;
+  onMinimize: () => void;
+  onLeave: () => void;
   onUpdateRoom: (updatedData: Partial<Room>) => void;
   onViewProfile: (user: User) => void;
+  localStream: MediaStream | null;
+  onViewVideoNote: (url: string) => void;
 }
 
-const SwipeView: React.FC<SwipeViewProps> = ({ rooms, initialRoomId, onClose, onUpdateRoom, onViewProfile }) => {
+const SwipeView: React.FC<SwipeViewProps> = ({ rooms, initialRoomId, onMinimize, onLeave, onUpdateRoom, onViewProfile, localStream, onViewVideoNote }) => {
   const initialIndex = useMemo(() => {
     const idx = rooms.findIndex(r => r.id === initialRoomId);
     return idx > -1 ? idx : 0;
@@ -36,7 +39,7 @@ const SwipeView: React.FC<SwipeViewProps> = ({ rooms, initialRoomId, onClose, on
 
   if (!activeRoom) {
     return (
-        <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center text-white" onClick={onClose}>
+        <div className="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center text-white" onClick={onMinimize}>
             <p>No more live rooms.</p>
         </div>
     );
@@ -57,9 +60,12 @@ const SwipeView: React.FC<SwipeViewProps> = ({ rooms, initialRoomId, onClose, on
             {Math.abs(index - currentIndex) <= 1 && ( // Only render current, next, and prev rooms
               <RoomView
                 room={room}
-                onLeave={onClose}
+                onMinimize={onMinimize}
+                onLeave={onLeave}
                 onUpdateRoom={onUpdateRoom}
                 onViewProfile={onViewProfile}
+                localStream={localStream}
+                onViewVideoNote={onViewVideoNote}
               />
             )}
           </div>

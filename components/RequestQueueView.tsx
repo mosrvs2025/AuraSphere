@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { RequestToSpeak, User } from '../types';
+import { RequestToSpeak, User } from '../types.ts';
 import { PlayIcon, PauseIcon, MicIcon, VideoCameraIcon } from './Icons';
 
 interface RequestQueueViewProps {

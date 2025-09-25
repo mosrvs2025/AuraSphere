@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+// FIX: Add React and hooks imports
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Room, DiscoverItem, ActiveView, Conversation, ChatMessage, Notification, ContributionRequest } from './types.ts';
 import { UserContext, IUserContext } from './context/UserContext.ts';
 import { MOCK_USERS, MOCK_ROOMS, MOCK_DISCOVER_ITEMS, MOCK_CONVERSATIONS, MOCK_NOTIFICATIONS, MOCK_CONTRIBUTION_REQUESTS } from './data.ts';
@@ -26,7 +26,7 @@ import NotificationsView from './components/NotificationsView.tsx';
 import ScheduledView from './components/ScheduledView.tsx';
 import PrivacyDashboard from './components/PrivacyDashboard.tsx';
 import CreateVideoReplyView from './components/CreateVideoReplyView.tsx';
-import FabCreateMenu from './components/FabCreateMenu.tsx';
+import CreateMenu from './components/FabCreateMenu.tsx';
 
 const App: React.FC = () => {
     const [users, setUsers] = useState<User[]>(MOCK_USERS);
@@ -39,12 +39,60 @@ const App: React.FC = () => {
 
     const [activeView, setActiveView] = useState<ActiveView>({ view: 'home' });
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
+    const [isRoomExpanded, setIsRoomExpanded] = useState(false);
     const [isCreateRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+    const [isCreateMenuOpen, setCreateMenuOpen] = useState(false);
+    const [viewingChatMediaUrl, setViewingChatMediaUrl] = useState<string | null>(null);
     const [showPostCreationAnimation, setShowPostCreationAnimation] = useState<{ type: 'image' | 'video' | 'note' | 'voice_note', imageUrl?: string } | null>(null);
     const [activeFilter, setActiveFilter] = useState<DiscoverItem['type'] | 'All'>('All');
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     
     const imageInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const isHost = activeRoom?.hosts.some(h => h.id === currentUser.id);
+
+        const manageStream = async () => {
+             if (isHost && activeRoom?.isVideoEnabled) {
+                if (!localStream) { // Only get stream if we don't have one
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                        setLocalStream(stream);
+                    } catch (err) {
+                        console.error("Stream error:", err);
+                        // Disable video if permission is denied
+                        handleUpdateRoom({ isVideoEnabled: false });
+                    }
+                }
+            } else {
+                if (localStream) { // Stop stream if we have one but shouldn't
+                    localStream.getTracks().forEach(track => track.stop());
+                    setLocalStream(null);
+                }
+            }
+        }
+
+        manageStream();
+
+        // Cleanup function for when activeRoom changes to null or component unmounts
+        return () => {
+            if (localStream && !activeRoom) {
+                localStream.getTracks().forEach(track => track.stop());
+                setLocalStream(null);
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeRoom?.id, activeRoom?.isVideoEnabled]);
+
+    useEffect(() => {
+        if (localStream) {
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !activeRoom?.isMicMuted;
+            });
+        }
+    }, [localStream, activeRoom?.isMicMuted]);
+
 
     const userContextValue: IUserContext = {
         currentUser,
@@ -86,11 +134,20 @@ const App: React.FC = () => {
 
     const handleEnterRoom = (room: Room) => {
         setActiveRoom(room);
-        setActiveView({ view: 'home' }); // Keep home view in background
+        setIsRoomExpanded(true);
+    };
+
+    const handleMinimizeRoom = () => {
+        setIsRoomExpanded(false);
     };
 
     const handleLeaveRoom = () => {
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            setLocalStream(null);
+        }
         setActiveRoom(null);
+        setIsRoomExpanded(false);
     };
 
     const handleUpdateRoom = (updatedData: Partial<Room>) => {
@@ -98,6 +155,12 @@ const App: React.FC = () => {
             const updatedRoom = { ...activeRoom, ...updatedData };
             setActiveRoom(updatedRoom);
             setRooms(rooms.map(r => r.id === updatedRoom.id ? updatedRoom : r));
+        }
+    };
+    
+    const handleToggleMute = () => {
+        if (activeRoom) {
+            handleUpdateRoom({ isMicMuted: !activeRoom.isMicMuted });
         }
     };
 
@@ -109,6 +172,7 @@ const App: React.FC = () => {
             isPrivate,
             featuredUrl,
             isVideoEnabled,
+            isMicMuted: false,
             hosts: [currentUser],
             speakers: [],
             listeners: [],
@@ -137,7 +201,10 @@ const App: React.FC = () => {
         setActiveView({ view: 'home' });
     };
 
-    const handleNavigate = (view: 'home' | 'explore' | 'rooms' | 'messages' | 'profile' | 'notifications') => {
+    const handleNavigate = (view: 'home' | 'explore' | 'messages' | 'profile' | 'notifications') => {
+        if (activeRoom) {
+            setIsRoomExpanded(false);
+        }
         setActiveView({ view: view });
     }
 
@@ -150,8 +217,11 @@ const App: React.FC = () => {
         event.target.value = ''; // Reset input
     };
     
-    const mainTabs: ActiveView['view'][] = ['home', 'explore', 'rooms', 'messages', 'profile'];
-    const showMainUI = mainTabs.includes(activeView.view);
+    const isLiveAndMinimized = activeRoom && !isRoomExpanded;
+    
+    const onViewVideoNote = (url: string) => {
+        setViewingChatMediaUrl(url);
+    };
 
     const renderActiveView = () => {
         switch (activeView.view) {
@@ -194,8 +264,6 @@ const App: React.FC = () => {
                 return <CreateVoiceNoteView onClose={() => setActiveView({ view: 'explore' })} onPost={handlePost} />
             case 'create_post':
                  return <CreatePostView file={activeView.file} onClose={() => setActiveView({ view: 'explore' })} onPost={handlePost} />;
-            case 'swipe':
-                return <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeView.initialRoomId} onClose={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />;
             case 'in_app_browser':
                 return <InAppBrowser url={activeView.url} onClose={() => setActiveView({ view: 'explore' })} />;
             case 'messages':
@@ -204,7 +272,7 @@ const App: React.FC = () => {
                             currentUser={currentUser} 
                             onConversationSelect={(convo) => setActiveView({ view: 'conversation', conversationId: convo.id })}
                             liveRooms={rooms.filter(r => !r.isScheduled)}
-                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onEnterRoom={handleEnterRoom}
                             onCreateRoom={() => setCreateRoomModalOpen(true)}
                         />
             case 'conversation':
@@ -218,7 +286,7 @@ const App: React.FC = () => {
             case 'explore':
                  return <ExploreView
                             discoverItems={discoverItems}
-                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onEnterRoom={handleEnterRoom}
                             onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
                             onViewMedia={(post) => setActiveView({ view: 'media', post })}
                             onViewPost={(post) => setActiveView({ view: 'post', post })}
@@ -228,7 +296,7 @@ const App: React.FC = () => {
             case 'rooms':
                 return <RoomsView
                             rooms={rooms}
-                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onEnterRoom={handleEnterRoom}
                         />;
             case 'privacy_dashboard':
                 return <PrivacyDashboard user={currentUser} onUpdateUser={userContextValue.updateCurrentUser} onBack={() => setActiveView({ view: 'profile', userId: currentUser.id })} />;
@@ -238,7 +306,7 @@ const App: React.FC = () => {
             default:
                 return <HomeView 
                             discoverItems={discoverItems}
-                            onEnterRoom={(room) => setActiveView({ view: 'swipe', initialRoomId: room.id })}
+                            onEnterRoom={handleEnterRoom}
                             onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })}
                             onViewMedia={(post) => setActiveView({ view: 'media', post })}
                             onViewPost={(post) => setActiveView({ view: 'post', post })}
@@ -259,16 +327,10 @@ const App: React.FC = () => {
                 </main>
 
                 {/* Modals and Overlays */}
-                {activeRoom && !activeRoom.isScheduled && (
-                     <div className="md:hidden">
-                        <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeRoom.id} onClose={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} />
+                {activeRoom && !activeRoom.isScheduled && isRoomExpanded && (
+                     <div className="fixed inset-0 bg-gray-900 z-40 md:hidden">
+                        <SwipeView rooms={rooms.filter(r => !r.isScheduled)} initialRoomId={activeRoom.id} onMinimize={handleMinimizeRoom} onLeave={handleLeaveRoom} onUpdateRoom={handleUpdateRoom} onViewProfile={(user) => setActiveView({ view: 'profile', userId: user.id })} localStream={localStream} onViewVideoNote={onViewVideoNote} />
                      </div>
-                )}
-                
-                {activeRoom && (
-                    <div className="hidden md:block">
-                        <MiniPlayer room={activeRoom} onExpand={() => console.log('expand')} onLeave={handleLeaveRoom} />
-                    </div>
                 )}
                 
                 {isCreateRoomModalOpen && (
@@ -284,21 +346,40 @@ const App: React.FC = () => {
                         onAnimationComplete={handlePostCreationAnimationComplete} 
                     />
                 )}
+                
+                {viewingChatMediaUrl && (
+                    <div 
+                        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fade-in"
+                        onClick={() => setViewingChatMediaUrl(null)}
+                    >
+                        <video src={viewingChatMediaUrl} controls autoPlay className="max-w-full max-h-full rounded-lg" onClick={e => e.stopPropagation()} />
+                    </div>
+                )}
+
+                <CreateMenu
+                    isOpen={isCreateMenuOpen}
+                    onClose={() => setCreateMenuOpen(false)}
+                    onStartRoom={() => { setCreateMenuOpen(false); setCreateRoomModalOpen(true); }}
+                    onNewImagePost={() => { setCreateMenuOpen(false); imageInputRef.current?.click(); }}
+                    onNewVideoPost={() => { setCreateMenuOpen(false); videoInputRef.current?.click(); }}
+                    onNewVoiceNote={() => { setCreateMenuOpen(false); setActiveView({ view: 'create_voice_note' }); }}
+                    onNewTextPost={() => { setCreateMenuOpen(false); setActiveView({ view: 'create_note' }); }}
+                />
 
                 {/* Persistent UI */}
-                {showMainUI && (
-                    <FabCreateMenu 
-                        onStartRoom={() => setCreateRoomModalOpen(true)}
-                        onNewImagePost={() => imageInputRef.current?.click()}
-                        onNewVideoPost={() => videoInputRef.current?.click()}
-                        onNewVoiceNote={() => setActiveView({ view: 'create_voice_note' })}
-                        onNewTextPost={() => setActiveView({ view: 'create_note' })}
-                        activeFilter={activeFilter}
+                {isLiveAndMinimized && (
+                    <MiniPlayer 
+                        room={activeRoom} 
+                        onExpand={() => setIsRoomExpanded(true)} 
+                        onLeave={handleLeaveRoom}
+                        localStream={localStream}
+                        onToggleMute={handleToggleMute}
                     />
                 )}
                 <div className="flex-shrink-0 md:hidden">
                     <BottomNavBar 
-                        onNavigate={handleNavigate} 
+                        onNavigate={handleNavigate as any}
+                        onCreate={() => setCreateMenuOpen(true)}
                         activeView={activeView.view}
                     />
                 </div>

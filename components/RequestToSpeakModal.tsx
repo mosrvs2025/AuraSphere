@@ -15,6 +15,7 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
     const [isPlaying, setIsPlaying] = useState(false);
     const [permissionError, setPermissionError] = useState<string | null>(null);
     const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -87,15 +88,17 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
     };
     
     const handleSubmit = () => {
-        if (!canSubmit) return;
-        onSubmit({
-            text: text.trim() || undefined,
-            voiceMemo: audioPreview ? { url: audioPreview.url, duration: audioPreview.duration } : undefined,
-            videoNote: videoPreview ? { url: videoPreview.url, duration: videoPreview.duration, thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300` } : undefined
-        });
-        // The parent component now owns the blob URL, so we nullify it here to prevent our cleanup from revoking it.
-        if (audioPreview) setAudioPreview(null);
-        if (videoPreview) setVideoPreview(null);
+        if (!canSubmit || isSubmitting) return;
+        setIsSubmitting(true);
+        setTimeout(() => {
+            onSubmit({
+                text: text.trim() || undefined,
+                voiceMemo: audioPreview ? { url: audioPreview.url, duration: audioPreview.duration } : undefined,
+                videoNote: videoPreview ? { url: videoPreview.url, duration: videoPreview.duration, thumbnailUrl: `https://picsum.photos/seed/${Date.now()}/200/300` } : undefined
+            });
+            if (audioPreview) setAudioPreview(null);
+            if (videoPreview) setVideoPreview(null);
+        }, 300);
     };
 
     const handleVideoSend = (url: string, duration: number) => {
@@ -173,8 +176,8 @@ const RequestToSpeakModal: React.FC<RequestToSpeakModalProps> = ({ onClose, onSu
 
             <div className="flex justify-end space-x-3 mt-6">
                 <button onClick={onClose} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-full text-sm transition">Cancel</button>
-                <button onClick={handleSubmit} disabled={!canSubmit} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-5 rounded-full text-sm transition disabled:bg-indigo-800/50 disabled:cursor-not-allowed">
-                    Submit Request
+                <button onClick={handleSubmit} disabled={!canSubmit || isSubmitting} className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-5 rounded-full text-sm transition disabled:bg-indigo-800/50 disabled:cursor-not-allowed">
+                    {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
             </div>
         </div>

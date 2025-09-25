@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import VideoRecorderModal from './VideoRecorderModal';
-import { Comment, DiscoverItem } from '../types';
+import { Comment, DiscoverItem } from '../types.ts';
 
 interface CreateVideoReplyViewProps {
   replyInfo: {

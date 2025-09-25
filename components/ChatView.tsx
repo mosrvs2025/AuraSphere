@@ -1,4 +1,3 @@
-
 // Implemented the ChatView component for real-time messaging in rooms.
 import React, { useRef, useEffect, useState } from 'react';
 // FIX: Corrected import path for types.
@@ -60,10 +59,14 @@ const LongPressWrapper: React.FC<{ onToggleReaction: (emoji: string) => void, ch
 // --- Sub-component for Video Notes ---
 interface VideoNoteBubbleProps {
     message: ChatMessage;
+    onView: (url: string) => void;
 }
-const VideoNoteBubble: React.FC<VideoNoteBubbleProps> = ({ message }) => {
+const VideoNoteBubble: React.FC<VideoNoteBubbleProps> = ({ message, onView }) => {
+    const videoUrl = message.videoNote?.url;
+    if (!videoUrl) return null;
+
     return (
-        <div className="relative w-40 h-56 rounded-lg overflow-hidden cursor-pointer group">
+        <div onClick={() => onView(videoUrl)} className="relative w-40 h-56 rounded-lg overflow-hidden cursor-pointer group">
             <img src={message.videoNote?.thumbnailUrl} alt="Video note thumbnail" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center">
                  <button className="p-3 bg-white/30 backdrop-blur-sm rounded-full text-white scale-100 group-hover:scale-110 transition-transform">
@@ -89,9 +92,10 @@ interface ChatViewProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   animatedReaction: { messageId: string, emoji: string } | null;
+  onViewVideoNote: (url: string) => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, isCollapsed, onToggleCollapse, animatedReaction }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, isCollapsed, onToggleCollapse, animatedReaction, onViewVideoNote }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -134,7 +138,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
                             </div>
                         </LongPressWrapper>
                     )}
-                    {msg.videoNote && <VideoNoteBubble message={msg} />}
+                    {msg.videoNote && <VideoNoteBubble message={msg} onView={onViewVideoNote} />}
                     
                     {totalReactions > 0 && (
                         <div className="absolute -bottom-4 left-2 flex items-center space-x-1.5 bg-gray-900 px-1.5 py-0.5 rounded-full text-xs z-10">

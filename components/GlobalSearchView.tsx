@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Room, User, DiscoverItem } from '../types';
+import { Room, User, DiscoverItem } from '../types.ts';
 import SearchView from './SearchView';
 import { SearchIcon, XIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
@@ -17,7 +17,7 @@ interface GlobalSearchViewProps {
   onEnterRoom: (room: Room) => void;
   onViewProfile: (user: User) => void;
   onViewMedia: (post: Extract<DiscoverItem, { type: 'image_post' | 'video_post' }>) => void;
-  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' }>) => void;
+  onViewPost: (post: Extract<DiscoverItem, { type: 'text_post' | 'voice_note_post' }>) => void;
   onClose: () => void;
 }
 

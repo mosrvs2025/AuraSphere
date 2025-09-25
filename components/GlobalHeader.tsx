@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, CurationTab } from '../types';
+import { User, CurationTab } from '../types.ts';
 import { FilterIcon } from './Icons';
 
 interface GlobalHeaderProps {

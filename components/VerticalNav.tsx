@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DiscoverItem } from '../types';
+import { DiscoverItem } from '../types.ts';
 import { HomeIcon, ImageIcon, VideoCameraIcon, MicIcon, DocumentTextIcon, LiveIcon } from './Icons';
 
 interface VerticalNavProps {

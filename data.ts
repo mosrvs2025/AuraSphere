@@ -137,6 +137,9 @@ const room1: Room = {
   isPrivate: false,
   messages: [],
   createdAt: new Date(Date.now() - 1200 * 1000),
+  isRecorded: true,
+  isChatEnabled: true,
+  isMicMuted: false,
 };
 
 const room2: Room = {
@@ -151,6 +154,9 @@ const room2: Room = {
   featuredUrl: 'https://www.reuters.com/',
   messages: [],
   createdAt: new Date(Date.now() - 600 * 1000),
+  isRecorded: false,
+  isChatEnabled: false,
+  isMicMuted: false,
 };
 
 const scheduledRoom: Room = {
@@ -159,12 +165,14 @@ const scheduledRoom: Room = {
     description: 'Special guest appearance to discuss the next wave of AI innovation.',
     hosts: [user1],
     speakers: [],
-
     listeners: [],
     isPrivate: true,
     isScheduled: true,
     scheduledTime: new Date(Date.now() + 3600 * 1000 * 24 * 2), // 2 days from now
     messages: [],
+    isRecorded: true,
+    isChatEnabled: true,
+    isMicMuted: false,
 };
 
 export const MOCK_ROOMS: Room[] = [room1, room2, scheduledRoom];
