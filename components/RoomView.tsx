@@ -28,13 +28,39 @@ interface RoomViewProps {
   onViewVideoNote: (url: string) => void;
 }
 
-const ParticipantGrid: React.FC<{ users: User[], onUserClick: (user: User, ref: HTMLButtonElement) => void, title: string, gridClass?: string }> = ({ users, onUserClick, title, gridClass = 'grid-cols-4' }) => (
+const ParticipantAvatar: React.FC<{ user: User; isHost: boolean; room: Room; localStream: MediaStream | null; currentUser: User; className?: string; }> = ({ user, isHost, room, localStream, currentUser, className }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const isCurrentUserHost = isHost && user.id === currentUser.id;
+    const isVideoOn = isCurrentUserHost && room.isVideoEnabled && localStream;
+
+    useEffect(() => {
+        if (isVideoOn && videoRef.current) {
+            videoRef.current.srcObject = localStream;
+        }
+    }, [isVideoOn, localStream]);
+
+    return isVideoOn ? (
+        <video ref={videoRef} autoPlay muted playsInline className={`${className} object-cover`} />
+    ) : (
+        <img src={user.avatarUrl} alt={user.name} className={`${className} object-cover`} />
+    );
+};
+
+
+const ParticipantGrid: React.FC<{ users: User[], room: Room, localStream: MediaStream | null, currentUser: User, onUserClick: (user: User, ref: HTMLButtonElement) => void, title: string, gridClass?: string }> = ({ users, room, localStream, currentUser, onUserClick, title, gridClass = 'grid-cols-4' }) => (
   <div>
     <h3 className="text-gray-400 font-bold text-sm mb-2">{title} ({users.length})</h3>
     <div className={`grid ${gridClass} gap-4`}>
       {users.map(user => (
         <button key={user.id} onClick={(e) => onUserClick(user, e.currentTarget)} className="flex flex-col items-center text-center space-y-1 group">
-          <img src={user.avatarUrl} alt={user.name} className="w-16 h-16 rounded-2xl group-hover:opacity-80 transition-opacity" />
+          <ParticipantAvatar 
+            user={user} 
+            isHost={title === 'Hosts'} 
+            room={room} 
+            localStream={localStream} 
+            currentUser={currentUser}
+            className="w-16 h-16 rounded-full group-hover:opacity-80 transition-opacity"
+          />
           <p className="text-xs font-semibold text-white truncate w-16">{user.name}</p>
         </button>
       ))}
@@ -88,18 +114,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
   const [reactions, setReactions] = useState<{id: number, emoji: string, x: number}[]>([]);
   const reactionCounter = useRef(0);
   
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const isHost = room.hosts.some(h => h.id === currentUser.id);
 
   const [isToolsPanelOpen, setToolsPanelOpen] = useState(false);
   const [showShareVideoInput, setShowShareVideoInput] = useState(false);
   const [videoInput, setVideoInput] = useState('');
-
-  useEffect(() => {
-    if (videoRef.current && localStream) {
-      videoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
 
   useEffect(() => {
     // If chat is disabled and the current user is not a host, switch to the requests tab
@@ -269,8 +288,7 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
         }
     };
 
-
-  const renderAudioLayout = () => (
+  const renderLayout = () => (
     <div className="h-full bg-gray-900 text-white flex flex-col animate-fade-in">
        {room.isRecorded && (
         <div className="bg-yellow-900/50 text-yellow-300 text-xs text-center p-2 flex items-center justify-center flex-shrink-0">
@@ -302,9 +320,9 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
         {room.poll && <Poll poll={room.poll} onVote={handleVote} isHost={isHost} onEndPoll={handleEndPoll} currentUser={currentUser} />}
 
         <div className="space-y-6">
-          <ParticipantGrid users={room.hosts} onUserClick={handleUserClick} title="Hosts" />
-          <ParticipantGrid users={room.speakers} onUserClick={handleUserClick} title="Speakers" />
-          <ParticipantGrid users={room.listeners} onUserClick={handleUserClick} title="Listeners" gridClass="grid-cols-5" />
+          <ParticipantGrid users={room.hosts} room={room} localStream={localStream} currentUser={currentUser} onUserClick={handleUserClick} title="Hosts" />
+          <ParticipantGrid users={room.speakers} room={room} localStream={localStream} currentUser={currentUser} onUserClick={handleUserClick} title="Speakers" />
+          <ParticipantGrid users={room.listeners} room={room} localStream={localStream} currentUser={currentUser} onUserClick={handleUserClick} title="Listeners" gridClass="grid-cols-5" />
         </div>
       </div>
 
@@ -395,62 +413,6 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
     </div>
   );
 
-  const renderVideoLayout = () => (
-    <div className="h-full bg-black text-white flex flex-col animate-fade-in relative">
-        <video ref={videoRef} autoPlay muted playsInline className="absolute inset-0 w-full h-full object-cover z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-0"></div>
-        
-        {room.isRecorded && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-yellow-300 text-xs text-center p-2 rounded-full flex items-center justify-center z-20 backdrop-blur-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                Room is being recorded
-            </div>
-        )}
-
-        <div className="relative z-10 flex flex-col h-full p-4">
-            <header className="flex justify-between items-center">
-                <button onClick={onMinimize} className="p-2 bg-black/30 rounded-full text-white hover:bg-black/50" aria-label="Minimize Room">
-                    <ChevronDownIcon />
-                </button>
-                <div className="text-center">
-                    <h1 className="text-xl font-bold drop-shadow-lg">{room.title}</h1>
-                    {room.description && <p className="text-gray-300 text-xs drop-shadow-md">{room.description}</p>}
-                </div>
-                 {isHost ? (
-                    <button onClick={() => setToolsPanelOpen(true)} className="p-2 bg-black/30 rounded-full text-white hover:bg-black/50" aria-label="Open host tools">
-                        <Cog6ToothIcon />
-                    </button>
-                ) : <div className="w-10"></div>}
-            </header>
-            
-            <div className="flex-1">
-                {/* Participant avatars can be overlayed here */}
-            </div>
-
-            <footer className="space-y-4">
-                 <div className="flex items-end justify-between">
-                    <div className="flex-1">
-                        {room.isChatEnabled && (
-                            <DynamicInput
-                                onSubmitMessage={handleSendTextMessage}
-                                onSubmitAudioNote={handleSendAudioNote}
-                                onSubmitVideoNote={handleSendVideoNote}
-                            />
-                        )}
-                    </div>
-                    <div className="flex items-center space-x-4 pl-4">
-                        <button onClick={handleSendLiveReaction} className="p-3 bg-white/10 backdrop-blur-sm rounded-full text-white hover:text-red-400 transition-transform active:scale-125"><HeartIcon className="w-7 h-7" /></button>
-                        {!isHost && (
-                            <button onClick={() => setRequestModalOpen(true)} className="bg-yellow-600/80 hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-full text-sm transition flex items-center space-x-2">
-                                <UserPlusIcon className="h-5 w-5" />
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </footer>
-        </div>
-    </div>
-  );
 
   return (
     <>
@@ -462,11 +424,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
             ))}
         </div>
         
-        {room.isVideoEnabled ? renderVideoLayout() : renderAudioLayout()}
+        {renderLayout()}
         
          {isHost && (
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent z-20">
-                <div className="flex items-center justify-center space-x-4">
+            <div className="absolute bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent z-20 pointer-events-none">
+                <div className="flex items-center justify-center space-x-4 pointer-events-auto">
                     <button 
                         onClick={() => onUpdateRoom({ isMicMuted: !room.isMicMuted })}
                         className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${room.isMicMuted ? 'bg-red-600 text-white' : 'bg-gray-700/80 text-white'}`}

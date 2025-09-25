@@ -46,9 +46,11 @@ const App: React.FC = () => {
     const [showPostCreationAnimation, setShowPostCreationAnimation] = useState<{ type: 'image' | 'video' | 'note' | 'voice_note', imageUrl?: string } | null>(null);
     const [activeFilter, setActiveFilter] = useState<DiscoverItem['type'] | 'All'>('All');
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [isRoomAudioMuted, setIsRoomAudioMuted] = useState(false);
     
     const imageInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
+    const mockAudioRef = useRef<HTMLAudioElement>(null);
 
     useEffect(() => {
         const isHost = activeRoom?.hosts.some(h => h.id === currentUser.id);
@@ -92,6 +94,20 @@ const App: React.FC = () => {
             });
         }
     }, [localStream, activeRoom?.isMicMuted]);
+    
+    // Effect for handling mock room audio for listeners
+    useEffect(() => {
+        if (mockAudioRef.current) {
+            const isHost = activeRoom?.hosts.some(h => h.id === currentUser.id);
+            const isListener = activeRoom && !isHost;
+
+            if (isListener && !isRoomAudioMuted) {
+                mockAudioRef.current.play().catch(e => console.error("Mock audio play failed:", e));
+            } else {
+                mockAudioRef.current.pause();
+            }
+        }
+    }, [activeRoom, isRoomAudioMuted, currentUser.id]);
 
 
     const userContextValue: IUserContext = {
@@ -162,6 +178,10 @@ const App: React.FC = () => {
         if (activeRoom) {
             handleUpdateRoom({ isMicMuted: !activeRoom.isMicMuted });
         }
+    };
+    
+    const handleToggleRoomAudio = () => {
+        setIsRoomAudioMuted(prev => !prev);
     };
 
     const handleCreateRoom = (title: string, description: string, isPrivate: boolean, featuredUrl: string, isVideoEnabled: boolean) => {
@@ -320,6 +340,10 @@ const App: React.FC = () => {
                 {/* File inputs for FAB */}
                 <input type="file" accept="image/*" ref={imageInputRef} onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
                 <input type="file" accept="video/*" ref={videoInputRef} onChange={(e) => handleFileChange(e, 'video')} className="hidden" />
+                
+                {/* Mock Audio Player */}
+                <audio ref={mockAudioRef} src="https://storage.googleapis.com/voice-memes/coffee-shop-ambience.mp3" loop className="hidden" />
+
 
                 {/* Main content */}
                 <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
@@ -370,10 +394,13 @@ const App: React.FC = () => {
                 {isLiveAndMinimized && (
                     <MiniPlayer 
                         room={activeRoom} 
+                        currentUser={currentUser}
                         onExpand={() => setIsRoomExpanded(true)} 
                         onLeave={handleLeaveRoom}
                         localStream={localStream}
                         onToggleMute={handleToggleMute}
+                        isRoomAudioMuted={isRoomAudioMuted}
+                        onToggleRoomAudio={handleToggleRoomAudio}
                     />
                 )}
                 <div className="flex-shrink-0 md:hidden">
