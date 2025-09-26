@@ -1,22 +1,29 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 // FIX: Corrected import path for Icons.
-import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon } from './Icons.tsx';
+import { MicIcon, SendIcon, VideoCameraIcon, StopIcon, TrashIcon, PlayIcon, PauseIcon, ImageIcon, PlusIcon, HeartIcon, HandRaisedIcon } from './Icons.tsx';
 import VideoRecorderModal from './VideoRecorderModal.tsx';
 
 interface DynamicInputProps {
     onSubmitMessage: (text: string) => void;
     onSubmitAudioNote: (url: string, duration: number) => void;
     onSubmitVideoNote: (url: string, duration: number) => void;
-    // New prop for image replies
     onSubmitImage?: (file: File) => void;
+    // New props for listener controls
+    isListener?: boolean;
+    onSendLiveReaction?: () => void;
+    onRequestToSpeak?: () => void;
 }
 
 const RECORDING_DURATION = 30;
 
-const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAudioNote, onSubmitVideoNote, onSubmitImage }) => {
+const DynamicInput: React.FC<DynamicInputProps> = (props) => {
+    const { onSubmitMessage, onSubmitAudioNote, onSubmitVideoNote, onSubmitImage, isListener, onSendLiveReaction, onRequestToSpeak } = props;
     const [text, setText] = useState('');
     
+    // UI state
+    const [isMediaMenuOpen, setMediaMenuOpen] = useState(false);
+
     // Recording flow state
     const [mode, setMode] = useState<'idle' | 'recording' | 'preview'>('idle');
     const [countdown, setCountdown] = useState(RECORDING_DURATION);
@@ -216,6 +223,55 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
             onSubmitImage(event.target.files[0]);
         }
     };
+    
+    const handleMediaMenuAction = (action: 'image' | 'video' | 'audio') => {
+        setMediaMenuOpen(false);
+        switch (action) {
+            case 'image': imageInputRef.current?.click(); break;
+            case 'video': setVideoRecorderOpen(true); break;
+            case 'audio': startAudioRecording(); break;
+        }
+    };
+
+    if (mode === 'recording') {
+        return (
+            <div className="w-full flex items-center justify-between px-4 h-[48px] bg-gray-800 rounded-full">
+                <div className="flex items-center text-sm text-gray-300 flex-1 justify-center">
+                    <div className="flex items-center space-x-0.5 h-6 mr-3">
+                        {Array.from({ length: 24 }).map((_, i) => {
+                            const sampleIndex = Math.floor(i * (dataArray.length / 24));
+                            const value = dataArray[sampleIndex] || 0;
+                            const heightPercent = Math.max(5, (value / 255) * 100); 
+                            return <div key={i} className="w-0.5 bg-red-400 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}/>;
+                        })}
+                    </div>
+                    <span className="font-mono text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
+                </div>
+                <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording"><StopIcon className="h-8 w-8" /></button>
+            </div>
+        );
+    }
+    
+    if (mode === 'preview' && audioPreview) {
+        return (
+             <div className="w-full flex items-center justify-between p-2 h-[48px] bg-gray-800 rounded-full">
+                <button onClick={deletePreview} className="p-2 text-gray-400 hover:text-white" aria-label="Delete recording"><TrashIcon className="h-6 w-6" /></button>
+                <div className="flex items-center flex-1 mx-2">
+                    <button onClick={toggleAudioPreview} className="p-2 text-white">{isAudioPreviewPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}</button>
+                    <div className="flex-1 h-8 flex items-center space-x-0.5 px-2">
+                        {Array.from({ length: 24 }).map((_, i) => {
+                            const sampleIndex = Math.floor(i * (dataArray.length / 24));
+                            const value = dataArray[sampleIndex] || 0;
+                            const heightPercent = Math.max(5, (value / 255) * 100); 
+                            return <div key={i} className="w-0.5 bg-gray-500 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }} />;
+                        })}
+                    </div>
+                    <span className="text-sm font-mono text-gray-400">0:{(RECORDING_DURATION - countdown).toString().padStart(2, '0')}</span>
+                </div>
+                <button onClick={sendPreview} className="p-3 text-white bg-indigo-600 rounded-full hover:bg-indigo-500" aria-label="Send audio note"><SendIcon /></button>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -228,72 +284,52 @@ const DynamicInput: React.FC<DynamicInputProps> = ({ onSubmitMessage, onSubmitAu
                 onEnded={() => { setIsAudioPreviewPlaying(false); cleanupAudioContext(); }}
                 preload="auto"
             />}
-            <div className="flex-1 flex items-center bg-gray-800 rounded-full relative transition-all duration-300">
-                {mode === 'idle' && (
-                    <form onSubmit={handleFormSubmit} className="w-full flex items-center">
-                        <input
-                            type="text"
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            placeholder="Add a reply..."
-                            className="bg-transparent w-full pl-4 p-3 text-sm focus:outline-none"
-                        />
-                         {text.trim() ? (
-                            <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300" aria-label="Send message">
-                                <SendIcon />
-                            </button>
-                        ) : (
-                            <div className="flex items-center p-1">
-                                <button type="button" onClick={() => imageInputRef.current?.click()} className="p-2 text-gray-300 hover:text-white" aria-label="Attach an image">
-                                    <ImageIcon />
-                                </button>
-                                <button type="button" onClick={() => setVideoRecorderOpen(true)} className="p-2 text-gray-300 hover:text-white" aria-label="Record a video clip">
-                                    <VideoCameraIcon />
-                                </button>
-                                <button type="button" onClick={startAudioRecording} className="p-2 text-gray-300 hover:text-white" aria-label="Record a voice note">
-                                    <MicIcon />
-                                </button>
-                            </div>
-                        )}
-                    </form>
-                )}
-
-                {mode === 'recording' && (
-                    <div className="w-full flex items-center justify-between px-4 h-[48px]">
-                        <div className="flex items-center text-sm text-gray-300 flex-1 justify-center">
-                             <div className="flex items-center space-x-0.5 h-6 mr-3">
-                                {Array.from({ length: 24 }).map((_, i) => {
-                                    const sampleIndex = Math.floor(i * (dataArray.length / 24));
-                                    const value = dataArray[sampleIndex] || 0;
-                                    const heightPercent = Math.max(5, (value / 255) * 100); 
-                                    return <div key={i} className="w-0.5 bg-red-400 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }}/>;
-                                })}
-                            </div>
-                            <span className="font-mono text-gray-400 w-10 text-center">0:{countdown.toString().padStart(2, '0')}</span>
-                        </div>
-                        <button onClick={finishRecording} className="p-2 text-red-400 hover:text-red-300" aria-label="Stop recording"><StopIcon className="h-8 w-8" /></button>
+            
+            <div className="w-full flex items-center h-[48px] relative">
+                {isListener && isMediaMenuOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 flex flex-col space-y-2 animate-fade-in">
+                        <button onClick={() => handleMediaMenuAction('audio')} className="p-3 bg-gray-700 rounded-full text-white hover:bg-gray-600 transition"><MicIcon/></button>
+                        <button onClick={() => handleMediaMenuAction('video')} className="p-3 bg-gray-700 rounded-full text-white hover:bg-gray-600 transition"><VideoCameraIcon/></button>
+                        <button onClick={() => handleMediaMenuAction('image')} className="p-3 bg-gray-700 rounded-full text-white hover:bg-gray-600 transition"><ImageIcon/></button>
                     </div>
                 )}
                 
-                {mode === 'preview' && audioPreview && (
-                     <div className="w-full flex items-center justify-between p-2 h-[48px]">
-                         <button onClick={deletePreview} className="p-2 text-gray-400 hover:text-white" aria-label="Delete recording"><TrashIcon className="h-6 w-6" /></button>
-                         <div className="flex items-center flex-1 mx-2">
-                            <button onClick={toggleAudioPreview} className="p-2 text-white">{isAudioPreviewPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}</button>
-                             <div className="flex-1 h-8 flex items-center space-x-0.5 px-2">
-                                {Array.from({ length: 24 }).map((_, i) => {
-                                    const sampleIndex = Math.floor(i * (dataArray.length / 24));
-                                    const value = dataArray[sampleIndex] || 0;
-                                    const heightPercent = Math.max(5, (value / 255) * 100); 
-                                    return <div key={i} className="w-0.5 bg-gray-500 rounded-full" style={{ height: `${heightPercent}%`, transition: 'height 75ms ease-out' }} />;
-                                })}
+                <form onSubmit={handleFormSubmit} className={`flex-1 flex items-center rounded-full h-full ${isListener ? 'bg-gray-700' : 'bg-gray-800'}`}>
+                     {isListener && (
+                        <button type="button" onClick={() => setMediaMenuOpen(p => !p)} className="p-3 text-gray-300 hover:text-white" aria-label="Attach media">
+                            <PlusIcon />
+                        </button>
+                    )}
+                    <input
+                        type="text"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Add a reply..."
+                        className="bg-transparent w-full pr-4 py-3 text-sm focus:outline-none h-full"
+                        style={{ paddingLeft: isListener ? '0' : '1rem' }}
+                    />
+                    {text.trim() ? (
+                        <button type="submit" className="p-3 text-indigo-400 hover:text-indigo-300" aria-label="Send message">
+                            <SendIcon />
+                        </button>
+                    ) : (
+                        !isListener && (
+                            <div className="flex items-center p-1">
+                                {onSubmitImage && <button type="button" onClick={() => imageInputRef.current?.click()} className="p-2 text-gray-300 hover:text-white" aria-label="Attach an image"><ImageIcon /></button>}
+                                <button type="button" onClick={() => setVideoRecorderOpen(true)} className="p-2 text-gray-300 hover:text-white" aria-label="Record a video clip"><VideoCameraIcon /></button>
+                                <button type="button" onClick={startAudioRecording} className="p-2 text-gray-300 hover:text-white" aria-label="Record a voice note"><MicIcon /></button>
                             </div>
-                             <span className="text-sm font-mono text-gray-400">0:{(RECORDING_DURATION - countdown).toString().padStart(2, '0')}</span>
-                         </div>
-                         <button onClick={sendPreview} className="p-3 text-white bg-indigo-600 rounded-full hover:bg-indigo-500" aria-label="Send audio note"><SendIcon /></button>
-                     </div>
+                        )
+                    )}
+                </form>
+                {isListener && (
+                    <div className="flex items-center ml-2 space-x-1">
+                        <button onClick={onSendLiveReaction} className="p-3 text-gray-300 hover:text-red-400 transition-transform active:scale-125"><HeartIcon /></button>
+                        <button onClick={onRequestToSpeak} className="p-3 text-gray-300 hover:text-yellow-400"><HandRaisedIcon /></button>
+                    </div>
                 )}
             </div>
+
             {isVideoRecorderOpen && (
                 <VideoRecorderModal 
                     onClose={() => setVideoRecorderOpen(false)}

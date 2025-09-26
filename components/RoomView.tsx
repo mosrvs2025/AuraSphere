@@ -120,12 +120,50 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
   const [showShareVideoInput, setShowShareVideoInput] = useState(false);
   const [videoInput, setVideoInput] = useState('');
 
+  // Draggable Chat Panel State
+  const chatPanelRef = useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState({ startY: 0, currentY: 0, isDragging: false, initialHeight: 0 });
+
   useEffect(() => {
     // If chat is disabled and the current user is not a host, switch to the requests tab
     if (!room.isChatEnabled && !isHost && sidePanelView === 'chat') {
         setSidePanelView('requests');
     }
   }, [room.isChatEnabled, isHost, sidePanelView]);
+
+  const handleDragStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!chatPanelRef.current) return;
+    setDragState({
+      startY: e.touches[0].clientY,
+      currentY: e.touches[0].clientY,
+      isDragging: true,
+      initialHeight: chatPanelRef.current.clientHeight,
+    });
+  };
+
+  const handleDragMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!dragState.isDragging || !chatPanelRef.current) return;
+    const deltaY = e.touches[0].clientY - dragState.startY;
+    // Prevent dragging up too far
+    if (dragState.initialHeight - deltaY < window.innerHeight * 0.8) {
+        chatPanelRef.current.style.transform = `translateY(${deltaY}px)`;
+    }
+  };
+
+  const handleDragEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!dragState.isDragging || !chatPanelRef.current) return;
+    chatPanelRef.current.style.transform = ''; // Reset transform for CSS transition
+    const deltaY = e.changedTouches[0].clientY - dragState.startY;
+    
+    // Toggle based on drag direction and distance
+    if (isChatCollapsed && deltaY < -50) { // Swiped up
+      setIsChatCollapsed(false);
+    } else if (!isChatCollapsed && deltaY > 50) { // Swiped down
+      setIsChatCollapsed(true);
+    }
+
+    setDragState({ startY: 0, currentY: 0, isDragging: false, initialHeight: 0 });
+  };
 
 
   const handleUserClick = (user: User, ref: HTMLButtonElement) => {
@@ -327,7 +365,11 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
       </div>
 
       {/* BOTTOM PART: The chat/controls panel */}
-      <div className="flex-shrink-0 border-t border-gray-700/50 flex flex-col bg-gray-900">
+      <div 
+        ref={chatPanelRef}
+        className={`flex-shrink-0 border-t border-gray-700/50 flex flex-col bg-gray-900 ${!dragState.isDragging && 'transition-transform duration-300'}`}
+        style={{ touchAction: 'none' }} // Disable browser default touch actions like scroll
+      >
         <div className="flex border-b border-gray-700/50 flex-shrink-0">
             {(room.isChatEnabled || isHost) && (
                 <button
@@ -358,6 +400,9 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
                     onToggleReaction={handleToggleReactionWithAnimation}
                     isCollapsed={isChatCollapsed}
                     onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+                    onDragStart={handleDragStart}
+                    onDragMove={handleDragMove}
+                    onDragEnd={handleDragEnd}
                     animatedReaction={animatedReaction}
                     onViewVideoNote={onViewVideoNote}
                 />
@@ -380,34 +425,18 @@ const RoomView: React.FC<RoomViewProps> = ({ room, onMinimize, onLeave, onUpdate
         )}
         
         <footer className="p-4 bg-gray-800/80 border-t border-gray-700/50">
-          {isHost ? (
              <div className="space-y-2">
                 {sidePanelView === 'chat' && room.isChatEnabled &&
                     <DynamicInput
+                        isListener={!isHost}
                         onSubmitMessage={handleSendTextMessage}
                         onSubmitAudioNote={handleSendAudioNote}
                         onSubmitVideoNote={handleSendVideoNote}
+                        onSendLiveReaction={handleSendLiveReaction}
+                        onRequestToSpeak={() => setRequestModalOpen(true)}
                     />
                 }
              </div>
-          ) : (
-             <div className="flex items-center space-x-4">
-                <div className="flex-1">
-                  {sidePanelView === 'chat' && room.isChatEnabled &&
-                    <DynamicInput
-                        onSubmitMessage={handleSendTextMessage}
-                        onSubmitAudioNote={handleSendAudioNote}
-                        onSubmitVideoNote={handleSendVideoNote}
-                    />
-                  }
-                </div>
-                <button onClick={handleSendLiveReaction} className="p-2 text-gray-400 hover:text-red-400 transition-transform active:scale-125"><HeartIcon className="w-7 h-7" /></button>
-                 <button onClick={() => setRequestModalOpen(true)} className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-full text-sm transition flex items-center space-x-2">
-                      <UserPlusIcon className="h-5 w-5" />
-                      <span>Request</span>
-                  </button>
-              </div>
-          )}
         </footer>
       </div>
     </div>

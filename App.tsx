@@ -1,3 +1,4 @@
+
 // FIX: Add React and hooks imports
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Room, DiscoverItem, ActiveView, Conversation, ChatMessage, Notification, ContributionRequest } from './types.ts';
@@ -342,7 +343,7 @@ const App: React.FC = () => {
                 <input type="file" accept="video/*" ref={videoInputRef} onChange={(e) => handleFileChange(e, 'video')} className="hidden" />
                 
                 {/* Mock Audio Player */}
-                <audio ref={mockAudioRef} src="https://storage.googleapis.com/voice-memes/coffee-shop-ambience.mp3" loop className="hidden" />
+                <audio ref={mockAudioRef} src="https://storage.googleapis.com/voice-memes/Eminem_My_Name_Is.mp3" loop className="hidden" />
 
 
                 {/* Main content */}
@@ -390,20 +391,20 @@ const App: React.FC = () => {
                     onNewTextPost={() => { setCreateMenuOpen(false); setActiveView({ view: 'create_note' }); }}
                 />
 
-                {/* Persistent UI */}
-                {isLiveAndMinimized && (
-                    <MiniPlayer 
-                        room={activeRoom} 
-                        currentUser={currentUser}
-                        onExpand={() => setIsRoomExpanded(true)} 
-                        onLeave={handleLeaveRoom}
-                        localStream={localStream}
-                        onToggleMute={handleToggleMute}
-                        isRoomAudioMuted={isRoomAudioMuted}
-                        onToggleRoomAudio={handleToggleRoomAudio}
-                    />
-                )}
+                {/* Persistent UI for Mobile */}
                 <div className="flex-shrink-0 md:hidden">
+                    {isLiveAndMinimized && (
+                        <MiniPlayer 
+                            room={activeRoom} 
+                            currentUser={currentUser}
+                            onExpand={() => setIsRoomExpanded(true)} 
+                            onLeave={handleLeaveRoom}
+                            localStream={localStream}
+                            onToggleMute={handleToggleMute}
+                            isRoomAudioMuted={isRoomAudioMuted}
+                            onToggleRoomAudio={handleToggleRoomAudio}
+                        />
+                    )}
                     <BottomNavBar 
                         onNavigate={handleNavigate as any}
                         onCreate={() => setCreateMenuOpen(true)}

@@ -1,3 +1,4 @@
+
 import { User, Room, DiscoverItem, Conversation, Notification, ContributionRequest, Group } from './types.ts';
 
 // --- MOCK USERS ---
@@ -135,7 +136,12 @@ const room1: Room = {
   speakers: [],
   listeners: [user1, user3, user5],
   isPrivate: false,
-  messages: [],
+  messages: [
+    { id: 'msg-r1-1', user: user3, text: 'This sounds amazing, Elena!', createdAt: new Date(Date.now() - 1100 * 1000) },
+    { id: 'msg-r1-2', user: user5, text: 'Can you play "Wonderwall"? 😉', createdAt: new Date(Date.now() - 1000 * 1000) },
+    { id: 'msg-r1-3', user: user2, text: 'Haha, classic! Maybe later.', createdAt: new Date(Date.now() - 900 * 1000) },
+    { id: 'msg-r1-4', user: user1, voiceMemo: { url: 'https://storage.googleapis.com/voice-memes/Eminem_My_Name_Is.mp3', duration: 8 }, createdAt: new Date(Date.now() - 800 * 1000) },
+  ],
   createdAt: new Date(Date.now() - 1200 * 1000),
   isRecorded: true,
   isChatEnabled: true,
@@ -152,10 +158,14 @@ const room2: Room = {
   isPrivate: false,
   isVideoEnabled: true,
   featuredUrl: 'https://www.reuters.com/',
-  messages: [],
+  messages: [
+    { id: 'msg-r2-1', user: user4, text: "What's the main takeaway from the new trade agreement?", createdAt: new Date(Date.now() - 500 * 1000) },
+    { id: 'msg-r2-2', user: user5, text: "Good question, Chloe. The biggest thing is the focus on renewable energy tech. It's going to shift a lot of investment.", createdAt: new Date(Date.now() - 450 * 1000) },
+    { id: 'msg-r2-3', user: user1, text: "I agree. I think we'll see a big push in solar and wind components from a few key players.", createdAt: new Date(Date.now() - 400 * 1000) },
+  ],
   createdAt: new Date(Date.now() - 600 * 1000),
   isRecorded: false,
-  isChatEnabled: false,
+  isChatEnabled: true,
   isMicMuted: false,
 };
 

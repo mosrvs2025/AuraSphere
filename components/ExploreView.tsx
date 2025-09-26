@@ -1,10 +1,37 @@
-
 import React, { useState, useMemo } from 'react';
 import { DiscoverItem, Room, User, CurationTab } from '../types.ts';
 import VerticalNav from './VerticalNav.tsx';
 import GlobalHeader from './GlobalHeader.tsx';
 import { DiscoverCard } from './DiscoverCards.tsx';
 import { SearchIcon } from './Icons.tsx';
+
+const LiveRail: React.FC<{ liveRooms: Room[]; onEnterRoom: (room: Room) => void; }> = ({ liveRooms, onEnterRoom }) => {
+    if (liveRooms.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="py-4 border-b border-gray-800">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-4">Live Now</h2>
+            <div className="flex items-center space-x-4 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+                {liveRooms.map((room) => (
+                    <button key={room.id} onClick={() => onEnterRoom(room)} className="flex flex-col items-center space-y-2 flex-shrink-0 w-20 text-center focus:outline-none group">
+                        <div className="relative">
+                            <img 
+                                src={room.hosts[0]?.avatarUrl} 
+                                alt={room.hosts[0]?.name} 
+                                className="w-16 h-16 rounded-full border-2 border-gray-700 group-hover:border-indigo-500 transition-colors" 
+                            />
+                             <div className="absolute inset-0 rounded-full animate-pulse-live pointer-events-none"></div>
+                        </div>
+                        <p className="text-xs text-white font-semibold truncate w-full">{room.title}</p>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 interface ExploreViewProps {
   discoverItems: DiscoverItem[];
@@ -74,6 +101,8 @@ const ExploreView: React.FC<ExploreViewProps> = (props) => {
     return results;
   }, [discoverItems, activeFilter, activeTopicTag, curationTab, searchQuery]);
 
+  const liveRooms = useMemo(() => discoverItems.filter(item => item.type === 'live_room') as Room[], [discoverItems]);
+
   // Masonry layout logic
   const columns: DiscoverItem[][] = [[], [], []];
   filteredItems.forEach((item, i) => {
@@ -106,6 +135,7 @@ const ExploreView: React.FC<ExploreViewProps> = (props) => {
           onTopicTagChange={setActiveTopicTag}
         />
         <main className="flex-1 overflow-y-auto p-4">
+            <LiveRail liveRooms={liveRooms} onEnterRoom={callbacks.onEnterRoom} />
             {filteredItems.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
                 {columns.map((col, colIndex) => (

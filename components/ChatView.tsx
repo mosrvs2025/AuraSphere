@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 // FIX: Corrected import path for types.
 import { ChatMessage, User } from '../types.ts';
 // FIX: Corrected import path for Icons.
-import { ChevronDownIcon } from './Icons.tsx';
+import { GripHorizontalIcon } from './Icons.tsx';
 import AudioPlayer from './AudioPlayer.tsx';
 
 // --- Sub-component for Emoji Reactions ---
@@ -91,11 +91,14 @@ interface ChatViewProps {
   onToggleReaction: (messageId: string, emoji: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onDragStart: (e: React.TouchEvent<HTMLDivElement>) => void;
+  onDragMove: (e: React.TouchEvent<HTMLDivElement>) => void;
+  onDragEnd: (e: React.TouchEvent<HTMLDivElement>) => void;
   animatedReaction: { messageId: string, emoji: string } | null;
   onViewVideoNote: (url: string) => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, isCollapsed, onToggleCollapse, animatedReaction, onViewVideoNote }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReaction, isCollapsed, onToggleCollapse, onDragStart, onDragMove, onDragEnd, animatedReaction, onViewVideoNote }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -110,11 +113,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, currentUser, onToggleReac
 
   return (
     <div className="flex flex-col bg-gray-800/80 backdrop-blur-sm overflow-hidden">
-      <header className="p-4 border-b border-gray-700/50 flex-shrink-0">
-         <button onClick={onToggleCollapse} className="w-full flex justify-between items-center text-left text-white font-bold disabled:cursor-default" disabled={!onToggleCollapse}>
-            <span>Room Chat</span>
-            <ChevronDownIcon className={`h-5 w-5 transform transition-transform duration-300 ${!onToggleCollapse ? 'hidden' : ''} ${!isCollapsed ? 'rotate-180' : ''}`} />
-        </button>
+      <header
+        className="py-2 border-b border-gray-700/50 flex-shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
+        onTouchStart={onDragStart}
+        onTouchMove={onDragMove}
+        onTouchEnd={onDragEnd}
+        onClick={onToggleCollapse}
+      >
+        <div className="w-10 h-2 bg-gray-600 rounded-full"></div>
       </header>
       <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[300px] opacity-100 p-4 space-y-4'}`}>
         {messages.map(msg => {
